@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Egzaminu Ósmoklasisty</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            color: white;
+            transition: background 0.5s;
+        }
+
+        body.warning {
+            background: #2e2a1a;
+        }
+
+        body.danger {
+            background: #2e1a1a;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .setup-panel {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .setup-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .setup-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .setup-group label {
+            font-size: 0.85rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setup-group select,
+        .setup-group input[type="time"] {
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: #2a2a3e;
+            color: white;
+            min-width: 180px;
+        }
+
+        .setup-group select:focus,
+        .setup-group input:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #2a2a3e;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-group input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group span {
+            font-size: 1rem;
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+
+        .time-info-item {
+            text-align: center;
+        }
+
+        .time-info-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .time-info-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffd700;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 14px 35px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-pause {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #333;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-fullscreen {
+            background: #444;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Timer Display */
+        .timer-display {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .exam-name {
+            font-size: 2rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .timer-main {
+            font-size: 10rem;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            line-height: 1;
+            margin: 20px 0;
+            text-shadow: 0 0 30px rgba(255,255,255,0.3);
+            transition: color 0.5s;
+        }
+
+        .timer-main.normal {
+            color: #00ff88;
+        }
+
+        .timer-main.warning {
+            color: #ffd700;
+        }
+
+        .timer-main.danger {
+            color: #ff4444;
+        }
+
+        .timer-seconds {
+            font-size: 4rem;
+            opacity: 0.7;
+        }
+
+        .progress-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            height: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #28a745);
+            transition: width 1s linear, background 0.5s;
+            border-radius: 15px;
+        }
+
+        .progress-bar.warning {
+            background: linear-gradient(90deg, #ffd700, #fd7e14);
+        }
+
+        .progress-bar.danger {
+            background: linear-gradient(90deg, #ff4444, #dc3545);
+        }
+
+        .end-time {
+            font-size: 1.3rem;
+            color: #888;
+            margin-top: 20px;
+        }
+
+        .end-time span {
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        /* Alert Message */
+        .alert-message {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 25px;
+            background: linear-gradient(135deg, #ffd700 0%, #fd7e14 100%);
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            animation: pulse 2s infinite;
+        }
+
+        .alert-message.visible {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .alert-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .alert-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .alert-subtext {
+            font-size: 1rem;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        /* Finished state */
+        .timer-finished {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .timer-finished.visible {
+            display: block;
+        }
+
+        .finished-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .finished-text {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #ff4444;
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #888;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #444;
+        }
+
+        .status-dot.active {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .status-dot.paused {
+            background: #ffd700;
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        /* Hidden when running */
+        .hide-when-running {
+            transition: opacity 0.3s;
+        }
+
+        body.running .hide-when-running {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        body.running .setup-panel {
+            padding: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .timer-main {
+                font-size: 5rem;
+            }
+
+            .timer-seconds {
+                font-size: 2.5rem;
+            }
+
+            .exam-name {
+                font-size: 1.5rem;
+            }
+
+            .setup-row {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .timer-main {
+                font-size: 3.5rem;
+            }
+        }
+
+        /* Fullscreen styles */
+        :fullscreen {
+            background: #1a1a2e;
+        }
+
+        :fullscreen .container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        :fullscreen .timer-main {
+            font-size: 15rem;
+        }
+
+        :fullscreen .exam-name {
+            font-size: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Timer Egzaminu Ósmoklasisty 2026</h1>
+
+        <div class="setup-panel">
+            <div class="setup-row hide-when-running">
+                <div class="setup-group">
+                    <label>Egzamin</label>
+                    <select id="examType" onchange="updateExamInfo()">
+                        <option value="polish">Język polski</option>
+                        <option value="math">Matematyka</option>
+                        <option value="english">Język angielski</option>
+                    </select>
+                </div>
+
+                <div class="setup-group">
+                    <label>Godzina rozpoczęcia</label>
+                    <input type="time" id="startTime" value="09:00">
+                </div>
+
+                <label class="checkbox-group">
+                    <input type="checkbox" id="extendedTime" onchange="updateExamInfo()">
+                    <span>Wydłużony czas (SPE)</span>
+                </label>
+            </div>
+
+            <div class="time-info">
+                <div class="time-info-item">
+                    <div class="time-info-label">Czas trwania</div>
+                    <div class="time-info-value" id="durationInfo">150 min</div>
+                </div>
+                <div class="time-info-item">
+                    <div class="time-info-label">Godzina zakończenia</div>
+                    <div class="time-info-value" id="endTimeInfo">11:30</div>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-start" id="btnStart" onclick="startTimer()">Start</button>
+                <button class="btn btn-pause" id="btnPause" onclick="pauseTimer()" disabled>Pauza</button>
+                <button class="btn btn-stop" id="btnStop" onclick="stopTimer()" disabled>Stop</button>
+                <button class="btn btn-fullscreen" onclick="toggleFullscreen()">Pełny ekran</button>
+            </div>
+        </div>
+
+        <div class="timer-display" id="timerDisplay">
+            <div class="exam-name" id="examName">Język polski</div>
+            <div class="timer-main normal" id="timerMain">
+                <span id="timerHours">02</span>:<span id="timerMinutes">30</span><span class="timer-seconds">:<span id="timerSeconds">00</span></span>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar" style="width: 100%"></div>
+            </div>
+
+            <div class="end-time">
+                Koniec egzaminu: <span id="endTimeDisplay">11:30</span>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Gotowy</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert-message" id="alertMessage">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-text">Pozostało 10 minut!</div>
+            <div class="alert-subtext">Przypomnienie: przeniesienie odpowiedzi na kartę odpowiedzi</div>
+        </div>
+
+        <div class="timer-finished" id="timerFinished">
+            <div class="finished-icon">🛑</div>
+            <div class="finished-text">KONIEC CZASU</div>
+        </div>
+    </div>
+
+    <script>
+        const EXAM_CONFIG = {
+            polish: {
+                name: 'Język polski',
+                duration: 150,
+                extended: 60
+            },
+            math: {
+                name: 'Matematyka',
+                duration: 125,
+                extended: 50
+            },
+            english: {
+                name: 'Język angielski',
+                duration: 110,
+                extended: 45
+            }
+        };
+
+        let timerInterval = null;
+        let remainingSeconds = 0;
+        let totalSeconds = 0;
+        let isPaused = false;
+        let alertShown = false;
+
+        function getExamDuration() {
+            const examType = document.getElementById('examType').value;
+            const extended = document.getElementById('extendedTime').checked;
+            const config = EXAM_CONFIG[examType];
+            return config.duration + (extended ? config.extended : 0);
+        }
+
+        function updateExamInfo() {
+            const examType = document.getElementById('examType').value;
+            const config = EXAM_CONFIG[examType];
+            const duration = getExamDuration();
+
+            document.getElementById('durationInfo').textContent = duration + ' min';
+            document.getElementById('examName').textContent = config.name;
+
+            updateEndTime();
+            updateTimerDisplay(duration * 60);
+        }
+
+        function updateEndTime() {
+            const startTime = document.getElementById('startTime').value;
+            const duration = getExamDuration();
+
+            if (startTime) {
+                const [hours, minutes] = startTime.split(':').map(Number);
+                const startDate = new Date();
+                startDate.setHours(hours, minutes, 0);
+
+                const endDate = new Date(startDate.getTime() + duration * 60000);
+                const endTimeStr = endDate.toTimeString().slice(0, 5);
+
+                document.getElementById('endTimeInfo').textContent = endTimeStr;
+                document.getElementById('endTimeDisplay').textContent = endTimeStr;
+            }
+        }
+
+        function updateTimerDisplay(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+
+            document.getElementById('timerHours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('timerMinutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('timerSeconds').textContent = secs.toString().padStart(2, '0');
+        }
+
+        function updateProgress() {
+            const progress = (remainingSeconds / totalSeconds) * 100;
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = progress + '%';
+
+            const timerMain = document.getElementById('timerMain');
+            const body = document.body;
+
+            // Remove all state classes
+            timerMain.classList.remove('normal', 'warning', 'danger');
+            progressBar.classList.remove('warning', 'danger');
+            body.classList.remove('warning', 'danger');
+
+            if (remainingSeconds <= 600) { // 10 minutes
+                timerMain.classList.add('danger');
+                progressBar.classList.add('danger');
+                body.classList.add('danger');
+            } else if (remainingSeconds <= 1800) { // 30 minutes
+                timerMain.classList.add('warning');
+                progressBar.classList.add('warning');
+                body.classList.add('warning');
+            } else {
+                timerMain.classList.add('normal');
+            }
+        }
+
+        function checkAlert() {
+            // Show alert at 10 minutes remaining
+            if (remainingSeconds <= 600 && remainingSeconds > 0 && !alertShown) {
+                document.getElementById('alertMessage').classList.add('visible');
+                alertShown = true;
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) return;
+
+            const duration = getExamDuration();
+            totalSeconds = duration * 60;
+            remainingSeconds = totalSeconds;
+            alertShown = false;
+
+            document.getElementById('alertMessage').classList.remove('visible');
+            document.getElementById('timerFinished').classList.remove('visible');
+
+            document.body.classList.add('running');
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').disabled = false;
+            document.getElementById('btnStop').disabled = false;
+
+            document.getElementById('statusDot').classList.add('active');
+            document.getElementById('statusText').textContent = 'Trwa egzamin';
+
+            isPaused = false;
+            runTimer();
+        }
+
+        function runTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    remainingSeconds--;
+
+                    if (remainingSeconds <= 0) {
+                        remainingSeconds = 0;
+                        finishTimer();
+                        return;
+                    }
+
+                    updateTimerDisplay(remainingSeconds);
+                    updateProgress();
+                    checkAlert();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isPaused = !isPaused;
+
+            const btn = document.getElementById('btnPause');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            if (isPaused) {
+                btn.textContent = 'Wznów';
+                statusDot.classList.remove('active');
+                statusDot.classList.add('paused');
+                statusText.textContent = 'Pauza';
+            } else {
+                btn.textContent = 'Pauza';
+                statusDot.classList.remove('paused');
+                statusDot.classList.add('active');
+                statusText.textContent = 'Trwa egzamin';
+            }
+        }
+
+        function stopTimer() {
+            if (confirm('Czy na pewno chcesz zakończyć egzamin?')) {
+                finishTimer();
+            }
+        }
+
+        function finishTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+
+            document.getElementById('timerFinished').classList.add('visible');
+            document.getElementById('alertMessage').classList.remove('visible');
+
+            document.body.classList.remove('running');
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnPause').disabled = true;
+            document.getElementById('btnStop').disabled = true;
+            document.getElementById('btnPause').textContent = 'Pauza';
+
+            document.getElementById('statusDot').classList.remove('active', 'paused');
+            document.getElementById('statusText').textContent = 'Zakończony';
+
+            updateTimerDisplay(0);
+            document.getElementById('progressBar').style.width = '0%';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('startTime').addEventListener('change', updateEndTime);
+
+        // Initialize
+        updateExamInfo();
+    </script>
+</body>
+</html>
