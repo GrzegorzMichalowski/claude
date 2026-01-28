@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Ocen - Sprawdzian</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .max-points-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .max-points-section label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .max-points-section input {
+            width: 120px;
+            padding: 12px 15px;
+            font-size: 1.2rem;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .max-points-section input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.2);
+        }
+
+        .thresholds-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .thresholds-header {
+            padding: 15px 20px;
+            background: #e9ecef;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            user-select: none;
+        }
+
+        .thresholds-header:hover {
+            background: #dee2e6;
+        }
+
+        .thresholds-arrow {
+            transition: transform 0.3s;
+        }
+
+        .thresholds-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .thresholds-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .thresholds-content.open {
+            max-height: 500px;
+        }
+
+        .thresholds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .threshold-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .threshold-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .threshold-label {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .threshold-input {
+            width: 70px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .threshold-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .threshold-percent {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .warning-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin: 0 20px 15px 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            color: #856404;
+            font-size: 0.9rem;
+        }
+
+        .warning-banner.visible {
+            display: flex;
+        }
+
+        .warning-icon {
+            font-size: 1.2rem;
+        }
+
+        .reset-thresholds {
+            margin-left: auto;
+            padding: 6px 12px;
+            background: #ffc107;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .reset-thresholds:hover {
+            background: #e0a800;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .student-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .student-row:hover {
+            background: #e9ecef;
+        }
+
+        .student-label {
+            font-weight: 600;
+            color: #555;
+            min-width: 85px;
+            font-size: 0.9rem;
+        }
+
+        .student-input {
+            width: 70px;
+            padding: 8px 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .student-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .student-input.error {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .student-grade {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            min-width: 100px;
+            transition: all 0.3s;
+        }
+
+        .grade-celujacy { background: #28a745; color: white; }
+        .grade-bardzo-dobry { background: #20c997; color: white; }
+        .grade-dobry { background: #17a2b8; color: white; }
+        .grade-dostateczny { background: #ffc107; color: #333; }
+        .grade-dopuszczajacy { background: #fd7e14; color: white; }
+        .grade-niedostateczny { background: #dc3545; color: white; }
+        .grade-empty { background: #e9ecef; color: #999; }
+
+        .stats-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .stats-title {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .distribution {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .dist-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+
+        .dist-count {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .dist-label {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        .buttons-section {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+
+            .students-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .distribution {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kalkulator Ocen ze Sprawdzianu</h1>
+        <p class="subtitle">Wprowadź maksymalną liczbę punktów i wyniki uczniów</p>
+
+        <div class="max-points-section">
+            <label for="studentsCount">Liczba uczniów:</label>
+            <input type="number" id="studentsCount" min="1" max="50" value="25" placeholder="np. 18">
+            <span style="margin: 0 20px; color: #ccc;">|</span>
+            <label for="maxPoints">Maks. punktów:</label>
+            <input type="number" id="maxPoints" min="1" max="1000" value="100" placeholder="np. 50">
+        </div>
+
+        <div class="thresholds-section">
+            <div class="thresholds-header" onclick="toggleThresholds()">
+                <span>Progi ocenowe (kliknij aby rozwinac)</span>
+                <span class="thresholds-arrow" id="thresholdsArrow">&#9660;</span>
+            </div>
+            <div class="thresholds-content" id="thresholdsContent">
+                <div class="warning-banner" id="warningBanner">
+                    <span class="warning-icon">&#9888;</span>
+                    <span>Uwaga: Progi zostaly zmienione i nie sa zgodne ze statutem szkoly!</span>
+                    <button class="reset-thresholds" onclick="resetThresholds()">Przywroc domyslne</button>
+                </div>
+                <div class="thresholds-grid">
+                    <div class="threshold-item">
+                        <div class="threshold-color grade-celujacy"></div>
+                        <span class="threshold-label">Celujacy od</span>
+                        <input type="number" class="threshold-input" id="threshold6" value="100" min="0" max="100" step="1" oninput="updateThresholds()">
+                        <span class="threshold-percent">%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <div class="threshold-color grade-bardzo-dobry"></div>
+                        <span class="threshold-label">Bardzo dobry od</span>
+                        <input type="number" class="threshold-input" id="threshold5" value="91" min="0" max="100" step="1" oninput="updateThresholds()">
+                        <span class="threshold-percent">%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <div class="threshold-color grade-dobry"></div>
+                        <span class="threshold-label">Dobry od</span>
+                        <input type="number" class="threshold-input" id="threshold4" value="75" min="0" max="100" step="1" oninput="updateThresholds()">
+                        <span class="threshold-percent">%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <div class="threshold-color grade-dostateczny"></div>
+                        <span class="threshold-label">Dostateczny od</span>
+                        <input type="number" class="threshold-input" id="threshold3" value="51" min="0" max="100" step="1" oninput="updateThresholds()">
+                        <span class="threshold-percent">%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <div class="threshold-color grade-dopuszczajacy"></div>
+                        <span class="threshold-label">Dopuszczajacy od</span>
+                        <input type="number" class="threshold-input" id="threshold2" value="34" min="0" max="100" step="1" oninput="updateThresholds()">
+                        <span class="threshold-percent">%</span>
+                    </div>
+                    <div class="threshold-item">
+                        <div class="threshold-color grade-niedostateczny"></div>
+                        <span class="threshold-label">Niedostateczny</span>
+                        <span style="color: #666; font-size: 0.85rem;">ponizej progu "2"</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend" id="legendSection">
+            <!-- Generowane przez JavaScript -->
+        </div>
+
+        <div class="students-grid" id="studentsGrid">
+            <!-- Generowane przez JavaScript -->
+        </div>
+
+        <div class="stats-section" id="statsSection">
+            <h2 class="stats-title">Statystyki klasy</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-value" id="statCount">0</span>
+                    <div class="stat-label">Liczba ocen</div>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="statAvgPoints">-</span>
+                    <div class="stat-label">Średnia punktów</div>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="statAvgPercent">-</span>
+                    <div class="stat-label">Średnia %</div>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="statAvgGrade">-</span>
+                    <div class="stat-label">Średnia ocena</div>
+                </div>
+            </div>
+            <div class="distribution">
+                <div class="dist-item">
+                    <div class="dist-count" id="distCel">0</div>
+                    <div class="dist-label">Celujący</div>
+                </div>
+                <div class="dist-item">
+                    <div class="dist-count" id="distBdb">0</div>
+                    <div class="dist-label">Bardzo dobry</div>
+                </div>
+                <div class="dist-item">
+                    <div class="dist-count" id="distDb">0</div>
+                    <div class="dist-label">Dobry</div>
+                </div>
+                <div class="dist-item">
+                    <div class="dist-count" id="distDst">0</div>
+                    <div class="dist-label">Dostateczny</div>
+                </div>
+                <div class="dist-item">
+                    <div class="dist-count" id="distDop">0</div>
+                    <div class="dist-label">Dopuszczający</div>
+                </div>
+                <div class="dist-item">
+                    <div class="dist-count" id="distNdst">0</div>
+                    <div class="dist-label">Niedostateczny</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons-section">
+            <button class="btn btn-primary" onclick="exportToCSV()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Eksportuj do CSV
+            </button>
+            <button class="btn btn-secondary" onclick="clearAll()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                Wyczyść wszystko
+            </button>
+            <button class="btn btn-success" onclick="printResults()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 6 2 18 2 18 9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                Drukuj
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Pobierz aktualną liczbę uczniów z pola
+        function getStudentsCount() {
+            return parseInt(document.getElementById('studentsCount').value) || 25;
+        }
+
+        // Domyślne progi (zgodne ze statutem)
+        const DEFAULT_THRESHOLDS = {
+            6: 100,  // Celujący od 100% (>99%)
+            5: 91,   // Bardzo dobry od 91% (>90%)
+            4: 75,   // Dobry od 75% (>74%)
+            3: 51,   // Dostateczny od 51% (>50%)
+            2: 34    // Dopuszczający od 34% (>33%)
+        };
+
+        // Pobierz aktualne progi z pól
+        function getThresholds() {
+            return [
+                { min: parseFloat(document.getElementById('threshold6').value) || 100, grade: 'Celujący', short: '6', class: 'grade-celujacy', value: 6 },
+                { min: parseFloat(document.getElementById('threshold5').value) || 91, grade: 'Bardzo dobry', short: '5', class: 'grade-bardzo-dobry', value: 5 },
+                { min: parseFloat(document.getElementById('threshold4').value) || 75, grade: 'Dobry', short: '4', class: 'grade-dobry', value: 4 },
+                { min: parseFloat(document.getElementById('threshold3').value) || 51, grade: 'Dostateczny', short: '3', class: 'grade-dostateczny', value: 3 },
+                { min: parseFloat(document.getElementById('threshold2').value) || 34, grade: 'Dopuszczający', short: '2', class: 'grade-dopuszczajacy', value: 2 },
+                { min: 0, grade: 'Niedostateczny', short: '1', class: 'grade-niedostateczny', value: 1 }
+            ];
+        }
+
+        // Sprawdź czy progi są zmienione
+        function areThresholdsModified() {
+            const t6 = parseFloat(document.getElementById('threshold6').value);
+            const t5 = parseFloat(document.getElementById('threshold5').value);
+            const t4 = parseFloat(document.getElementById('threshold4').value);
+            const t3 = parseFloat(document.getElementById('threshold3').value);
+            const t2 = parseFloat(document.getElementById('threshold2').value);
+
+            return t6 !== DEFAULT_THRESHOLDS[6] ||
+                   t5 !== DEFAULT_THRESHOLDS[5] ||
+                   t4 !== DEFAULT_THRESHOLDS[4] ||
+                   t3 !== DEFAULT_THRESHOLDS[3] ||
+                   t2 !== DEFAULT_THRESHOLDS[2];
+        }
+
+        // Aktualizuj progi i ostrzeżenie
+        function updateThresholds() {
+            const warning = document.getElementById('warningBanner');
+            if (areThresholdsModified()) {
+                warning.classList.add('visible');
+            } else {
+                warning.classList.remove('visible');
+            }
+            updateLegend();
+            recalculateAll();
+        }
+
+        // Przywróć domyślne progi
+        function resetThresholds() {
+            document.getElementById('threshold6').value = DEFAULT_THRESHOLDS[6];
+            document.getElementById('threshold5').value = DEFAULT_THRESHOLDS[5];
+            document.getElementById('threshold4').value = DEFAULT_THRESHOLDS[4];
+            document.getElementById('threshold3').value = DEFAULT_THRESHOLDS[3];
+            document.getElementById('threshold2').value = DEFAULT_THRESHOLDS[2];
+            updateThresholds();
+        }
+
+        // Rozwiń/zwiń sekcję progów
+        function toggleThresholds() {
+            const content = document.getElementById('thresholdsContent');
+            const arrow = document.getElementById('thresholdsArrow');
+            content.classList.toggle('open');
+            arrow.classList.toggle('open');
+        }
+
+        // Aktualizuj legendę
+        function updateLegend() {
+            const thresholds = getThresholds();
+            const legend = document.getElementById('legendSection');
+            legend.innerHTML = '';
+
+            const gradeInfo = [
+                { class: 'grade-celujacy', name: 'Celujący', idx: 0 },
+                { class: 'grade-bardzo-dobry', name: 'Bardzo dobry', idx: 1 },
+                { class: 'grade-dobry', name: 'Dobry', idx: 2 },
+                { class: 'grade-dostateczny', name: 'Dostateczny', idx: 3 },
+                { class: 'grade-dopuszczajacy', name: 'Dopuszczający', idx: 4 },
+                { class: 'grade-niedostateczny', name: 'Niedostateczny', idx: 5 }
+            ];
+
+            gradeInfo.forEach((info, i) => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                const threshold = thresholds[info.idx];
+                let rangeText = '';
+                if (i === 0) {
+                    rangeText = `(=${threshold.min}%)`;
+                } else if (i === 5) {
+                    rangeText = `(<${thresholds[4].min}%)`;
+                } else {
+                    rangeText = `(>=${threshold.min}%)`;
+                }
+                item.innerHTML = `
+                    <div class="legend-color ${info.class}"></div>
+                    <span>${info.name} ${rangeText}</span>
+                `;
+                legend.appendChild(item);
+            });
+        }
+
+        // Generowanie pól dla uczniów
+        function generateStudentFields() {
+            const grid = document.getElementById('studentsGrid');
+            grid.innerHTML = '';
+            const count = getStudentsCount();
+
+            for (let i = 1; i <= count; i++) {
+                const row = document.createElement('div');
+                row.className = 'student-row';
+                row.innerHTML = `
+                    <span class="student-label">Nr ${i}:</span>
+                    <input type="number"
+                           class="student-input"
+                           id="student${i}"
+                           min="0"
+                           step="0.5"
+                           placeholder="pkt"
+                           oninput="calculateGrade(${i})">
+                    <div class="student-grade grade-empty" id="grade${i}">-</div>
+                `;
+                grid.appendChild(row);
+            }
+        }
+
+        // Obliczanie oceny dla ucznia
+        function calculateGrade(studentNum) {
+            const maxPoints = parseFloat(document.getElementById('maxPoints').value) || 0;
+            const input = document.getElementById(`student${studentNum}`);
+            const gradeDiv = document.getElementById(`grade${studentNum}`);
+            const points = parseFloat(input.value);
+            const thresholds = getThresholds();
+
+            // Walidacja
+            if (points > maxPoints && maxPoints > 0) {
+                input.classList.add('error');
+            } else {
+                input.classList.remove('error');
+            }
+
+            // Brak danych
+            if (isNaN(points) || input.value === '' || maxPoints <= 0) {
+                gradeDiv.textContent = '-';
+                gradeDiv.className = 'student-grade grade-empty';
+                updateStats();
+                return;
+            }
+
+            const percent = (points / maxPoints) * 100;
+
+            // Znajdź odpowiednią ocenę
+            for (const threshold of thresholds) {
+                if (percent >= threshold.min) {
+                    gradeDiv.textContent = `${threshold.grade} (${percent.toFixed(1)}%)`;
+                    gradeDiv.className = `student-grade ${threshold.class}`;
+                    break;
+                }
+            }
+
+            updateStats();
+        }
+
+        // Przelicz wszystkie oceny (po zmianie max punktów)
+        function recalculateAll() {
+            const count = getStudentsCount();
+            for (let i = 1; i <= count; i++) {
+                calculateGrade(i);
+            }
+        }
+
+        // Aktualizacja statystyk
+        function updateStats() {
+            const maxPoints = parseFloat(document.getElementById('maxPoints').value) || 0;
+            const studentsCount = getStudentsCount();
+            const thresholds = getThresholds();
+            let count = 0;
+            let totalPoints = 0;
+            let totalPercent = 0;
+            let totalGradeValue = 0;
+
+            const distribution = { cel: 0, bdb: 0, db: 0, dst: 0, dop: 0, ndst: 0 };
+
+            for (let i = 1; i <= studentsCount; i++) {
+                const input = document.getElementById(`student${i}`);
+                const points = parseFloat(input.value);
+
+                if (!isNaN(points) && input.value !== '' && maxPoints > 0) {
+                    count++;
+                    totalPoints += points;
+                    const percent = (points / maxPoints) * 100;
+                    totalPercent += percent;
+
+                    // Znajdź ocenę i zaktualizuj rozkład
+                    for (const threshold of thresholds) {
+                        if (percent >= threshold.min) {
+                            totalGradeValue += threshold.value;
+
+                            if (threshold.value === 6) distribution.cel++;
+                            else if (threshold.value === 5) distribution.bdb++;
+                            else if (threshold.value === 4) distribution.db++;
+                            else if (threshold.value === 3) distribution.dst++;
+                            else if (threshold.value === 2) distribution.dop++;
+                            else distribution.ndst++;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Aktualizuj wyświetlanie
+            document.getElementById('statCount').textContent = count;
+            document.getElementById('statAvgPoints').textContent = count > 0 ? (totalPoints / count).toFixed(1) : '-';
+            document.getElementById('statAvgPercent').textContent = count > 0 ? (totalPercent / count).toFixed(1) + '%' : '-';
+            document.getElementById('statAvgGrade').textContent = count > 0 ? (totalGradeValue / count).toFixed(2) : '-';
+
+            document.getElementById('distCel').textContent = distribution.cel;
+            document.getElementById('distBdb').textContent = distribution.bdb;
+            document.getElementById('distDb').textContent = distribution.db;
+            document.getElementById('distDst').textContent = distribution.dst;
+            document.getElementById('distDop').textContent = distribution.dop;
+            document.getElementById('distNdst').textContent = distribution.ndst;
+        }
+
+        // Export do CSV
+        function exportToCSV() {
+            const maxPoints = parseFloat(document.getElementById('maxPoints').value) || 0;
+            const studentsCount = getStudentsCount();
+            const thresholds = getThresholds();
+            let csv = 'Nr w dzienniku;Punkty;Procent;Ocena\n';
+
+            for (let i = 1; i <= studentsCount; i++) {
+                const input = document.getElementById(`student${i}`);
+                const points = parseFloat(input.value);
+
+                if (!isNaN(points) && input.value !== '' && maxPoints > 0) {
+                    const percent = (points / maxPoints) * 100;
+                    let gradeName = '';
+
+                    for (const threshold of thresholds) {
+                        if (percent >= threshold.min) {
+                            gradeName = threshold.grade;
+                            break;
+                        }
+                    }
+
+                    csv += `${i};${points};${percent.toFixed(1)}%;${gradeName}\n`;
+                }
+            }
+
+            // Dodaj statystyki
+            csv += '\n';
+            csv += `Maksymalna liczba punktów;${maxPoints}\n`;
+            csv += `Liczba ocenionych uczniów;${document.getElementById('statCount').textContent}\n`;
+            csv += `Średnia punktów;${document.getElementById('statAvgPoints').textContent}\n`;
+            csv += `Średnia procentowa;${document.getElementById('statAvgPercent').textContent}\n`;
+            csv += `Średnia ocena;${document.getElementById('statAvgGrade').textContent}\n`;
+
+            // Dodaj informację o progach jeśli zmienione
+            if (areThresholdsModified()) {
+                csv += '\n';
+                csv += `UWAGA: Zastosowano niestandardowe progi ocen!\n`;
+                csv += `Celujący od;${document.getElementById('threshold6').value}%\n`;
+                csv += `Bardzo dobry od;${document.getElementById('threshold5').value}%\n`;
+                csv += `Dobry od;${document.getElementById('threshold4').value}%\n`;
+                csv += `Dostateczny od;${document.getElementById('threshold3').value}%\n`;
+                csv += `Dopuszczający od;${document.getElementById('threshold2').value}%\n`;
+            }
+
+            // Pobierz plik
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `oceny_sprawdzian_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Wyczyść wszystko
+        function clearAll() {
+            if (confirm('Czy na pewno chcesz wyczyścić wszystkie dane?')) {
+                const studentsCount = getStudentsCount();
+                for (let i = 1; i <= studentsCount; i++) {
+                    document.getElementById(`student${i}`).value = '';
+                    document.getElementById(`grade${i}`).textContent = '-';
+                    document.getElementById(`grade${i}`).className = 'student-grade grade-empty';
+                    document.getElementById(`student${i}`).classList.remove('error');
+                }
+                updateStats();
+            }
+        }
+
+        // Drukowanie
+        function printResults() {
+            window.print();
+        }
+
+        // Inicjalizacja
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLegend();
+            generateStudentFields();
+            document.getElementById('maxPoints').addEventListener('input', recalculateAll);
+            document.getElementById('studentsCount').addEventListener('input', () => {
+                generateStudentFields();
+                updateStats();
+            });
+        });
+    </script>
+
+    <style media="print">
+        body {
+            background: white !important;
+            padding: 0 !important;
+        }
+        .container {
+            box-shadow: none !important;
+            max-width: 100% !important;
+        }
+        .buttons-section {
+            display: none !important;
+        }
+        .thresholds-section {
+            display: none !important;
+        }
+        .student-input {
+            border: 1px solid #ccc !important;
+        }
+    </style>
+</body>
+</html>
