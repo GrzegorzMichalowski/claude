@@ -142,6 +142,22 @@
             font-size: 1rem;
         }
 
+        .test-title {
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .test-title.visible {
+            display: block;
+        }
+
         .print-btn {
             display: block;
             width: 100%;
@@ -209,6 +225,18 @@
                 display: none !important;
             }
 
+            .input-section {
+                display: none !important;
+            }
+
+            .test-title.visible {
+                display: block !important;
+                background: none !important;
+                border-bottom: 2px solid #333;
+                border-radius: 0 !important;
+                margin-bottom: 25px;
+            }
+
             .grade-card {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -222,10 +250,14 @@
         <p class="subtitle">Wpisz maksymalną liczbę punktów, aby zobaczyć przedziały</p>
 
         <div class="input-section">
+            <label for="testName">Nazwa sprawdzianu:</label>
+            <input type="text" id="testName" placeholder="np. Sprawdzian z równań" oninput="updateTitle()" style="width: 100%; margin-bottom: 20px;">
             <label for="maxPoints">Maksymalna liczba punktów:</label>
             <input type="number" id="maxPoints" min="1" max="1000" placeholder="np. 50" oninput="calculateRanges()">
             <span>pkt</span>
         </div>
+
+        <div class="test-title" id="testTitle"></div>
 
         <div class="grades-container" id="gradesContainer">
             <div class="empty-state">
@@ -241,6 +273,17 @@
     </div>
 
     <script>
+        function updateTitle() {
+            const testName = document.getElementById('testName').value.trim();
+            const titleDiv = document.getElementById('testTitle');
+            if (testName) {
+                titleDiv.textContent = testName;
+                titleDiv.classList.add('visible');
+            } else {
+                titleDiv.classList.remove('visible');
+            }
+        }
+
         const GRADES = [
             { name: 'Celujący', number: 6, minPercent: 100, maxPercent: 100, class: 'grade-6' },
             { name: 'Bardzo dobry', number: 5, minPercent: 91, maxPercent: 99, class: 'grade-5' },
