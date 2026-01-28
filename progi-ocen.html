@@ -285,7 +285,7 @@
         <button class="print-btn" onclick="window.print()">Drukuj / Zapisz PDF</button>
 
         <div class="info-box">
-            Progi zgodne ze statutem szkoły: celujący (100%), bardzo dobry (91-99%), dobry (75-90%), dostateczny (51-74%), dopuszczający (34-50%), niedostateczny (0-33%)
+            Progi zgodne ze statutem szkoły: celujący (100%), bardzo dobry (od 91%), dobry (od 75%), dostateczny (od 51%), dopuszczający (od 34%), niedostateczny (poniżej 34%)
         </div>
     </div>
 
@@ -322,16 +322,21 @@
             let html = '';
 
             GRADES.forEach(grade => {
-                const minPoints = ((grade.minPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
-                const maxPointsRange = ((grade.maxPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
+                const minPoints = Math.round(((grade.minPercent / 100) * maxPoints) * 2) / 2;
 
                 let rangeText = '';
+                let percentText = '';
+
                 if (grade.minPercent === 100) {
                     rangeText = `${maxPoints} pkt`;
+                    percentText = '100%';
                 } else if (grade.minPercent === 0) {
-                    rangeText = `0 - ${maxPointsRange} pkt`;
+                    const nextGradeMin = Math.round(((34 / 100) * maxPoints) * 2) / 2;
+                    rangeText = `poniżej ${nextGradeMin} pkt`;
+                    percentText = 'poniżej 34%';
                 } else {
-                    rangeText = `${minPoints} - ${maxPointsRange} pkt`;
+                    rangeText = `od ${minPoints} pkt`;
+                    percentText = `od ${grade.minPercent}%`;
                 }
 
                 html += `
@@ -339,7 +344,7 @@
                         <span class="grade-number">${grade.number}</span>
                         <div>
                             <div class="grade-name">${grade.name}</div>
-                            <div class="grade-percent">${grade.minPercent === grade.maxPercent ? grade.minPercent + '%' : grade.minPercent + '% - ' + grade.maxPercent + '%'}</div>
+                            <div class="grade-percent">${percentText}</div>
                         </div>
                         <div class="grade-value">${rangeText}</div>
                     </div>
