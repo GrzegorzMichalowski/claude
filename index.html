@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narzędzia dla Nauczycieli</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+
+        .cards {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        .card-1 .card-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-2 .card-icon {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .card-content h2 {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .card-content p {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85rem;
+        }
+
+        .footer a {
+            color: rgba(255,255,255,0.9);
+        }
+
+        @media (max-width: 500px) {
+            .card {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Narzędzia dla Nauczycieli</h1>
+        <p class="subtitle">Kalkulatory ocen ze sprawdzianów</p>
+
+        <div class="cards">
+            <a href="kalkulator-ocen.html" class="card card-1">
+                <div class="card-icon">&#128221;</div>
+                <div class="card-content">
+                    <h2>Kalkulator Ocen</h2>
+                    <p>Wprowadź wyniki punktowe uczniów i automatycznie oblicz oceny dla całej klasy. Statystyki, rozkład ocen, eksport do CSV.</p>
+                </div>
+            </a>
+
+            <a href="progi-ocen.html" class="card card-2">
+                <div class="card-icon">&#128202;</div>
+                <div class="card-content">
+                    <h2>Progi Ocen</h2>
+                    <p>Szybki generator przedziałów punktowych. Wpisz maksymalną liczbę punktów i zobacz progi dla każdej oceny.</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="footer">
+            <a href="https://github.com/GrzegorzMichalowski/claude" target="_blank">GitHub</a>
+        </div>
+    </div>
+</body>
+</html>
