@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progi Ocen - Generator Przedziałów Punktowych</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.6rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .input-section input {
+            width: 150px;
+            padding: 15px 20px;
+            font-size: 1.5rem;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .input-section input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.2);
+        }
+
+        .input-section span {
+            font-size: 1.2rem;
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .grades-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .grade-card {
+            display: flex;
+            align-items: center;
+            padding: 18px 20px;
+            border-radius: 12px;
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .grade-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .grade-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            min-width: 140px;
+        }
+
+        .grade-value {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-left: auto;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .grade-6 { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+        .grade-5 { background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%); }
+        .grade-4 { background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%); }
+        .grade-3 { background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); color: #333; }
+        .grade-3 .grade-value { background: rgba(0,0,0,0.1); }
+        .grade-2 { background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%); }
+        .grade-1 { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+
+        .grade-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-right: 15px;
+            opacity: 0.9;
+        }
+
+        .grade-percent {
+            font-size: 0.8rem;
+            opacity: 0.85;
+            margin-top: 3px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1rem;
+        }
+
+        .print-btn {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .info-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #0056b3;
+            text-align: center;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px;
+            }
+
+            .grade-card {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .grade-name {
+                min-width: 100px;
+            }
+
+            .grade-value {
+                margin-left: 0;
+                width: 100%;
+                text-align: center;
+                margin-top: 5px;
+            }
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+            }
+
+            .container {
+                box-shadow: none !important;
+                max-width: 100% !important;
+            }
+
+            .print-btn, .info-box {
+                display: none !important;
+            }
+
+            .grade-card {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Progi Ocen ze Sprawdzianu</h1>
+        <p class="subtitle">Wpisz maksymalną liczbę punktów, aby zobaczyć przedziały</p>
+
+        <div class="input-section">
+            <label for="maxPoints">Maksymalna liczba punktów:</label>
+            <input type="number" id="maxPoints" min="1" max="1000" placeholder="np. 50" oninput="calculateRanges()">
+            <span>pkt</span>
+        </div>
+
+        <div class="grades-container" id="gradesContainer">
+            <div class="empty-state">
+                Wpisz liczbę punktów powyżej, aby wygenerować przedziały ocen
+            </div>
+        </div>
+
+        <button class="print-btn" onclick="window.print()">Drukuj / Zapisz PDF</button>
+
+        <div class="info-box">
+            Progi zgodne ze statutem szkoły: celujący (100%), bardzo dobry (91-99%), dobry (75-90%), dostateczny (51-74%), dopuszczający (34-50%), niedostateczny (0-33%)
+        </div>
+    </div>
+
+    <script>
+        const GRADES = [
+            { name: 'Celujący', number: 6, minPercent: 100, maxPercent: 100, class: 'grade-6' },
+            { name: 'Bardzo dobry', number: 5, minPercent: 91, maxPercent: 99, class: 'grade-5' },
+            { name: 'Dobry', number: 4, minPercent: 75, maxPercent: 90, class: 'grade-4' },
+            { name: 'Dostateczny', number: 3, minPercent: 51, maxPercent: 74, class: 'grade-3' },
+            { name: 'Dopuszczający', number: 2, minPercent: 34, maxPercent: 50, class: 'grade-2' },
+            { name: 'Niedostateczny', number: 1, minPercent: 0, maxPercent: 33, class: 'grade-1' }
+        ];
+
+        function calculateRanges() {
+            const maxPoints = parseFloat(document.getElementById('maxPoints').value);
+            const container = document.getElementById('gradesContainer');
+
+            if (!maxPoints || maxPoints <= 0) {
+                container.innerHTML = '<div class="empty-state">Wpisz liczbę punktów powyżej, aby wygenerować przedziały ocen</div>';
+                return;
+            }
+
+            let html = '';
+
+            GRADES.forEach(grade => {
+                const minPoints = ((grade.minPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
+                const maxPointsRange = ((grade.maxPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
+
+                let rangeText = '';
+                if (grade.minPercent === 100) {
+                    rangeText = `${maxPoints} pkt`;
+                } else if (grade.minPercent === 0) {
+                    rangeText = `0 - ${maxPointsRange} pkt`;
+                } else {
+                    rangeText = `${minPoints} - ${maxPointsRange} pkt`;
+                }
+
+                html += `
+                    <div class="grade-card ${grade.class}">
+                        <span class="grade-number">${grade.number}</span>
+                        <div>
+                            <div class="grade-name">${grade.name}</div>
+                            <div class="grade-percent">${grade.minPercent === grade.maxPercent ? grade.minPercent + '%' : grade.minPercent + '% - ' + grade.maxPercent + '%'}</div>
+                        </div>
+                        <div class="grade-value">${rangeText}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
