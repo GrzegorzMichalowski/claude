@@ -639,6 +639,52 @@
             display: none !important;
         }
 
+        /* Round start announcement */
+        .round-announcement {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .announcement-content {
+            text-align: center;
+            color: white;
+            animation: scaleIn 0.4s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .announcement-content .player-symbol {
+            font-size: 5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .announcement-content .player-symbol.x { color: #e74c3c; }
+        .announcement-content .player-symbol.o { color: #3498db; }
+
+        .announcement-content .player-text {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+            color: #ffd700;
+        }
+
+        .announcement-content .start-text {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.7);
+        }
+
         .footer-link {
             text-align: center;
             margin-top: 20px;
@@ -1607,27 +1653,38 @@
             document.getElementById('gameScoreO').textContent = '0';
             document.getElementById('pointsToWinDisplay').textContent = currentTournament.pointsToWin;
 
-            resetBoard();
             document.getElementById('gameModal').classList.add('active');
+            resetBoard(true); // Show announcement
             updateGamePlayerHighlight();
         }
 
-        function resetBoard() {
+        function resetBoard(showAnnouncement = true) {
             gameState.board = ['', '', '', '', '', '', '', '', ''];
             gameState.currentPlayer = 'X';
             gameState.isSelectingCell = false;
             gameState.clickedCells = [];
+            gameState.boardActive = false; // Disable board until announcement
 
             document.querySelectorAll('.game-cell').forEach(cell => {
                 cell.textContent = '';
                 cell.className = 'game-cell';
-                cell.onclick = () => handleGameCellClick(parseInt(cell.dataset.index));
+                cell.onclick = () => {
+                    if (gameState.boardActive) handleGameCellClick(parseInt(cell.dataset.index));
+                };
             });
 
             document.getElementById('questionPanel').classList.add('hidden');
             document.getElementById('roundResult').classList.add('hidden');
             document.getElementById('matchResult').classList.add('hidden');
             document.getElementById('gameBoard').style.display = 'grid';
+
+            if (showAnnouncement) {
+                showTournamentAnnouncement('X', currentMatch.player1.name, () => {
+                    gameState.boardActive = true;
+                });
+            } else {
+                gameState.boardActive = true;
+            }
         }
 
         function updateGamePlayerHighlight() {
@@ -1636,6 +1693,28 @@
 
             const currentName = gameState.currentPlayer === 'X' ? currentMatch.player1.name : currentMatch.player2.name;
             document.getElementById('questionPlayerTurn').textContent = `Odpowiada: ${currentName}`;
+        }
+
+        function showTournamentAnnouncement(playerSymbol, playerName, callback) {
+            const announcement = document.createElement('div');
+            announcement.className = 'round-announcement';
+            announcement.innerHTML = `
+                <div class="announcement-content">
+                    <div class="player-symbol ${playerSymbol.toLowerCase()}">${playerSymbol}</div>
+                    <div class="player-text">${playerName}</div>
+                    <div class="start-text">zaczyna rundę!</div>
+                </div>
+            `;
+            document.body.appendChild(announcement);
+
+            setTimeout(() => {
+                announcement.style.opacity = '0';
+                announcement.style.transition = 'opacity 0.3s';
+                setTimeout(() => {
+                    announcement.remove();
+                    if (callback) callback();
+                }, 300);
+            }, 1500);
         }
 
         function handleGameCellClick(index) {

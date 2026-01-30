@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kółko i Krzyżyk - Tabliczka Mnożenia</title>
+    <title>Quiz Kółko i Krzyżyk</title>
     <style>
         * {
             box-sizing: border-box;
@@ -181,6 +181,56 @@
         @keyframes pulse {
             from { transform: scale(1); }
             to { transform: scale(1.1); }
+        }
+
+        /* Round start announcement */
+        .round-announcement {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .announcement-content {
+            text-align: center;
+            color: white;
+            animation: scaleIn 0.4s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .announcement-content .player-symbol {
+            font-size: 5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .announcement-content .player-symbol.x { color: #e74c3c; }
+        .announcement-content .player-symbol.o { color: #3498db; }
+
+        .announcement-content .player-text {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .announcement-content .start-text {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.7);
         }
 
         /* Question Modal */
@@ -572,11 +622,31 @@
 <body>
     <div class="container">
         <a href="index.html" class="home-btn">&#8592; Strona główna</a>
-        <h1>Kółko i Krzyżyk</h1>
-        <p class="subtitle">Tabliczka Mnożenia - Gra dla 2 graczy</p>
+        <h1>Quiz Kółko i Krzyżyk</h1>
+        <p class="subtitle">Matematyka i Geografia - Gra dla 2 graczy</p>
 
         <div class="settings-panel">
             <div class="settings-row">
+                <label for="topic">Temat:</label>
+                <select id="topic" onchange="updateLevelOptions()">
+                    <optgroup label="Matematyka">
+                        <option value="multiplication" selected>✖️ Tabliczka mnożenia</option>
+                        <option value="division">➗ Dzielenie</option>
+                        <option value="subtraction">➖ Odejmowanie</option>
+                        <option value="powers">🔢 Potęgowanie</option>
+                        <option value="roots">√ Pierwiastkowanie</option>
+                        <option value="fractions">½ Ułamki</option>
+                        <option value="percentages">% Procenty</option>
+                        <option value="length_units">📏 Jednostki długości</option>
+                        <option value="mass_units">⚖️ Jednostki masy</option>
+                    </optgroup>
+                    <optgroup label="Geografia">
+                        <option value="poland_voivodeships">🇵🇱 Województwa Polski</option>
+                        <option value="europe_capitals">🇪🇺 Stolice Europy</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="settings-row" style="margin-top: 10px;">
                 <label for="level">Poziom:</label>
                 <select id="level">
                     <option value="easy">🐣 Kurczaczek (1-5)</option>
@@ -692,6 +762,350 @@
             master: { min: 1, max: 20, name: 'Mega Mózg' }
         };
 
+        // Geography data
+        const POLAND_VOIVODESHIPS = [
+            { voivodeship: 'dolnośląskie', capital: 'Wrocław' },
+            { voivodeship: 'kujawsko-pomorskie', capital: 'Bydgoszcz' },
+            { voivodeship: 'lubelskie', capital: 'Lublin' },
+            { voivodeship: 'lubuskie', capital: 'Gorzów Wielkopolski' },
+            { voivodeship: 'łódzkie', capital: 'Łódź' },
+            { voivodeship: 'małopolskie', capital: 'Kraków' },
+            { voivodeship: 'mazowieckie', capital: 'Warszawa' },
+            { voivodeship: 'opolskie', capital: 'Opole' },
+            { voivodeship: 'podkarpackie', capital: 'Rzeszów' },
+            { voivodeship: 'podlaskie', capital: 'Białystok' },
+            { voivodeship: 'pomorskie', capital: 'Gdańsk' },
+            { voivodeship: 'śląskie', capital: 'Katowice' },
+            { voivodeship: 'świętokrzyskie', capital: 'Kielce' },
+            { voivodeship: 'warmińsko-mazurskie', capital: 'Olsztyn' },
+            { voivodeship: 'wielkopolskie', capital: 'Poznań' },
+            { voivodeship: 'zachodniopomorskie', capital: 'Szczecin' }
+        ];
+
+        const EUROPE_COUNTRIES = [
+            // Easy - major countries
+            { country: 'Niemcy', capital: 'Berlin', level: 'easy' },
+            { country: 'Francja', capital: 'Paryż', level: 'easy' },
+            { country: 'Wielka Brytania', capital: 'Londyn', level: 'easy' },
+            { country: 'Włochy', capital: 'Rzym', level: 'easy' },
+            { country: 'Hiszpania', capital: 'Madryt', level: 'easy' },
+            { country: 'Polska', capital: 'Warszawa', level: 'easy' },
+            { country: 'Czechy', capital: 'Praga', level: 'easy' },
+            { country: 'Austria', capital: 'Wiedeń', level: 'easy' },
+            // Medium
+            { country: 'Portugalia', capital: 'Lizbona', level: 'medium' },
+            { country: 'Holandia', capital: 'Amsterdam', level: 'medium' },
+            { country: 'Belgia', capital: 'Bruksela', level: 'medium' },
+            { country: 'Szwajcaria', capital: 'Berno', level: 'medium' },
+            { country: 'Szwecja', capital: 'Sztokholm', level: 'medium' },
+            { country: 'Norwegia', capital: 'Oslo', level: 'medium' },
+            { country: 'Dania', capital: 'Kopenhaga', level: 'medium' },
+            { country: 'Finlandia', capital: 'Helsinki', level: 'medium' },
+            { country: 'Grecja', capital: 'Ateny', level: 'medium' },
+            { country: 'Węgry', capital: 'Budapeszt', level: 'medium' },
+            { country: 'Rumunia', capital: 'Bukareszt', level: 'medium' },
+            { country: 'Ukraina', capital: 'Kijów', level: 'medium' },
+            { country: 'Rosja', capital: 'Moskwa', level: 'medium' },
+            { country: 'Turcja', capital: 'Ankara', level: 'medium' },
+            // Hard
+            { country: 'Irlandia', capital: 'Dublin', level: 'hard' },
+            { country: 'Słowacja', capital: 'Bratysława', level: 'hard' },
+            { country: 'Słowenia', capital: 'Lublana', level: 'hard' },
+            { country: 'Chorwacja', capital: 'Zagrzeb', level: 'hard' },
+            { country: 'Serbia', capital: 'Belgrad', level: 'hard' },
+            { country: 'Bułgaria', capital: 'Sofia', level: 'hard' },
+            { country: 'Litwa', capital: 'Wilno', level: 'hard' },
+            { country: 'Łotwa', capital: 'Ryga', level: 'hard' },
+            { country: 'Estonia', capital: 'Tallin', level: 'hard' },
+            { country: 'Białoruś', capital: 'Mińsk', level: 'hard' },
+            { country: 'Mołdawia', capital: 'Kiszyniów', level: 'hard' },
+            { country: 'Albania', capital: 'Tirana', level: 'hard' },
+            { country: 'Macedonia Północna', capital: 'Skopje', level: 'hard' },
+            { country: 'Czarnogóra', capital: 'Podgorica', level: 'hard' },
+            { country: 'Bośnia i Hercegowina', capital: 'Sarajewo', level: 'hard' },
+            { country: 'Islandia', capital: 'Reykjavik', level: 'hard' },
+            // Master - microstates
+            { country: 'Luksemburg', capital: 'Luksemburg', level: 'master' },
+            { country: 'Malta', capital: 'La Valletta', level: 'master' },
+            { country: 'Cypr', capital: 'Nikozja', level: 'master' },
+            { country: 'Monako', capital: 'Monako', level: 'master' },
+            { country: 'Liechtenstein', capital: 'Vaduz', level: 'master' },
+            { country: 'San Marino', capital: 'San Marino', level: 'master' },
+            { country: 'Andora', capital: 'Andora', level: 'master' },
+            { country: 'Watykan', capital: 'Watykan', level: 'master' }
+        ];
+
+        // Topic definitions with question generators
+        const TOPICS = {
+            multiplication: {
+                name: 'Tabliczka mnożenia',
+                levels: {
+                    easy: { name: '🐣 Kurczaczek (1-5)', min: 1, max: 5 },
+                    medium: { name: '📚 Uczeń (1-10)', min: 1, max: 10 },
+                    hard: { name: '🤖 Terminator (1-12)', min: 1, max: 12 },
+                    master: { name: '🧠 Mega Mózg (1-20)', min: 1, max: 20 }
+                },
+                generate: (level) => {
+                    const a = Math.floor(Math.random() * level.max) + level.min;
+                    const b = Math.floor(Math.random() * level.max) + level.min;
+                    return {
+                        question: `${a} × ${b} = ?`,
+                        answer: a * b,
+                        wrongAnswers: [a * (b + 1), (a + 1) * b, a * b + a, a * b - b]
+                    };
+                }
+            },
+            division: {
+                name: 'Dzielenie',
+                levels: {
+                    easy: { name: '🐣 Kurczaczek (do 25)', min: 1, max: 5 },
+                    medium: { name: '📚 Uczeń (do 100)', min: 1, max: 10 },
+                    hard: { name: '🤖 Terminator (do 144)', min: 1, max: 12 },
+                    master: { name: '🧠 Mega Mózg (do 400)', min: 1, max: 20 }
+                },
+                generate: (level) => {
+                    const b = Math.floor(Math.random() * level.max) + level.min;
+                    const answer = Math.floor(Math.random() * level.max) + level.min;
+                    const a = b * answer;
+                    return {
+                        question: `${a} : ${b} = ?`,
+                        answer: answer,
+                        wrongAnswers: [answer + 1, answer - 1, answer + 2, b]
+                    };
+                }
+            },
+            subtraction: {
+                name: 'Odejmowanie',
+                levels: {
+                    easy: { name: '🐣 Kurczaczek (do 20)', min: 1, max: 20 },
+                    medium: { name: '📚 Uczeń (do 100)', min: 10, max: 100 },
+                    hard: { name: '🤖 Terminator (do 500)', min: 50, max: 500 },
+                    master: { name: '🧠 Mega Mózg (do 1000)', min: 100, max: 1000 }
+                },
+                generate: (level) => {
+                    const a = Math.floor(Math.random() * (level.max - level.min)) + level.min;
+                    const b = Math.floor(Math.random() * a) + 1;
+                    const answer = a - b;
+                    return {
+                        question: `${a} − ${b} = ?`,
+                        answer: answer,
+                        wrongAnswers: [answer + 1, answer - 1, answer + 10, a + b]
+                    };
+                }
+            },
+            powers: {
+                name: 'Potęgowanie',
+                levels: {
+                    easy: { name: '🐣 Kwadraty (1-5)²', min: 1, max: 5, power: 2 },
+                    medium: { name: '📚 Kwadraty (1-12)²', min: 1, max: 12, power: 2 },
+                    hard: { name: '🤖 Sześciany (1-5)³', min: 1, max: 5, power: 3 },
+                    master: { name: '🧠 Mix potęg', min: 1, max: 10, power: 0 }
+                },
+                generate: (level) => {
+                    const base = Math.floor(Math.random() * level.max) + level.min;
+                    let power = level.power;
+                    if (power === 0) power = Math.random() < 0.5 ? 2 : 3;
+                    const answer = Math.pow(base, power);
+                    const superscript = power === 2 ? '²' : '³';
+                    return {
+                        question: `${base}${superscript} = ?`,
+                        answer: answer,
+                        wrongAnswers: [base * power, answer + base, answer - base, Math.pow(base, power === 2 ? 3 : 2)]
+                    };
+                }
+            },
+            roots: {
+                name: 'Pierwiastkowanie',
+                levels: {
+                    easy: { name: '🐣 Kurczaczek (1-5)', squares: [1, 4, 9, 16, 25] },
+                    medium: { name: '📚 Uczeń (1-12)', squares: [1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144] },
+                    hard: { name: '🤖 Terminator (1-15)', squares: [1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225] },
+                    master: { name: '🧠 Mega Mózg (1-20)', squares: [1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400] }
+                },
+                generate: (level) => {
+                    const num = level.squares[Math.floor(Math.random() * level.squares.length)];
+                    const answer = Math.sqrt(num);
+                    return {
+                        question: `√${num} = ?`,
+                        answer: answer,
+                        wrongAnswers: [answer + 1, answer - 1, answer + 2, num / 2]
+                    };
+                }
+            },
+            fractions: {
+                name: 'Ułamki',
+                levels: {
+                    easy: { name: '🐣 Połówki i ćwiartki', fractions: [[1,2], [1,4], [2,4], [3,4]] },
+                    medium: { name: '📚 Podstawowe', fractions: [[1,2], [1,3], [2,3], [1,4], [3,4], [1,5], [2,5]] },
+                    hard: { name: '🤖 Rozszerzone', fractions: [[1,2], [1,3], [2,3], [1,4], [3,4], [1,5], [2,5], [3,5], [4,5], [1,6], [5,6]] },
+                    master: { name: '🧠 Wszystkie', fractions: [[1,2], [1,3], [2,3], [1,4], [3,4], [1,5], [2,5], [3,5], [4,5], [1,6], [5,6], [1,8], [3,8], [5,8], [7,8]] }
+                },
+                generate: (level) => {
+                    const fracs = level.fractions;
+                    const [n1, d1] = fracs[Math.floor(Math.random() * fracs.length)];
+                    let [n2, d2] = fracs[Math.floor(Math.random() * fracs.length)];
+
+                    // Ensure same denominator for easy addition
+                    if (d1 !== d2) {
+                        const commonDenom = d1 * d2;
+                        const newN1 = n1 * d2;
+                        const newN2 = n2 * d1;
+                        const sumN = newN1 + newN2;
+                        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+                        const g = gcd(sumN, commonDenom);
+                        const answerN = sumN / g;
+                        const answerD = commonDenom / g;
+
+                        return {
+                            question: `${n1}/${d1} + ${n2}/${d2} = ?`,
+                            answer: answerD === 1 ? answerN : `${answerN}/${answerD}`,
+                            wrongAnswers: [`${answerN + 1}/${answerD}`, `${n1 + n2}/${d1 + d2}`, `${answerN}/${answerD + 1}`, `${n1}/${d1}`],
+                            isText: true
+                        };
+                    } else {
+                        const sumN = n1 + n2;
+                        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+                        const g = gcd(sumN, d1);
+                        const answerN = sumN / g;
+                        const answerD = d1 / g;
+
+                        return {
+                            question: `${n1}/${d1} + ${n2}/${d2} = ?`,
+                            answer: answerD === 1 ? answerN : `${answerN}/${answerD}`,
+                            wrongAnswers: [`${sumN}/${d1}`, `${n1 + n2}/${d1 * 2}`, `${answerN + 1}/${answerD}`, `${n1}/${d1}`],
+                            isText: true
+                        };
+                    }
+                }
+            },
+            percentages: {
+                name: 'Procenty',
+                levels: {
+                    easy: { name: '🐣 10%, 50%, 100%', percents: [10, 50, 100], bases: [10, 20, 50, 100] },
+                    medium: { name: '📚 Podstawowe', percents: [10, 20, 25, 50, 75, 100], bases: [20, 40, 50, 80, 100, 200] },
+                    hard: { name: '🤖 Rozszerzone', percents: [5, 10, 15, 20, 25, 30, 50, 75], bases: [20, 40, 60, 80, 100, 200] },
+                    master: { name: '🧠 Wszystkie', percents: [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80], bases: [50, 100, 150, 200, 250, 500] }
+                },
+                generate: (level) => {
+                    const percent = level.percents[Math.floor(Math.random() * level.percents.length)];
+                    const base = level.bases[Math.floor(Math.random() * level.bases.length)];
+                    const answer = (percent * base) / 100;
+                    return {
+                        question: `${percent}% z ${base} = ?`,
+                        answer: answer,
+                        wrongAnswers: [answer + 10, answer - 5, base / percent, percent]
+                    };
+                }
+            },
+            length_units: {
+                name: 'Jednostki długości',
+                levels: {
+                    easy: { name: '🐣 m ↔ cm', conversions: [{ from: 'm', to: 'cm', mult: 100 }] },
+                    medium: { name: '📚 km, m, cm', conversions: [{ from: 'm', to: 'cm', mult: 100 }, { from: 'km', to: 'm', mult: 1000 }] },
+                    hard: { name: '🤖 + mm', conversions: [{ from: 'm', to: 'cm', mult: 100 }, { from: 'km', to: 'm', mult: 1000 }, { from: 'cm', to: 'mm', mult: 10 }, { from: 'm', to: 'mm', mult: 1000 }] },
+                    master: { name: '🧠 Wszystkie', conversions: [{ from: 'm', to: 'cm', mult: 100 }, { from: 'km', to: 'm', mult: 1000 }, { from: 'cm', to: 'mm', mult: 10 }, { from: 'm', to: 'mm', mult: 1000 }, { from: 'km', to: 'cm', mult: 100000 }] }
+                },
+                generate: (level) => {
+                    const conv = level.conversions[Math.floor(Math.random() * level.conversions.length)];
+                    const value = Math.floor(Math.random() * 9) + 1;
+                    const answer = value * conv.mult;
+                    return {
+                        question: `${value} ${conv.from} = ? ${conv.to}`,
+                        answer: answer,
+                        wrongAnswers: [answer * 10, answer / 10, value, answer + conv.mult]
+                    };
+                }
+            },
+            mass_units: {
+                name: 'Jednostki masy',
+                levels: {
+                    easy: { name: '🐣 kg ↔ g', conversions: [{ from: 'kg', to: 'g', mult: 1000 }] },
+                    medium: { name: '📚 t, kg, g', conversions: [{ from: 'kg', to: 'g', mult: 1000 }, { from: 't', to: 'kg', mult: 1000 }] },
+                    hard: { name: '🤖 + dag', conversions: [{ from: 'kg', to: 'g', mult: 1000 }, { from: 't', to: 'kg', mult: 1000 }, { from: 'kg', to: 'dag', mult: 100 }, { from: 'dag', to: 'g', mult: 10 }] },
+                    master: { name: '🧠 Wszystkie', conversions: [{ from: 'kg', to: 'g', mult: 1000 }, { from: 't', to: 'kg', mult: 1000 }, { from: 'kg', to: 'dag', mult: 100 }, { from: 'dag', to: 'g', mult: 10 }, { from: 't', to: 'g', mult: 1000000 }] }
+                },
+                generate: (level) => {
+                    const conv = level.conversions[Math.floor(Math.random() * level.conversions.length)];
+                    const value = Math.floor(Math.random() * 9) + 1;
+                    const answer = value * conv.mult;
+                    return {
+                        question: `${value} ${conv.from} = ? ${conv.to}`,
+                        answer: answer,
+                        wrongAnswers: [answer * 10, answer / 10, value, answer + conv.mult]
+                    };
+                }
+            },
+            poland_voivodeships: {
+                name: 'Województwa Polski',
+                levels: {
+                    easy: { name: '🐣 Główne', count: 8 },
+                    medium: { name: '📚 Więcej', count: 12 },
+                    hard: { name: '🤖 Wszystkie', count: 16 },
+                    master: { name: '🧠 Odwrotnie', count: 16, reverse: true }
+                },
+                generate: (level) => {
+                    const data = POLAND_VOIVODESHIPS.slice(0, level.count);
+                    const item = data[Math.floor(Math.random() * data.length)];
+                    const others = data.filter(d => d.capital !== item.capital);
+                    const wrongCaps = others.sort(() => Math.random() - 0.5).slice(0, 3).map(d => d.capital);
+
+                    if (level.reverse) {
+                        const wrongVoi = others.slice(0, 3).map(d => d.voivodeship);
+                        return {
+                            question: `${item.capital} to stolica woj.?`,
+                            answer: item.voivodeship,
+                            wrongAnswers: wrongVoi,
+                            isText: true
+                        };
+                    }
+
+                    return {
+                        question: `Stolica woj. ${item.voivodeship}?`,
+                        answer: item.capital,
+                        wrongAnswers: wrongCaps,
+                        isText: true
+                    };
+                }
+            },
+            europe_capitals: {
+                name: 'Stolice Europy',
+                levels: {
+                    easy: { name: '🐣 Główne kraje', filter: ['easy'] },
+                    medium: { name: '📚 Więcej krajów', filter: ['easy', 'medium'] },
+                    hard: { name: '🤖 Cała Europa', filter: ['easy', 'medium', 'hard'] },
+                    master: { name: '🧠 + mikropaństwa', filter: ['easy', 'medium', 'hard', 'master'] }
+                },
+                generate: (level) => {
+                    const data = EUROPE_COUNTRIES.filter(c => level.filter.includes(c.level));
+                    const item = data[Math.floor(Math.random() * data.length)];
+                    const others = data.filter(d => d.capital !== item.capital);
+                    const wrongCaps = others.sort(() => Math.random() - 0.5).slice(0, 3).map(d => d.capital);
+
+                    return {
+                        question: `Stolica: ${item.country}?`,
+                        answer: item.capital,
+                        wrongAnswers: wrongCaps,
+                        isText: true
+                    };
+                }
+            }
+        };
+
+        function updateLevelOptions() {
+            const topic = document.getElementById('topic').value;
+            const levelSelect = document.getElementById('level');
+            const topicData = TOPICS[topic];
+
+            levelSelect.innerHTML = Object.entries(topicData.levels).map(([key, level]) =>
+                `<option value="${key}">${level.name}</option>`
+            ).join('');
+
+            // Select medium by default if available
+            if (topicData.levels.medium) {
+                levelSelect.value = 'medium';
+            }
+        }
+
         const WIN_PATTERNS = [
             [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
             [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
@@ -703,6 +1117,7 @@
             cell.addEventListener('click', () => handleCellClick(cell));
         });
 
+        updateLevelOptions();
         loadRanking();
 
         function handleCellClick(cell) {
@@ -754,66 +1169,60 @@
             }, 1500);
         }
 
-        function generateUniqueQuestion(level) {
-            let a, b, questionKey;
-            let attempts = 0;
-            const maxAttempts = 50;
-
-            // Clear history if we've asked too many questions (reset pool)
-            if (askedQuestions.size > (level.max * level.max) / 2) {
-                askedQuestions.clear();
-            }
-
-            do {
-                a = Math.floor(Math.random() * level.max) + level.min;
-                b = Math.floor(Math.random() * level.max) + level.min;
-                // Normalize key so 3x5 and 5x3 are considered the same
-                questionKey = a <= b ? `${a}x${b}` : `${b}x${a}`;
-                attempts++;
-            } while (askedQuestions.has(questionKey) && attempts < maxAttempts);
-
-            askedQuestions.add(questionKey);
-            return { a, b };
-        }
-
         function showQuestion() {
-            const level = LEVELS[document.getElementById('level').value];
-            const { a, b } = generateUniqueQuestion(level);
-            correctAnswer = a * b;
+            const topic = document.getElementById('topic').value;
+            const levelKey = document.getElementById('level').value;
+            const topicData = TOPICS[topic];
+            const level = topicData.levels[levelKey];
 
-            // Generate wrong answers
-            const answers = [correctAnswer];
-            while (answers.length < 4) {
-                let wrong;
-                const errorType = Math.random();
-                if (errorType < 0.3) {
-                    wrong = a * (b + 1);
-                } else if (errorType < 0.6) {
-                    wrong = (a + 1) * b;
-                } else if (errorType < 0.8) {
-                    wrong = correctAnswer + Math.floor(Math.random() * 10) - 5;
-                } else {
-                    wrong = a * b + a;
-                }
-                if (wrong > 0 && wrong !== correctAnswer && !answers.includes(wrong)) {
+            // Generate question using topic generator
+            const q = topicData.generate(level);
+            correctAnswer = q.answer;
+            const isTextAnswer = q.isText || false;
+
+            // Build answers array
+            const answers = [q.answer];
+            const wrongAnswers = q.wrongAnswers.filter(w =>
+                w !== q.answer &&
+                w !== null &&
+                w !== undefined &&
+                (typeof w === 'string' || w > 0)
+            );
+
+            // Add unique wrong answers
+            for (const wrong of wrongAnswers) {
+                if (answers.length >= 4) break;
+                if (!answers.includes(wrong)) {
                     answers.push(wrong);
                 }
+            }
+
+            // Fill remaining with variations if needed
+            while (answers.length < 4) {
+                const filler = isTextAnswer ? '?' : (typeof q.answer === 'number' ? q.answer + answers.length * 3 : answers.length);
+                if (!answers.includes(filler)) answers.push(filler);
             }
 
             // Shuffle answers
             answers.sort(() => Math.random() - 0.5);
 
             // Update modal
-            document.getElementById('questionText').textContent = `${a} × ${b} = ?`;
+            document.getElementById('questionText').textContent = q.question;
 
             const modalPlayer = document.getElementById('modalPlayer');
             modalPlayer.textContent = `Gracz ${currentPlayer}`;
             modalPlayer.className = `modal-player player-${currentPlayer.toLowerCase()}`;
 
             const container = document.getElementById('answersContainer');
-            container.innerHTML = answers.map(ans =>
-                `<button class="answer-btn" onclick="checkAnswer(${ans})">${ans}</button>`
-            ).join('');
+            if (isTextAnswer) {
+                container.innerHTML = answers.map(ans =>
+                    `<button class="answer-btn" onclick="checkAnswer('${ans}')" style="font-size: 1rem;">${ans}</button>`
+                ).join('');
+            } else {
+                container.innerHTML = answers.map(ans =>
+                    `<button class="answer-btn" onclick="checkAnswer(${ans})">${ans}</button>`
+                ).join('');
+            }
 
             document.getElementById('modalOverlay').classList.add('active');
 
@@ -860,18 +1269,21 @@
             clickedCells = [];
 
             const buttons = document.querySelectorAll('.answer-btn');
+            const isTextAnswer = typeof correctAnswer === 'string';
+
             buttons.forEach(btn => {
                 btn.disabled = true;
-                if (parseInt(btn.textContent) === correctAnswer) {
+                const btnValue = isTextAnswer ? btn.textContent : parseInt(btn.textContent);
+                if (btnValue === correctAnswer || btn.textContent === String(correctAnswer)) {
                     btn.classList.add('correct');
-                } else if (parseInt(btn.textContent) === answer && answer !== correctAnswer) {
+                } else if ((btnValue === answer || btn.textContent === String(answer)) && answer !== correctAnswer) {
                     btn.classList.add('wrong');
                 }
             });
 
             // Handle timeout (answer = -1)
             const isTimeout = answer === -1;
-            const isCorrect = answer === correctAnswer;
+            const isCorrect = answer === correctAnswer || String(answer) === String(correctAnswer);
 
             setTimeout(() => {
                 document.getElementById('modalOverlay').classList.remove('active');
@@ -921,6 +1333,28 @@
             display.className = `current-player player-${currentPlayer.toLowerCase()}`;
         }
 
+        function showRoundAnnouncement(player, callback) {
+            const announcement = document.createElement('div');
+            announcement.className = 'round-announcement';
+            announcement.innerHTML = `
+                <div class="announcement-content">
+                    <div class="player-symbol ${player.toLowerCase()}">${player}</div>
+                    <div class="player-text">Gracz ${player}</div>
+                    <div class="start-text">zaczyna rundę!</div>
+                </div>
+            `;
+            document.body.appendChild(announcement);
+
+            setTimeout(() => {
+                announcement.style.opacity = '0';
+                announcement.style.transition = 'opacity 0.3s';
+                setTimeout(() => {
+                    announcement.remove();
+                    if (callback) callback();
+                }, 300);
+            }, 1500);
+        }
+
         function checkWin() {
             return WIN_PATTERNS.some(pattern => {
                 return pattern.every(index => board[index] === currentPlayer);
@@ -965,7 +1399,7 @@
         function newGame() {
             board = ['', '', '', '', '', '', '', '', ''];
             currentPlayer = 'X';
-            gameActive = true;
+            gameActive = false; // Disable until announcement is done
             selectedCell = null;
             lastWinner = null;
             askedQuestions.clear(); // Reset question history for new game
@@ -987,6 +1421,11 @@
             document.getElementById('winnerForm').classList.remove('visible');
             document.getElementById('timerDisplay').classList.remove('active', 'warning');
             updateCurrentPlayerDisplay();
+
+            // Show announcement who starts
+            showRoundAnnouncement('X', () => {
+                gameActive = true;
+            });
         }
 
         // Ranking functions
@@ -999,10 +1438,11 @@
                 return;
             }
 
+            const topic = document.getElementById('topic').value;
             const level = document.getElementById('level').value;
             const ranking = getRanking();
 
-            const key = `${initials}-${playerClass}-${level}`;
+            const key = `${initials}-${playerClass}-${topic}-${level}`;
             const existing = ranking.find(r => r.key === key);
 
             if (existing) {
@@ -1013,6 +1453,7 @@
                     key,
                     initials,
                     class: playerClass || '-',
+                    topic,
                     level,
                     wins: 1,
                     date: new Date().toISOString()
@@ -1061,7 +1502,7 @@
                             <th>#</th>
                             <th>Gracz</th>
                             <th>Klasa</th>
-                            <th>Poziom</th>
+                            <th>Temat</th>
                             <th>Wygrane</th>
                         </tr>
                     </thead>
@@ -1072,12 +1513,17 @@
                 const rankClass = index < 3 ? `rank-${index + 1}` : '';
                 const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
 
+                // Get topic name - handle old entries without topic
+                const topicName = entry.topic && TOPICS[entry.topic]
+                    ? TOPICS[entry.topic].name
+                    : (LEVELS[entry.level] ? LEVELS[entry.level].name : entry.level);
+
                 html += `
                     <tr>
                         <td class="${rankClass}">${medal}</td>
                         <td><strong>${entry.initials}</strong></td>
                         <td>${entry.class}</td>
-                        <td><span class="level-badge ${levelClasses[entry.level]}">${LEVELS[entry.level].name}</span></td>
+                        <td><span class="level-badge ${levelClasses[entry.level]}">${topicName}</span></td>
                         <td><strong>${entry.wins}</strong></td>
                     </tr>
                 `;
@@ -1096,15 +1542,19 @@
 
             ranking.sort((a, b) => b.wins - a.wins);
 
-            let csv = 'Miejsce,Inicjały,Klasa,Poziom,Wygrane\n';
+            let csv = 'Miejsce,Inicjały,Klasa,Temat,Poziom,Wygrane\n';
             ranking.forEach((entry, index) => {
-                csv += `${index + 1},${entry.initials},${entry.class},${LEVELS[entry.level].name},${entry.wins}\n`;
+                const topicName = entry.topic && TOPICS[entry.topic] ? TOPICS[entry.topic].name : 'Tabliczka mnożenia';
+                const levelName = entry.topic && TOPICS[entry.topic] && TOPICS[entry.topic].levels[entry.level]
+                    ? TOPICS[entry.topic].levels[entry.level].name
+                    : entry.level;
+                csv += `${index + 1},${entry.initials},${entry.class},${topicName},${levelName},${entry.wins}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'ranking-tabliczka-mnozenia.csv';
+            link.download = 'ranking-quiz.csv';
             link.click();
         }
 
