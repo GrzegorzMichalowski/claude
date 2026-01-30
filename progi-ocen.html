@@ -95,29 +95,6 @@
             margin-left: 10px;
         }
 
-        .precision-info {
-            margin-top: 12px;
-            font-size: 0.85rem;
-            color: #666;
-        }
-
-        .precise-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 12px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            color: #555;
-        }
-
-        .precise-toggle input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
         .grades-container {
             display: flex;
             flex-direction: column;
@@ -295,11 +272,6 @@
             <label for="maxPoints">Maksymalna liczba punktów:</label>
             <input type="number" id="maxPoints" min="1" max="1000" placeholder="np. 50" oninput="calculateRanges()" step="0.5">
             <span>pkt</span>
-            <div class="precision-info">Progi zaokrąglone do 0,5 punkta</div>
-            <label class="precise-toggle">
-                <input type="checkbox" id="preciseMode" onchange="calculateRanges()">
-                <span>Pokaż dokładnie (3 miejsca po przecinku)</span>
-            </label>
         </div>
 
         <div class="test-title" id="testTitle"></div>
@@ -340,26 +312,17 @@
             { name: 'Niedostateczny', number: 1, minPercent: 0, maxPercent: 33, class: 'grade-1' }
         ];
 
-        // Zaokrąglij do 0.5
-        function roundToHalf(num) {
-            return Math.round(num * 2) / 2;
-        }
-
-        // Formatuj liczbę - usuń zbędne zera
-        function formatNumber(num, decimals) {
-            return num.toFixed(decimals).replace(/\.?0+$/, '');
+        // Formatuj liczbę - max 2 miejsca po przecinku, usuń zbędne zera
+        function formatPoints(num) {
+            // Jeśli liczba jest całkowita, pokaż bez przecinka
+            if (Number.isInteger(num)) return num.toString();
+            // W przeciwnym razie max 2 miejsca po przecinku
+            return num.toFixed(2).replace(/\.?0+$/, '');
         }
 
         function calculateRanges() {
             const maxPoints = parseFloat(document.getElementById('maxPoints').value);
             const container = document.getElementById('gradesContainer');
-            const preciseMode = document.getElementById('preciseMode').checked;
-            const infoDiv = document.querySelector('.precision-info');
-
-            // Aktualizuj informację o precyzji
-            infoDiv.textContent = preciseMode
-                ? 'Progi z dokładnością do 3 miejsc po przecinku'
-                : 'Progi zaokrąglone do 0,5 punkta';
 
             if (!maxPoints || maxPoints <= 0) {
                 container.innerHTML = '<div class="empty-state">Wpisz liczbę punktów powyżej, aby wygenerować przedziały ocen</div>';
@@ -372,17 +335,8 @@
                 let rangeText = '';
                 let percentText = '';
 
-                let minPoints, maxPointsForGrade;
-
-                if (preciseMode) {
-                    // Tryb dokładny - 3 miejsca po przecinku
-                    minPoints = formatNumber((grade.minPercent / 100) * maxPoints, 3);
-                    maxPointsForGrade = formatNumber((grade.maxPercent / 100) * maxPoints, 3);
-                } else {
-                    // Tryb domyślny - zaokrąglenie do 0.5
-                    minPoints = formatNumber(roundToHalf((grade.minPercent / 100) * maxPoints), 1);
-                    maxPointsForGrade = formatNumber(roundToHalf((grade.maxPercent / 100) * maxPoints), 1);
-                }
+                const minPoints = formatPoints((grade.minPercent / 100) * maxPoints);
+                const maxPointsForGrade = formatPoints((grade.maxPercent / 100) * maxPoints);
 
                 if (grade.minPercent === 100) {
                     rangeText = `${maxPoints} pkt`;
