@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kółko i Krzyżyk - Tabliczka Mnożenia</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 25px;
+        }
+
+        .home-btn {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .home-btn:hover {
+            background: #764ba2;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .settings-row label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .settings-row select {
+            padding: 8px 12px;
+            font-size: 1rem;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .new-game-btn {
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .new-game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Game Area */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Current Player */
+        .current-player {
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 10px 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .current-player.player-x {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .current-player.player-o {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        /* Board */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: #333;
+            padding: 8px;
+            border-radius: 12px;
+        }
+
+        .cell {
+            width: 90px;
+            height: 90px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            font-size: 3rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cell:hover:not(.taken) {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+
+        .cell.taken {
+            cursor: not-allowed;
+        }
+
+        .cell.x {
+            color: #e74c3c;
+        }
+
+        .cell.o {
+            color: #3498db;
+        }
+
+        .cell.winning {
+            animation: pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        /* Question Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: modalIn 0.3s ease-out;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-player {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .modal-player.player-x {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal-player.player-o {
+            background: #3498db;
+            color: white;
+        }
+
+        .question {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #333;
+            margin: 20px 0;
+        }
+
+        .answers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .answer-btn {
+            padding: 15px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .answer-btn:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .answer-btn.correct {
+            background: #27ae60;
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .answer-btn.wrong {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+        }
+
+        /* Result */
+        .result-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .result-message.visible {
+            display: block;
+            animation: resultIn 0.5s ease-out;
+        }
+
+        @keyframes resultIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-message.x-wins {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .result-message.o-wins {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .result-message.draw {
+            background: #95a5a6;
+            color: white;
+        }
+
+        /* Score */
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .score-value.x { color: #e74c3c; }
+        .score-value.o { color: #3498db; }
+        .score-value.draw { color: #95a5a6; }
+
+        /* Winner Input */
+        .winner-form {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .winner-form.visible {
+            display: block;
+        }
+
+        .winner-form h3 {
+            font-size: 1rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .winner-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .winner-inputs input {
+            padding: 8px 12px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            width: 80px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .winner-inputs input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .winner-inputs input::placeholder {
+            text-transform: none;
+        }
+
+        .save-btn {
+            padding: 8px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #27ae60;
+            color: white;
+        }
+
+        /* Ranking */
+        .ranking-section {
+            margin-top: 25px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ranking-header h2 {
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        .ranking-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .ranking-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .clear-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .ranking-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .ranking-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .ranking-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .ranking-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .ranking-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .ranking-table .rank-1 { color: #f1c40f; font-weight: bold; }
+        .ranking-table .rank-2 { color: #95a5a6; font-weight: bold; }
+        .ranking-table .rank-3 { color: #cd6133; font-weight: bold; }
+
+        .empty-ranking {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
+
+        .level-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .level-easy { background: #d5f5e3; color: #27ae60; }
+        .level-medium { background: #fdebd0; color: #f39c12; }
+        .level-hard { background: #fadbd8; color: #e74c3c; }
+        .level-master { background: #e8daef; color: #8e44ad; }
+
+        /* Footer */
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+
+        .footer-link a {
+            color: #667eea;
+        }
+
+        @media (max-width: 500px) {
+            .cell {
+                width: 75px;
+                height: 75px;
+                font-size: 2.5rem;
+            }
+
+            .question {
+                font-size: 2rem;
+            }
+
+            .answer-btn {
+                padding: 12px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+        <h1>Kółko i Krzyżyk</h1>
+        <p class="subtitle">Tabliczka Mnożenia - Gra dla 2 graczy</p>
+
+        <div class="settings-panel">
+            <div class="settings-row">
+                <label for="level">Poziom:</label>
+                <select id="level">
+                    <option value="easy">🐣 Żółtodziób (1-5)</option>
+                    <option value="medium" selected>📚 Uczeń (1-10)</option>
+                    <option value="hard">🤖 Tabliczkowy Terminator (1-12)</option>
+                    <option value="master">🧠 Mega Mózg (1-20)</option>
+                </select>
+                <button class="new-game-btn" onclick="newGame()">Nowa gra</button>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="current-player player-x" id="currentPlayer">Ruch: Gracz X</div>
+
+            <div class="board" id="board">
+                <button class="cell" data-index="0"></button>
+                <button class="cell" data-index="1"></button>
+                <button class="cell" data-index="2"></button>
+                <button class="cell" data-index="3"></button>
+                <button class="cell" data-index="4"></button>
+                <button class="cell" data-index="5"></button>
+                <button class="cell" data-index="6"></button>
+                <button class="cell" data-index="7"></button>
+                <button class="cell" data-index="8"></button>
+            </div>
+
+            <div class="result-message" id="resultMessage"></div>
+
+            <div class="winner-form" id="winnerForm">
+                <h3>🏆 Zapisz zwycięzcę w rankingu:</h3>
+                <div class="winner-inputs">
+                    <input type="text" id="winnerInitials" maxlength="3" placeholder="ABC">
+                    <input type="text" id="winnerClass" maxlength="4" placeholder="4a">
+                    <button class="save-btn" onclick="saveWinner()">Zapisz</button>
+                </div>
+            </div>
+
+            <div class="score-board">
+                <div class="score-item">
+                    <div class="score-label">Gracz X</div>
+                    <div class="score-value x" id="scoreX">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">Remisy</div>
+                    <div class="score-value draw" id="scoreDraw">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">Gracz O</div>
+                    <div class="score-value o" id="scoreO">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ranking-section">
+            <div class="ranking-header">
+                <h2>🏆 Ranking Mistrzów</h2>
+                <div class="ranking-actions">
+                    <button class="ranking-btn export-btn" onclick="exportRanking()">Eksportuj CSV</button>
+                    <button class="ranking-btn clear-btn" onclick="clearRanking()">Wyczyść</button>
+                </div>
+            </div>
+            <div id="rankingContent">
+                <p class="empty-ranking">Brak zapisanych zwycięstw</p>
+            </div>
+        </div>
+
+        <div class="footer-link">
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki odwiedzin</a>
+        </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-player player-x" id="modalPlayer">Gracz X</div>
+            <div class="question" id="questionText">7 × 8 = ?</div>
+            <div class="answers" id="answersContainer">
+                <button class="answer-btn">56</button>
+                <button class="answer-btn">54</button>
+                <button class="answer-btn">63</button>
+                <button class="answer-btn">48</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let selectedCell = null;
+        let correctAnswer = null;
+        let scores = { X: 0, O: 0, draw: 0 };
+        let currentLevel = 'medium';
+        let lastWinner = null;
+
+        const LEVELS = {
+            easy: { min: 1, max: 5, name: 'Żółtodziób' },
+            medium: { min: 1, max: 10, name: 'Uczeń' },
+            hard: { min: 1, max: 12, name: 'Tabliczkowy Terminator' },
+            master: { min: 1, max: 20, name: 'Mega Mózg' }
+        };
+
+        const WIN_PATTERNS = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+            [0, 4, 8], [2, 4, 6] // diagonals
+        ];
+
+        // Initialize
+        document.querySelectorAll('.cell').forEach(cell => {
+            cell.addEventListener('click', () => handleCellClick(cell));
+        });
+
+        loadRanking();
+
+        function handleCellClick(cell) {
+            const index = parseInt(cell.dataset.index);
+
+            if (board[index] !== '' || !gameActive) return;
+
+            selectedCell = index;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const level = LEVELS[document.getElementById('level').value];
+            const a = Math.floor(Math.random() * level.max) + level.min;
+            const b = Math.floor(Math.random() * level.max) + level.min;
+            correctAnswer = a * b;
+
+            // Generate wrong answers
+            const answers = [correctAnswer];
+            while (answers.length < 4) {
+                let wrong;
+                const errorType = Math.random();
+                if (errorType < 0.3) {
+                    wrong = a * (b + 1);
+                } else if (errorType < 0.6) {
+                    wrong = (a + 1) * b;
+                } else if (errorType < 0.8) {
+                    wrong = correctAnswer + Math.floor(Math.random() * 10) - 5;
+                } else {
+                    wrong = a * b + a;
+                }
+                if (wrong > 0 && wrong !== correctAnswer && !answers.includes(wrong)) {
+                    answers.push(wrong);
+                }
+            }
+
+            // Shuffle answers
+            answers.sort(() => Math.random() - 0.5);
+
+            // Update modal
+            document.getElementById('questionText').textContent = `${a} × ${b} = ?`;
+
+            const modalPlayer = document.getElementById('modalPlayer');
+            modalPlayer.textContent = `Gracz ${currentPlayer}`;
+            modalPlayer.className = `modal-player player-${currentPlayer.toLowerCase()}`;
+
+            const container = document.getElementById('answersContainer');
+            container.innerHTML = answers.map(ans =>
+                `<button class="answer-btn" onclick="checkAnswer(${ans})">${ans}</button>`
+            ).join('');
+
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function checkAnswer(answer) {
+            const buttons = document.querySelectorAll('.answer-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (parseInt(btn.textContent) === correctAnswer) {
+                    btn.classList.add('correct');
+                } else if (parseInt(btn.textContent) === answer && answer !== correctAnswer) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            setTimeout(() => {
+                document.getElementById('modalOverlay').classList.remove('active');
+
+                if (answer === correctAnswer) {
+                    placeMarker();
+                } else {
+                    // Wrong answer - switch player
+                    switchPlayer();
+                }
+            }, 800);
+        }
+
+        function placeMarker() {
+            board[selectedCell] = currentPlayer;
+            const cell = document.querySelector(`[data-index="${selectedCell}"]`);
+            cell.textContent = currentPlayer;
+            cell.classList.add('taken', currentPlayer.toLowerCase());
+
+            if (checkWin()) {
+                gameActive = false;
+                highlightWinningCells();
+                showResult(`Wygrywa Gracz ${currentPlayer}! 🎉`);
+                scores[currentPlayer]++;
+                lastWinner = currentPlayer;
+                updateScores();
+                showWinnerForm();
+            } else if (board.every(cell => cell !== '')) {
+                gameActive = false;
+                showResult('Remis! 🤝');
+                scores.draw++;
+                lastWinner = null;
+                updateScores();
+            } else {
+                switchPlayer();
+            }
+        }
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            updateCurrentPlayerDisplay();
+        }
+
+        function updateCurrentPlayerDisplay() {
+            const display = document.getElementById('currentPlayer');
+            display.textContent = `Ruch: Gracz ${currentPlayer}`;
+            display.className = `current-player player-${currentPlayer.toLowerCase()}`;
+        }
+
+        function checkWin() {
+            return WIN_PATTERNS.some(pattern => {
+                return pattern.every(index => board[index] === currentPlayer);
+            });
+        }
+
+        function highlightWinningCells() {
+            WIN_PATTERNS.forEach(pattern => {
+                if (pattern.every(index => board[index] === currentPlayer)) {
+                    pattern.forEach(index => {
+                        document.querySelector(`[data-index="${index}"]`).classList.add('winning');
+                    });
+                }
+            });
+        }
+
+        function showResult(message) {
+            const resultDiv = document.getElementById('resultMessage');
+            resultDiv.textContent = message;
+            resultDiv.className = 'result-message visible';
+
+            if (message.includes('X')) {
+                resultDiv.classList.add('x-wins');
+            } else if (message.includes('O')) {
+                resultDiv.classList.add('o-wins');
+            } else {
+                resultDiv.classList.add('draw');
+            }
+        }
+
+        function showWinnerForm() {
+            document.getElementById('winnerForm').classList.add('visible');
+            document.getElementById('winnerInitials').focus();
+        }
+
+        function updateScores() {
+            document.getElementById('scoreX').textContent = scores.X;
+            document.getElementById('scoreO').textContent = scores.O;
+            document.getElementById('scoreDraw').textContent = scores.draw;
+        }
+
+        function newGame() {
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            gameActive = true;
+            selectedCell = null;
+            lastWinner = null;
+
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.textContent = '';
+                cell.className = 'cell';
+            });
+
+            document.getElementById('resultMessage').className = 'result-message';
+            document.getElementById('winnerForm').classList.remove('visible');
+            updateCurrentPlayerDisplay();
+        }
+
+        // Ranking functions
+        function saveWinner() {
+            const initials = document.getElementById('winnerInitials').value.trim().toUpperCase();
+            const playerClass = document.getElementById('winnerClass').value.trim().toLowerCase();
+
+            if (!initials) {
+                alert('Wpisz inicjały!');
+                return;
+            }
+
+            const level = document.getElementById('level').value;
+            const ranking = getRanking();
+
+            const key = `${initials}-${playerClass}-${level}`;
+            const existing = ranking.find(r => r.key === key);
+
+            if (existing) {
+                existing.wins++;
+                existing.date = new Date().toISOString();
+            } else {
+                ranking.push({
+                    key,
+                    initials,
+                    class: playerClass || '-',
+                    level,
+                    wins: 1,
+                    date: new Date().toISOString()
+                });
+            }
+
+            localStorage.setItem('ttt-ranking', JSON.stringify(ranking));
+            loadRanking();
+
+            document.getElementById('winnerForm').classList.remove('visible');
+            document.getElementById('winnerInitials').value = '';
+            document.getElementById('winnerClass').value = '';
+        }
+
+        function getRanking() {
+            try {
+                return JSON.parse(localStorage.getItem('ttt-ranking')) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function loadRanking() {
+            const ranking = getRanking();
+            const container = document.getElementById('rankingContent');
+
+            if (ranking.length === 0) {
+                container.innerHTML = '<p class="empty-ranking">Brak zapisanych zwycięstw</p>';
+                return;
+            }
+
+            // Sort by wins descending
+            ranking.sort((a, b) => b.wins - a.wins);
+
+            const levelClasses = {
+                easy: 'level-easy',
+                medium: 'level-medium',
+                hard: 'level-hard',
+                master: 'level-master'
+            };
+
+            let html = `
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Gracz</th>
+                            <th>Klasa</th>
+                            <th>Poziom</th>
+                            <th>Wygrane</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            ranking.slice(0, 20).forEach((entry, index) => {
+                const rankClass = index < 3 ? `rank-${index + 1}` : '';
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
+
+                html += `
+                    <tr>
+                        <td class="${rankClass}">${medal}</td>
+                        <td><strong>${entry.initials}</strong></td>
+                        <td>${entry.class}</td>
+                        <td><span class="level-badge ${levelClasses[entry.level]}">${LEVELS[entry.level].name}</span></td>
+                        <td><strong>${entry.wins}</strong></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function exportRanking() {
+            const ranking = getRanking();
+            if (ranking.length === 0) {
+                alert('Ranking jest pusty!');
+                return;
+            }
+
+            ranking.sort((a, b) => b.wins - a.wins);
+
+            let csv = 'Miejsce,Inicjały,Klasa,Poziom,Wygrane\n';
+            ranking.forEach((entry, index) => {
+                csv += `${index + 1},${entry.initials},${entry.class},${LEVELS[entry.level].name},${entry.wins}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'ranking-tabliczka-mnozenia.csv';
+            link.click();
+        }
+
+        function clearRanking() {
+            if (confirm('Czy na pewno chcesz wyczyścić cały ranking?')) {
+                localStorage.removeItem('ttt-ranking');
+                loadRanking();
+            }
+        }
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
