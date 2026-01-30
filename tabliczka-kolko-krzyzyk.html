@@ -495,6 +495,51 @@
         .level-hard { background: #fadbd8; color: #e74c3c; }
         .level-master { background: #e8daef; color: #8e44ad; }
 
+        /* Checkbox */
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        /* Timer */
+        .timer-display {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #e74c3c;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .timer-display.active {
+            display: block;
+            animation: timer-pulse 1s infinite;
+        }
+
+        @keyframes timer-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .timer-display.warning {
+            color: #e74c3c;
+            animation: timer-warning 0.3s infinite;
+        }
+
+        @keyframes timer-warning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         /* Footer */
         .footer-link {
             text-align: center;
@@ -540,6 +585,12 @@
                     <option value="master">🧠 Mega Mózg (1-20)</option>
                 </select>
                 <button class="new-game-btn" onclick="newGame()">Nowa gra</button>
+            </div>
+            <div class="settings-row" style="margin-top: 10px;">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="lightningMode">
+                    <span>⚡ Runda błyskawiczna (3 sekundy)</span>
+                </label>
             </div>
         </div>
 
@@ -607,6 +658,7 @@
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <div class="modal-player player-x" id="modalPlayer">Gracz X</div>
+            <div class="timer-display" id="timerDisplay">3</div>
             <div class="question" id="questionText">7 × 8 = ?</div>
             <div class="answers" id="answersContainer">
                 <button class="answer-btn">56</button>
@@ -627,6 +679,9 @@
         let scores = { X: 0, O: 0, draw: 0 };
         let currentLevel = 'medium';
         let lastWinner = null;
+        let timerInterval = null;
+        let timeLeft = 3;
+        let askedQuestions = new Set(); // Track asked questions to avoid repetition
 
         const LEVELS = {
             easy: { min: 1, max: 5, name: 'Kurczaczek' },
@@ -657,10 +712,31 @@
             showQuestion();
         }
 
+        function generateUniqueQuestion(level) {
+            let a, b, questionKey;
+            let attempts = 0;
+            const maxAttempts = 50;
+
+            // Clear history if we've asked too many questions (reset pool)
+            if (askedQuestions.size > (level.max * level.max) / 2) {
+                askedQuestions.clear();
+            }
+
+            do {
+                a = Math.floor(Math.random() * level.max) + level.min;
+                b = Math.floor(Math.random() * level.max) + level.min;
+                // Normalize key so 3x5 and 5x3 are considered the same
+                questionKey = a <= b ? `${a}x${b}` : `${b}x${a}`;
+                attempts++;
+            } while (askedQuestions.has(questionKey) && attempts < maxAttempts);
+
+            askedQuestions.add(questionKey);
+            return { a, b };
+        }
+
         function showQuestion() {
             const level = LEVELS[document.getElementById('level').value];
-            const a = Math.floor(Math.random() * level.max) + level.min;
-            const b = Math.floor(Math.random() * level.max) + level.min;
+            const { a, b } = generateUniqueQuestion(level);
             correctAnswer = a * b;
 
             // Generate wrong answers
@@ -698,9 +774,45 @@
             ).join('');
 
             document.getElementById('modalOverlay').classList.add('active');
+
+            // Start timer if lightning mode is enabled
+            const lightningMode = document.getElementById('lightningMode').checked;
+            const timerDisplay = document.getElementById('timerDisplay');
+
+            if (lightningMode) {
+                timeLeft = 3;
+                timerDisplay.textContent = timeLeft;
+                timerDisplay.classList.add('active');
+                timerDisplay.classList.remove('warning');
+
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    timerDisplay.textContent = timeLeft;
+
+                    if (timeLeft <= 1) {
+                        timerDisplay.classList.add('warning');
+                    }
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        // Time's up - wrong answer
+                        checkAnswer(-1); // -1 indicates timeout
+                    }
+                }, 1000);
+            } else {
+                timerDisplay.classList.remove('active');
+            }
         }
 
         function checkAnswer(answer) {
+            // Clear timer if running
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timerDisplay').classList.remove('active', 'warning');
+
             const buttons = document.querySelectorAll('.answer-btn');
             buttons.forEach(btn => {
                 btn.disabled = true;
@@ -711,16 +823,20 @@
                 }
             });
 
+            // Handle timeout (answer = -1)
+            const isTimeout = answer === -1;
+            const isCorrect = answer === correctAnswer;
+
             setTimeout(() => {
                 document.getElementById('modalOverlay').classList.remove('active');
 
-                if (answer === correctAnswer) {
+                if (isCorrect) {
                     placeMarker();
                 } else {
-                    // Wrong answer - switch player
+                    // Wrong answer or timeout - switch player
                     switchPlayer();
                 }
-            }, 800);
+            }, isTimeout ? 300 : 800);
         }
 
         function placeMarker() {
@@ -806,6 +922,13 @@
             gameActive = true;
             selectedCell = null;
             lastWinner = null;
+            askedQuestions.clear(); // Reset question history for new game
+
+            // Clear any running timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
 
             document.querySelectorAll('.cell').forEach(cell => {
                 cell.textContent = '';
@@ -814,6 +937,7 @@
 
             document.getElementById('resultMessage').className = 'result-message';
             document.getElementById('winnerForm').classList.remove('visible');
+            document.getElementById('timerDisplay').classList.remove('active', 'warning');
             updateCurrentPlayerDisplay();
         }
 

@@ -587,6 +587,19 @@
                 <span class="icon">🎮</span>
                 <span>Dołącz do turnieju</span>
             </button>
+            <button class="start-btn" onclick="showHistory()" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white;">
+                <span class="icon">📜</span>
+                <span>Historia turniejów</span>
+            </button>
+        </div>
+
+        <!-- History Panel -->
+        <div id="historyPanel" class="panel hidden">
+            <h2>📜 Historia turniejów</h2>
+            <div id="historyContent" style="max-height: 400px; overflow-y: auto;">
+                <p style="color: rgba(255,255,255,0.5); text-align: center;">Ładowanie...</p>
+            </div>
+            <button class="btn btn-secondary" onclick="showStartScreen()" style="margin-top: 15px;">Powrót</button>
         </div>
 
         <!-- Create Tournament Panel -->
@@ -613,6 +626,12 @@
                     <option value="3">3 (dłuższy mecz)</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="timePressure" style="width: 20px; height: 20px;">
+                    <span>⚡ Presja czasu (rundy: 5s → półfinał: 4s → finał: 3s)</span>
+                </label>
+            </div>
             <button class="btn btn-primary" onclick="createTournament()">Utwórz turniej</button>
             <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
         </div>
@@ -625,10 +644,12 @@
                 <input type="text" id="joinCode" placeholder="np. ABC123" maxlength="6" style="text-transform: uppercase; font-size: 1.5rem; text-align: center; letter-spacing: 3px;">
             </div>
             <div class="form-group">
-                <label>Twoje imię / pseudonim</label>
+                <label>Imię / pseudonim uczestnika</label>
                 <input type="text" id="playerName" placeholder="np. Jan K." maxlength="15">
             </div>
+            <div id="addedParticipants" style="margin: 15px 0;"></div>
             <button class="btn btn-primary" onclick="joinTournament()">Dołącz</button>
+            <button class="btn btn-secondary" onclick="addAnotherPlayer()" style="background: #27ae60;">+ Dodaj następną osobę</button>
             <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
         </div>
 
@@ -718,6 +739,7 @@
 
             <div class="question-panel hidden" id="questionPanel">
                 <div id="questionPlayerTurn" style="margin-bottom: 10px; font-size: 0.9rem;">Odpowiada: Gracz X</div>
+                <div class="timer-display" id="timerDisplay" style="display: none; font-size: 2rem; font-weight: 800; color: #ffd700; margin: 10px 0;">5</div>
                 <div class="question-text" id="questionText">7 × 8 = ?</div>
                 <div class="answers-grid" id="answersContainer">
                     <!-- Answers will be generated -->
@@ -732,6 +754,7 @@
             <div id="matchResult" class="hidden" style="padding: 20px; text-align: center;">
                 <div style="font-size: 2rem; margin-bottom: 10px;">🎉</div>
                 <div style="font-size: 1.5rem; color: #ffd700;" id="matchResultText"></div>
+                <div id="finalBoardDisplay" style="margin: 15px 0;"></div>
                 <button class="btn btn-primary" onclick="closeGame()">Zamknij</button>
             </div>
         </div>
@@ -778,6 +801,9 @@
         let tournamentRef = null;
         let currentMatch = null;
         let gameState = null;
+        let addedPlayersFromDevice = []; // Players added from this device
+        let timerInterval = null;
+        let askedQuestions = new Set(); // Track asked questions
 
         // Connection status
         const connectedRef = db.ref('.info/connected');
@@ -806,9 +832,59 @@
         }
 
         function hideAllPanels() {
-            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'tournamentPanel', 'championPanel'].forEach(id => {
+            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'tournamentPanel', 'championPanel', 'historyPanel'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
+        }
+
+        // Show history of tournaments
+        async function showHistory() {
+            hideAllPanels();
+            document.getElementById('historyPanel').classList.remove('hidden');
+
+            try {
+                const snapshot = await db.ref('tournamentHistory').orderByChild('finishedAt').limitToLast(20).once('value');
+                const container = document.getElementById('historyContent');
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center;">Brak zapisanych turniejów</p>';
+                    return;
+                }
+
+                const tournaments = [];
+                snapshot.forEach(child => {
+                    tournaments.push({ id: child.key, ...child.val() });
+                });
+
+                // Sort by date descending
+                tournaments.reverse();
+
+                container.innerHTML = tournaments.map(t => {
+                    const date = new Date(t.finishedAt).toLocaleDateString('pl-PL', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    return `
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: #ffd700;">${t.name}</strong>
+                                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">${date}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.8rem;">Mistrz:</div>
+                                    <div style="color: #27ae60; font-weight: bold;">🏆 ${t.champion}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 8px;">
+                                Poziom: ${LEVELS[t.level]?.name || t.level} | Graczy: ${t.participantCount}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                document.getElementById('historyContent').innerHTML = '<p style="color: #e74c3c;">Błąd ładowania historii</p>';
+            }
         }
 
         function showCreateTournament() {
@@ -818,7 +894,74 @@
 
         function showJoinTournament() {
             hideAllPanels();
+            addedPlayersFromDevice = [];
+            updateAddedPlayersList();
             document.getElementById('joinPanel').classList.remove('hidden');
+        }
+
+        // Add another player from the same device
+        async function addAnotherPlayer() {
+            const code = document.getElementById('joinCode').value.trim().toUpperCase();
+            const name = document.getElementById('playerName').value.trim();
+
+            if (!code || code.length !== 6) {
+                alert('Najpierw podaj kod turnieju');
+                return;
+            }
+
+            if (!name) {
+                alert('Podaj imię uczestnika');
+                return;
+            }
+
+            try {
+                const snapshot = await db.ref('tournaments/' + code).once('value');
+                if (!snapshot.exists()) {
+                    alert('Nie znaleziono turnieju o podanym kodzie');
+                    return;
+                }
+
+                const tournament = snapshot.val();
+                if (tournament.status !== 'lobby') {
+                    alert('Ten turniej już się rozpoczął');
+                    return;
+                }
+
+                const playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+                await db.ref('tournaments/' + code + '/participants/' + playerId).set({
+                    name: name,
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                addedPlayersFromDevice.push({ id: playerId, name: name });
+                updateAddedPlayersList();
+                document.getElementById('playerName').value = '';
+                document.getElementById('playerName').focus();
+
+            } catch (error) {
+                alert('Błąd dodawania: ' + error.message);
+            }
+        }
+
+        function updateAddedPlayersList() {
+            const container = document.getElementById('addedParticipants');
+            if (addedPlayersFromDevice.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = `
+                <div style="color: #27ae60; font-size: 0.9rem; margin-bottom: 5px;">
+                    Dodani z tego urządzenia (${addedPlayersFromDevice.length}):
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${addedPlayersFromDevice.map(p => `
+                        <span style="background: rgba(39,174,96,0.3); padding: 5px 12px; border-radius: 15px; font-size: 0.85rem;">
+                            ${p.name}
+                        </span>
+                    `).join('')}
+                </div>
+            `;
         }
 
         // Generate tournament code
@@ -836,6 +979,7 @@
             const name = document.getElementById('tournamentName').value.trim() || 'Turniej';
             const level = document.getElementById('tournamentLevel').value;
             const pointsToWin = parseInt(document.getElementById('pointsToWin').value);
+            const timePressure = document.getElementById('timePressure').checked;
             const code = generateCode();
 
             const tournament = {
@@ -843,6 +987,7 @@
                 name: name,
                 level: level,
                 pointsToWin: pointsToWin,
+                timePressure: timePressure,
                 status: 'lobby',
                 host: 'host_' + Date.now(),
                 participants: {},
@@ -1189,6 +1334,9 @@
                 correctAnswer: null
             };
 
+            // Clear asked questions for new match
+            askedQuestions.clear();
+
             // Setup game modal
             document.getElementById('gamePlayerX').textContent = currentMatch.player1.name;
             document.getElementById('gamePlayerO').textContent = currentMatch.player2.name;
@@ -1235,11 +1383,46 @@
             showGameQuestion();
         }
 
+        // Generate unique question (avoid repetition)
+        function generateUniqueQuestion(level) {
+            let a, b, questionKey;
+            let attempts = 0;
+
+            // Clear history if too many questions asked
+            if (askedQuestions.size > (level.max * level.max) / 2) {
+                askedQuestions.clear();
+            }
+
+            do {
+                a = Math.floor(Math.random() * level.max) + level.min;
+                b = Math.floor(Math.random() * level.max) + level.min;
+                questionKey = a <= b ? `${a}x${b}` : `${b}x${a}`;
+                attempts++;
+            } while (askedQuestions.has(questionKey) && attempts < 50);
+
+            askedQuestions.add(questionKey);
+            return { a, b };
+        }
+
+        // Get time limit based on round
+        function getTimeLimit() {
+            if (!currentTournament.timePressure) return 0;
+
+            const totalRounds = currentTournament.bracket.length;
+            const currentRound = currentMatch.roundIndex;
+
+            // Finał = ostatnia runda
+            if (currentRound === totalRounds - 1) return 3; // Finał: 3s
+            // Półfinał = przedostatnia
+            if (currentRound === totalRounds - 2) return 4; // Półfinał: 4s
+            // Pozostałe rundy
+            return 5; // Rundy wcześniejsze: 5s
+        }
+
         // Show question
         function showGameQuestion() {
             const level = LEVELS[currentTournament.level];
-            const a = Math.floor(Math.random() * level.max) + level.min;
-            const b = Math.floor(Math.random() * level.max) + level.min;
+            const { a, b } = generateUniqueQuestion(level);
             gameState.correctAnswer = a * b;
 
             // Generate wrong answers
@@ -1267,11 +1450,48 @@
 
             document.getElementById('questionPanel').classList.remove('hidden');
             updateGamePlayerHighlight();
+
+            // Start timer if time pressure enabled
+            const timeLimit = getTimeLimit();
+            const timerDisplay = document.getElementById('timerDisplay');
+
+            if (timeLimit > 0) {
+                let timeLeft = timeLimit;
+                timerDisplay.textContent = timeLeft;
+                timerDisplay.style.display = 'block';
+                timerDisplay.style.color = '#ffd700';
+
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    timerDisplay.textContent = timeLeft;
+
+                    if (timeLeft <= 2) {
+                        timerDisplay.style.color = '#e74c3c';
+                    }
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        checkGameAnswer(-1); // Timeout
+                    }
+                }, 1000);
+            } else {
+                timerDisplay.style.display = 'none';
+            }
         }
 
         // Check answer
         function checkGameAnswer(answer) {
+            // Clear timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timerDisplay').style.display = 'none';
+
             const buttons = document.querySelectorAll('.answer-btn');
+            const isTimeout = answer === -1;
+
             buttons.forEach(btn => {
                 btn.disabled = true;
                 if (parseInt(btn.textContent) === gameState.correctAnswer) {
@@ -1287,11 +1507,11 @@
                 if (answer === gameState.correctAnswer) {
                     placeGameMarker();
                 } else {
-                    // Switch player
+                    // Wrong answer or timeout - switch player
                     gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
                     updateGamePlayerHighlight();
                 }
-            }, 800);
+            }, isTimeout ? 300 : 800);
         }
 
         // Place marker
@@ -1373,6 +1593,22 @@
             const winner = gameState.score1 >= currentTournament.pointsToWin ? currentMatch.player1 : currentMatch.player2;
 
             document.getElementById('matchResultText').textContent = `${winner.name} wygrywa mecz!`;
+
+            // Show final board state for verification
+            const boardDisplay = document.getElementById('finalBoardDisplay');
+            boardDisplay.innerHTML = `
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">
+                    Ostatnia plansza (weryfikacja):
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; justify-content: center;">
+                    ${gameState.board.map((cell, i) => `
+                        <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: ${cell === 'X' ? '#e74c3c' : cell === 'O' ? '#3498db' : 'transparent'};">
+                            ${cell || '·'}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
             document.getElementById('gameBoard').style.display = 'none';
             document.getElementById('matchResult').classList.remove('hidden');
 
@@ -1410,6 +1646,16 @@
                     status: 'finished',
                     champion: winner.name
                 });
+
+                // Save to history
+                const historyEntry = {
+                    name: currentTournament.name,
+                    champion: winner.name,
+                    level: currentTournament.level,
+                    participantCount: Object.keys(currentTournament.participants || {}).length,
+                    finishedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                await db.ref('tournamentHistory').push(historyEntry);
             }
 
             await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
