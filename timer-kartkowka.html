@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer - Kartkówka i Sprawdzian</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+            transition: background 0.5s;
+        }
+
+        body.warning {
+            background: linear-gradient(135deg, #2e2a1a 0%, #3d3520 100%);
+        }
+
+        body.danger {
+            background: linear-gradient(135deg, #2e1a1a 0%, #3d2020 100%);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .home-btn {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 8px 16px;
+            background: #ffd700;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .home-btn:hover {
+            background: #ffed4a;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .setup-panel {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .setup-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .setup-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .setup-group label {
+            font-size: 0.85rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setup-group select,
+        .setup-group input {
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: #2a2a3e;
+            color: white;
+            min-width: 150px;
+        }
+
+        .setup-group input[type="number"] {
+            width: 100px;
+            text-align: center;
+        }
+
+        .setup-group select:focus,
+        .setup-group input:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        .quick-times {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .quick-time-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-time-btn:hover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .quick-time-btn.selected {
+            border-color: #ffd700;
+            background: #ffd700;
+            color: #1a1a2e;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 14px 35px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-pause {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #333;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-fullscreen {
+            background: #444;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Timer Display */
+        .timer-display {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .test-type {
+            font-size: 2.5rem;
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .timer-main {
+            font-size: 12rem;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            line-height: 1;
+            margin: 20px 0;
+            text-shadow: 0 0 30px rgba(255,255,255,0.3);
+            transition: color 0.5s;
+        }
+
+        .timer-main.normal {
+            color: #00ff88;
+        }
+
+        .timer-main.warning {
+            color: #ffd700;
+        }
+
+        .timer-main.danger {
+            color: #ff4444;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .timer-seconds {
+            font-size: 5rem;
+            opacity: 0.7;
+        }
+
+        .progress-container {
+            max-width: 600px;
+            margin: 30px auto;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            height: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #28a745);
+            transition: width 1s linear, background 0.5s;
+            border-radius: 15px;
+        }
+
+        .progress-bar.warning {
+            background: linear-gradient(90deg, #ffd700, #fd7e14);
+        }
+
+        .progress-bar.danger {
+            background: linear-gradient(90deg, #ff4444, #dc3545);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #888;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #444;
+        }
+
+        .status-dot.active {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .status-dot.paused {
+            background: #ffd700;
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        /* Alert Message */
+        .alert-message {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffd700 0%, #fd7e14 100%);
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .alert-message.visible {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .alert-text {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* Finished state */
+        .timer-finished {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .timer-finished.visible {
+            display: block;
+        }
+
+        .finished-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .finished-text {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #ff4444;
+            text-transform: uppercase;
+        }
+
+        /* Hidden when running */
+        .hide-when-running {
+            transition: opacity 0.3s;
+        }
+
+        body.running .hide-when-running {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .timer-main {
+                font-size: 6rem;
+            }
+
+            .timer-seconds {
+                font-size: 3rem;
+            }
+
+            .test-type {
+                font-size: 1.8rem;
+            }
+
+            .setup-row {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .timer-main {
+                font-size: 4rem;
+            }
+
+            .timer-seconds {
+                font-size: 2rem;
+            }
+        }
+
+        /* Fullscreen styles */
+        :fullscreen {
+            background: #1a1a2e;
+        }
+
+        :fullscreen .container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        :fullscreen .timer-main {
+            font-size: 20rem;
+        }
+
+        :fullscreen .test-type {
+            font-size: 4rem;
+        }
+
+        :fullscreen .setup-panel {
+            display: none;
+        }
+
+        :fullscreen .home-btn,
+        :fullscreen h1 {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+        <h1>Timer - Kartkówka i Sprawdzian</h1>
+
+        <div class="setup-panel">
+            <div class="setup-row hide-when-running">
+                <div class="setup-group">
+                    <label>Typ</label>
+                    <select id="testType">
+                        <option value="kartkowka">Kartkówka</option>
+                        <option value="sprawdzian">Sprawdzian</option>
+                        <option value="praca">Praca klasowa</option>
+                    </select>
+                </div>
+
+                <div class="setup-group">
+                    <label>Czas (minuty)</label>
+                    <input type="number" id="duration" value="15" min="1" max="180">
+                </div>
+            </div>
+
+            <div class="quick-times hide-when-running">
+                <button class="quick-time-btn" onclick="setTime(5)">5 min</button>
+                <button class="quick-time-btn" onclick="setTime(10)">10 min</button>
+                <button class="quick-time-btn selected" onclick="setTime(15)">15 min</button>
+                <button class="quick-time-btn" onclick="setTime(20)">20 min</button>
+                <button class="quick-time-btn" onclick="setTime(30)">30 min</button>
+                <button class="quick-time-btn" onclick="setTime(45)">45 min</button>
+                <button class="quick-time-btn" onclick="setTime(60)">60 min</button>
+                <button class="quick-time-btn" onclick="setTime(90)">90 min</button>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-start" id="btnStart" onclick="startTimer()">Start</button>
+                <button class="btn btn-pause" id="btnPause" onclick="pauseTimer()" disabled>Pauza</button>
+                <button class="btn btn-stop" id="btnStop" onclick="stopTimer()" disabled>Stop</button>
+                <button class="btn btn-fullscreen" onclick="toggleFullscreen()">Pełny ekran</button>
+            </div>
+        </div>
+
+        <div class="timer-display" id="timerDisplay">
+            <div class="test-type" id="testTypeName">Kartkówka</div>
+            <div class="timer-main normal" id="timerMain">
+                <span id="timerMinutes">15</span><span class="timer-seconds">:<span id="timerSeconds">00</span></span>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar" style="width: 100%"></div>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Gotowy</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert-message" id="alertMessage">
+            <div class="alert-text">Ostatnia minuta!</div>
+        </div>
+
+        <div class="timer-finished" id="timerFinished">
+            <div class="finished-icon">🛑</div>
+            <div class="finished-text">Koniec czasu!</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem;">
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank" style="color: #ffd700;">Statystyki odwiedzin</a>
+        </div>
+    </div>
+
+    <script>
+        const TEST_NAMES = {
+            kartkowka: 'Kartkówka',
+            sprawdzian: 'Sprawdzian',
+            praca: 'Praca klasowa'
+        };
+
+        let timerInterval = null;
+        let remainingSeconds = 0;
+        let totalSeconds = 0;
+        let isPaused = false;
+        let alertShown = false;
+
+        function setTime(minutes) {
+            document.getElementById('duration').value = minutes;
+
+            // Update button selection
+            document.querySelectorAll('.quick-time-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent === minutes + ' min') {
+                    btn.classList.add('selected');
+                }
+            });
+
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const minutes = parseInt(document.getElementById('duration').value) || 15;
+            const testType = document.getElementById('testType').value;
+
+            document.getElementById('testTypeName').textContent = TEST_NAMES[testType];
+            updateTimerDisplay(minutes * 60);
+        }
+
+        function updateTimerDisplay(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+
+            document.getElementById('timerMinutes').textContent = mins.toString().padStart(2, '0');
+            document.getElementById('timerSeconds').textContent = secs.toString().padStart(2, '0');
+        }
+
+        function updateProgress() {
+            const progress = (remainingSeconds / totalSeconds) * 100;
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = progress + '%';
+
+            const timerMain = document.getElementById('timerMain');
+            const body = document.body;
+
+            // Remove all state classes
+            timerMain.classList.remove('normal', 'warning', 'danger');
+            progressBar.classList.remove('warning', 'danger');
+            body.classList.remove('warning', 'danger');
+
+            // Thresholds based on total time
+            const warningThreshold = Math.min(120, totalSeconds * 0.2); // 20% or 2 minutes
+            const dangerThreshold = Math.min(60, totalSeconds * 0.1);   // 10% or 1 minute
+
+            if (remainingSeconds <= dangerThreshold) {
+                timerMain.classList.add('danger');
+                progressBar.classList.add('danger');
+                body.classList.add('danger');
+            } else if (remainingSeconds <= warningThreshold) {
+                timerMain.classList.add('warning');
+                progressBar.classList.add('warning');
+                body.classList.add('warning');
+            } else {
+                timerMain.classList.add('normal');
+            }
+        }
+
+        function checkAlert() {
+            // Show alert at 1 minute remaining
+            if (remainingSeconds <= 60 && remainingSeconds > 0 && !alertShown) {
+                document.getElementById('alertMessage').classList.add('visible');
+                alertShown = true;
+
+                // Play sound if available
+                try {
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e');
+                    audio.volume = 0.5;
+                    audio.play().catch(() => {});
+                } catch(e) {}
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) return;
+
+            const duration = parseInt(document.getElementById('duration').value) || 15;
+            totalSeconds = duration * 60;
+            remainingSeconds = totalSeconds;
+            alertShown = false;
+
+            document.getElementById('alertMessage').classList.remove('visible');
+            document.getElementById('timerFinished').classList.remove('visible');
+
+            document.body.classList.add('running');
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').disabled = false;
+            document.getElementById('btnStop').disabled = false;
+
+            document.getElementById('statusDot').classList.add('active');
+            document.getElementById('statusText').textContent = 'Trwa...';
+
+            isPaused = false;
+            runTimer();
+        }
+
+        function runTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    remainingSeconds--;
+
+                    if (remainingSeconds <= 0) {
+                        remainingSeconds = 0;
+                        finishTimer();
+                        return;
+                    }
+
+                    updateTimerDisplay(remainingSeconds);
+                    updateProgress();
+                    checkAlert();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isPaused = !isPaused;
+
+            const btn = document.getElementById('btnPause');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            if (isPaused) {
+                btn.textContent = 'Wznów';
+                statusDot.classList.remove('active');
+                statusDot.classList.add('paused');
+                statusText.textContent = 'Pauza';
+            } else {
+                btn.textContent = 'Pauza';
+                statusDot.classList.remove('paused');
+                statusDot.classList.add('active');
+                statusText.textContent = 'Trwa...';
+            }
+        }
+
+        function stopTimer() {
+            if (confirm('Czy na pewno chcesz zakończyć?')) {
+                finishTimer();
+            }
+        }
+
+        function finishTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+
+            document.getElementById('timerFinished').classList.add('visible');
+            document.getElementById('alertMessage').classList.remove('visible');
+
+            document.body.classList.remove('running');
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnPause').disabled = true;
+            document.getElementById('btnStop').disabled = true;
+            document.getElementById('btnPause').textContent = 'Pauza';
+
+            document.getElementById('statusDot').classList.remove('active', 'paused');
+            document.getElementById('statusText').textContent = 'Zakończony';
+
+            updateTimerDisplay(0);
+            document.getElementById('progressBar').style.width = '0%';
+
+            // Flash effect
+            document.body.classList.add('danger');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('duration').addEventListener('change', () => {
+            document.querySelectorAll('.quick-time-btn').forEach(btn => btn.classList.remove('selected'));
+            updateDisplay();
+        });
+        document.getElementById('testType').addEventListener('change', updateDisplay);
+
+        // Initialize
+        updateDisplay();
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
