@@ -1594,7 +1594,9 @@
                 score1: 0,
                 score2: 0,
                 selectedCell: null,
-                correctAnswer: null
+                correctAnswer: null,
+                isSelectingCell: false,
+                clickedCells: []
             };
 
             askedQuestions = [];
@@ -1613,6 +1615,8 @@
         function resetBoard() {
             gameState.board = ['', '', '', '', '', '', '', '', ''];
             gameState.currentPlayer = 'X';
+            gameState.isSelectingCell = false;
+            gameState.clickedCells = [];
 
             document.querySelectorAll('.game-cell').forEach(cell => {
                 cell.textContent = '';
@@ -1636,8 +1640,50 @@
 
         function handleGameCellClick(index) {
             if (gameState.board[index] !== '') return;
+
+            // Check for cheating - clicking multiple cells
+            if (gameState.isSelectingCell) {
+                // Player clicked another cell while question is shown - PENALTY!
+                gameState.clickedCells.push(index);
+                if (gameState.clickedCells.length >= 2) {
+                    penalizeGamePlayer();
+                    return;
+                }
+            }
+
+            gameState.isSelectingCell = true;
+            gameState.clickedCells = [index];
             gameState.selectedCell = index;
             showGameQuestion();
+        }
+
+        function penalizeGamePlayer() {
+            // Clear any timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timerDisplay').style.display = 'none';
+            document.getElementById('questionPanel').classList.add('hidden');
+
+            // Reset selection state
+            gameState.isSelectingCell = false;
+            gameState.clickedCells = [];
+
+            // Show penalty message
+            const currentName = gameState.currentPlayer === 'X' ? currentMatch.player1.name : currentMatch.player2.name;
+
+            const penaltyDiv = document.createElement('div');
+            penaltyDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #e74c3c; color: white; padding: 20px 40px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; z-index: 2000; text-align: center;';
+            penaltyDiv.innerHTML = `${currentName} kliknął wiele pól!<br><span style="font-size: 0.9rem;">Traci turę ❌</span>`;
+            document.body.appendChild(penaltyDiv);
+
+            // Switch player after delay
+            setTimeout(() => {
+                penaltyDiv.remove();
+                gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
+                updateGamePlayerHighlight();
+            }, 1500);
         }
 
         // Get time limit based on phase
@@ -1753,6 +1799,10 @@
                 timerInterval = null;
             }
             document.getElementById('timerDisplay').style.display = 'none';
+
+            // Reset selection tracking
+            gameState.isSelectingCell = false;
+            gameState.clickedCells = [];
 
             const buttons = document.querySelectorAll('.answer-btn');
             const isTimeout = answer === -1;

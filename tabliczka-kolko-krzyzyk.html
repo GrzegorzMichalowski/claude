@@ -682,6 +682,8 @@
         let timerInterval = null;
         let timeLeft = 3;
         let askedQuestions = new Set(); // Track asked questions to avoid repetition
+        let isSelectingCell = false; // Track if player is in cell selection mode
+        let clickedCells = []; // Track clicked cells to detect cheating
 
         const LEVELS = {
             easy: { min: 1, max: 5, name: 'Kurczaczek' },
@@ -708,8 +710,48 @@
 
             if (board[index] !== '' || !gameActive) return;
 
+            // Check for cheating - clicking multiple cells
+            if (isSelectingCell) {
+                // Player clicked another cell while question is shown - PENALTY!
+                clickedCells.push(index);
+                if (clickedCells.length >= 2) {
+                    // Cheater detected!
+                    penalizePlayer();
+                    return;
+                }
+            }
+
+            isSelectingCell = true;
+            clickedCells = [index];
             selectedCell = index;
             showQuestion();
+        }
+
+        function penalizePlayer() {
+            // Clear any timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timerDisplay').classList.remove('active', 'warning');
+            document.getElementById('modalOverlay').classList.remove('active');
+
+            // Reset selection state
+            isSelectingCell = false;
+            clickedCells = [];
+
+            // Show penalty message
+            const resultDiv = document.getElementById('resultMessage');
+            resultDiv.textContent = `Gracz ${currentPlayer} kliknął wiele pól - traci turę! ❌`;
+            resultDiv.className = 'result-message visible';
+            resultDiv.style.background = '#e74c3c';
+
+            // Switch player after delay
+            setTimeout(() => {
+                resultDiv.className = 'result-message';
+                resultDiv.style.background = '';
+                switchPlayer();
+            }, 1500);
         }
 
         function generateUniqueQuestion(level) {
@@ -812,6 +854,10 @@
                 timerInterval = null;
             }
             document.getElementById('timerDisplay').classList.remove('active', 'warning');
+
+            // Reset selection tracking
+            isSelectingCell = false;
+            clickedCells = [];
 
             const buttons = document.querySelectorAll('.answer-btn');
             buttons.forEach(btn => {
@@ -923,6 +969,8 @@
             selectedCell = null;
             lastWinner = null;
             askedQuestions.clear(); // Reset question history for new game
+            isSelectingCell = false;
+            clickedCells = [];
 
             // Clear any running timer
             if (timerInterval) {
