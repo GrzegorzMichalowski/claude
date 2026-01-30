@@ -70,12 +70,12 @@
         .start-screen {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
         .start-btn {
-            padding: 20px 30px;
-            font-size: 1.2rem;
+            padding: 18px 25px;
+            font-size: 1.1rem;
             font-weight: 700;
             border: none;
             border-radius: 12px;
@@ -103,7 +103,7 @@
         }
 
         .start-btn .icon {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
         }
 
         /* Forms */
@@ -128,12 +128,12 @@
             color: white;
         }
 
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        .form-group input:focus, .form-group select:focus {
             outline: none;
             border-color: #ffd700;
         }
 
-        .form-group input::placeholder, .form-group textarea::placeholder {
+        .form-group input::placeholder {
             color: rgba(255,255,255,0.4);
         }
 
@@ -150,6 +150,7 @@
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            margin: 5px;
         }
 
         .btn-primary {
@@ -221,11 +222,108 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #e74c3c;
+            background: #27ae60;
         }
 
-        .participant.ready .status {
-            background: #27ae60;
+        /* Groups */
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .group-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .group-card h3 {
+            color: #ffd700;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .group-table {
+            width: 100%;
+            font-size: 0.85rem;
+            border-collapse: collapse;
+        }
+
+        .group-table th, .group-table td {
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        .group-table th {
+            color: rgba(255,255,255,0.6);
+            font-weight: normal;
+            font-size: 0.75rem;
+        }
+
+        .group-table tr:nth-child(1) td:first-child,
+        .group-table tr:nth-child(2) td:first-child {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .group-table td:first-child {
+            text-align: left;
+        }
+
+        /* Match List */
+        .match-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .match-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .match-item.completed {
+            opacity: 0.6;
+        }
+
+        .match-item.active {
+            border: 2px solid #ffd700;
+        }
+
+        .match-players {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .match-players .vs {
+            color: #ffd700;
+            margin: 0 8px;
+        }
+
+        .match-score {
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .match-btn {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
         }
 
         /* Bracket */
@@ -265,16 +363,10 @@
 
         .match.active {
             border-color: #ffd700;
-            animation: pulse-border 2s infinite;
         }
 
         .match.completed {
             border-color: #27ae60;
-        }
-
-        @keyframes pulse-border {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
-            50% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
         }
 
         .match-player {
@@ -298,10 +390,6 @@
             opacity: 0.5;
         }
 
-        .match-player .score {
-            font-weight: 700;
-        }
-
         .match-number {
             font-size: 0.7rem;
             color: rgba(255,255,255,0.5);
@@ -320,10 +408,6 @@
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-        }
-
-        .play-match-btn:hover {
-            transform: scale(1.02);
         }
 
         /* Game Modal */
@@ -370,6 +454,7 @@
             padding: 10px 20px;
             border-radius: 10px;
             font-weight: 600;
+            font-size: 0.95rem;
         }
 
         .game-player.x {
@@ -381,12 +466,7 @@
         }
 
         .game-player.active {
-            animation: glow 1s infinite alternate;
-        }
-
-        @keyframes glow {
-            from { box-shadow: 0 0 10px rgba(255,215,0,0.5); }
-            to { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+            box-shadow: 0 0 20px rgba(255,215,0,0.6);
         }
 
         .vs-text {
@@ -404,7 +484,6 @@
         .game-score .x { color: #e74c3c; }
         .game-score .o { color: #3498db; }
 
-        /* Board in modal */
         .game-board {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -444,7 +523,6 @@
             to { transform: scale(1.1); }
         }
 
-        /* Question in game */
         .question-panel {
             background: rgba(255,255,255,0.1);
             border-radius: 12px;
@@ -457,6 +535,22 @@
             font-weight: 800;
             color: #ffd700;
             margin-bottom: 15px;
+        }
+
+        .timer-display {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+
+        .timer-display.warning {
+            color: #e74c3c;
+            animation: timer-blink 0.3s infinite;
+        }
+
+        @keyframes timer-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .answers-grid {
@@ -477,9 +571,13 @@
             transition: all 0.2s;
         }
 
-        .answer-btn:hover {
+        .answer-btn:hover:not(:disabled) {
             border-color: #ffd700;
             background: rgba(255,215,0,0.2);
+        }
+
+        .answer-btn:disabled {
+            cursor: not-allowed;
         }
 
         .answer-btn.correct {
@@ -524,6 +622,7 @@
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
+            z-index: 100;
         }
 
         .connection-status.online {
@@ -536,12 +635,10 @@
             color: #e74c3c;
         }
 
-        /* Hidden sections */
         .hidden {
             display: none !important;
         }
 
-        /* Footer */
         .footer-link {
             text-align: center;
             margin-top: 20px;
@@ -552,7 +649,17 @@
             color: #ffd700;
         }
 
-        /* Responsive */
+        /* Phase indicator */
+        .phase-indicator {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,215,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #ffd700;
+        }
+
         @media (max-width: 600px) {
             .game-cell {
                 font-size: 2rem;
@@ -563,8 +670,8 @@
                 letter-spacing: 3px;
             }
 
-            .match {
-                min-width: 150px;
+            .groups-container {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -593,21 +700,27 @@
             </button>
         </div>
 
-        <!-- History Panel -->
-        <div id="historyPanel" class="panel hidden">
-            <h2>📜 Historia turniejów</h2>
-            <div id="historyContent" style="max-height: 400px; overflow-y: auto;">
-                <p style="color: rgba(255,255,255,0.5); text-align: center;">Ładowanie...</p>
-            </div>
-            <button class="btn btn-secondary" onclick="showStartScreen()" style="margin-top: 15px;">Powrót</button>
-        </div>
-
         <!-- Create Tournament Panel -->
         <div id="createPanel" class="panel hidden">
             <h2>Utwórz nowy turniej</h2>
             <div class="form-group">
                 <label>Nazwa turnieju</label>
                 <input type="text" id="tournamentName" placeholder="np. Turniej klasy 4a">
+            </div>
+            <div class="form-group">
+                <label>Tryb turnieju</label>
+                <select id="tournamentMode">
+                    <option value="knockout">🏆 Pucharowy (drabinka)</option>
+                    <option value="groups">⚽ Grupowy (jak MŚ) - dla 8-24 graczy</option>
+                </select>
+            </div>
+            <div class="form-group" id="groupCountSelect" style="display: none;">
+                <label>Liczba grup</label>
+                <select id="groupCount">
+                    <option value="2">2 grupy (4-8 graczy)</option>
+                    <option value="4" selected>4 grupy (8-20 graczy)</option>
+                    <option value="6">6 grup (12-30 graczy)</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>Poziom trudności</label>
@@ -621,15 +734,14 @@
             <div class="form-group">
                 <label>Punkty do wygrania meczu</label>
                 <select id="pointsToWin">
-                    <option value="1">1 (szybki mecz)</option>
-                    <option value="2" selected>2 (standardowy)</option>
-                    <option value="3">3 (dłuższy mecz)</option>
+                    <option value="1" selected>1 (szybki mecz ~1 min)</option>
+                    <option value="2">2 (standardowy ~2 min)</option>
                 </select>
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" id="timePressure" style="width: 20px; height: 20px;">
-                    <span>⚡ Presja czasu (rundy: 5s → półfinał: 4s → finał: 3s)</span>
+                    <input type="checkbox" id="timePressure" checked style="width: 20px; height: 20px;">
+                    <span>⚡ Presja czasu (grupy: 5s, półfinał: 4s, finał: 3s)</span>
                 </label>
             </div>
             <button class="btn btn-primary" onclick="createTournament()">Utwórz turniej</button>
@@ -644,16 +756,18 @@
                 <input type="text" id="joinCode" placeholder="np. ABC123" maxlength="6" style="text-transform: uppercase; font-size: 1.5rem; text-align: center; letter-spacing: 3px;">
             </div>
             <div class="form-group">
-                <label>Imię / pseudonim uczestnika</label>
+                <label>Imię uczestnika</label>
                 <input type="text" id="playerName" placeholder="np. Jan K." maxlength="15">
             </div>
             <div id="addedParticipants" style="margin: 15px 0;"></div>
-            <button class="btn btn-primary" onclick="joinTournament()">Dołącz</button>
-            <button class="btn btn-secondary" onclick="addAnotherPlayer()" style="background: #27ae60;">+ Dodaj następną osobę</button>
-            <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <button class="btn btn-primary" onclick="joinTournament()">Dołącz i czekaj</button>
+                <button class="btn" onclick="addAnotherPlayer()" style="background: #27ae60; color: white;">+ Dodaj kolejną osobę</button>
+                <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
+            </div>
         </div>
 
-        <!-- Lobby Panel (for host) -->
+        <!-- Lobby Panel -->
         <div id="lobbyPanel" class="panel hidden">
             <h2 id="lobbyTitle">Poczekalnia turnieju</h2>
 
@@ -681,13 +795,23 @@
             </div>
         </div>
 
-        <!-- Tournament Panel -->
+        <!-- Group Stage Panel -->
+        <div id="groupStagePanel" class="panel hidden">
+            <h2 id="groupStageTitle">Faza grupowa</h2>
+            <div class="phase-indicator" id="phaseIndicator">Faza grupowa - każdy z każdym w grupie</div>
+
+            <div class="groups-container" id="groupsContainer"></div>
+
+            <h3 style="color: #ffd700; margin: 20px 0 10px;">Mecze do rozegrania:</h3>
+            <div class="match-list" id="groupMatchList"></div>
+        </div>
+
+        <!-- Knockout Stage Panel -->
         <div id="tournamentPanel" class="panel hidden">
-            <h2 id="tournamentTitle">Turniej</h2>
+            <h2 id="tournamentTitle">Faza pucharowa</h2>
+            <div class="phase-indicator" id="knockoutPhaseIndicator">Faza pucharowa</div>
             <div class="bracket-container">
-                <div class="bracket" id="bracketContainer">
-                    <!-- Bracket will be generated here -->
-                </div>
+                <div class="bracket" id="bracketContainer"></div>
             </div>
         </div>
 
@@ -699,6 +823,15 @@
                 <div class="winner-name" id="championName">---</div>
             </div>
             <button class="btn btn-primary" onclick="showStartScreen()">Nowy turniej</button>
+        </div>
+
+        <!-- History Panel -->
+        <div id="historyPanel" class="panel hidden">
+            <h2>📜 Historia turniejów</h2>
+            <div id="historyContent" style="max-height: 400px; overflow-y: auto;">
+                <p style="color: rgba(255,255,255,0.5); text-align: center;">Ładowanie...</p>
+            </div>
+            <button class="btn btn-secondary" onclick="showStartScreen()" style="margin-top: 15px;">Powrót</button>
         </div>
 
         <div class="footer-link">
@@ -721,7 +854,7 @@
                     <span class="o" id="gameScoreO">0</span>
                 </div>
                 <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">
-                    Do <span id="pointsToWinDisplay">2</span> wygranych
+                    Do <span id="pointsToWinDisplay">1</span> wygranych
                 </div>
             </div>
 
@@ -739,11 +872,9 @@
 
             <div class="question-panel hidden" id="questionPanel">
                 <div id="questionPlayerTurn" style="margin-bottom: 10px; font-size: 0.9rem;">Odpowiada: Gracz X</div>
-                <div class="timer-display" id="timerDisplay" style="display: none; font-size: 2rem; font-weight: 800; color: #ffd700; margin: 10px 0;">5</div>
+                <div class="timer-display" id="timerDisplay" style="display: none; color: #ffd700;">5</div>
                 <div class="question-text" id="questionText">7 × 8 = ?</div>
-                <div class="answers-grid" id="answersContainer">
-                    <!-- Answers will be generated -->
-                </div>
+                <div class="answers-grid" id="answersContainer"></div>
             </div>
 
             <div id="roundResult" class="hidden" style="padding: 20px; text-align: center;">
@@ -801,9 +932,21 @@
         let tournamentRef = null;
         let currentMatch = null;
         let gameState = null;
-        let addedPlayersFromDevice = []; // Players added from this device
+        let addedPlayersFromDevice = [];
         let timerInterval = null;
-        let askedQuestions = new Set(); // Track asked questions
+        let askedQuestions = [];
+
+        // Cleanup function
+        function cleanup() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (tournamentRef) {
+                tournamentRef.off();
+                tournamentRef = null;
+            }
+        }
 
         // Connection status
         const connectedRef = db.ref('.info/connected');
@@ -818,73 +961,27 @@
             }
         });
 
+        // Mode selection handler
+        document.getElementById('tournamentMode').addEventListener('change', function() {
+            document.getElementById('groupCountSelect').style.display =
+                this.value === 'groups' ? 'block' : 'none';
+        });
+
         // UI Functions
         function showStartScreen() {
+            cleanup();
             hideAllPanels();
             document.getElementById('startScreen').classList.remove('hidden');
-            if (tournamentRef) {
-                tournamentRef.off();
-                tournamentRef = null;
-            }
             currentTournament = null;
             currentPlayer = null;
             isHost = false;
+            addedPlayersFromDevice = [];
         }
 
         function hideAllPanels() {
-            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'tournamentPanel', 'championPanel', 'historyPanel'].forEach(id => {
+            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'groupStagePanel', 'tournamentPanel', 'championPanel', 'historyPanel'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
-        }
-
-        // Show history of tournaments
-        async function showHistory() {
-            hideAllPanels();
-            document.getElementById('historyPanel').classList.remove('hidden');
-
-            try {
-                const snapshot = await db.ref('tournamentHistory').orderByChild('finishedAt').limitToLast(20).once('value');
-                const container = document.getElementById('historyContent');
-
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center;">Brak zapisanych turniejów</p>';
-                    return;
-                }
-
-                const tournaments = [];
-                snapshot.forEach(child => {
-                    tournaments.push({ id: child.key, ...child.val() });
-                });
-
-                // Sort by date descending
-                tournaments.reverse();
-
-                container.innerHTML = tournaments.map(t => {
-                    const date = new Date(t.finishedAt).toLocaleDateString('pl-PL', {
-                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    });
-                    return `
-                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong style="color: #ffd700;">${t.name}</strong>
-                                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">${date}</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-size: 0.8rem;">Mistrz:</div>
-                                    <div style="color: #27ae60; font-weight: bold;">🏆 ${t.champion}</div>
-                                </div>
-                            </div>
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 8px;">
-                                Poziom: ${LEVELS[t.level]?.name || t.level} | Graczy: ${t.participantCount}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                document.getElementById('historyContent').innerHTML = '<p style="color: #e74c3c;">Błąd ładowania historii</p>';
-            }
         }
 
         function showCreateTournament() {
@@ -896,10 +993,62 @@
             hideAllPanels();
             addedPlayersFromDevice = [];
             updateAddedPlayersList();
+            document.getElementById('joinCode').value = '';
+            document.getElementById('playerName').value = '';
             document.getElementById('joinPanel').classList.remove('hidden');
         }
 
-        // Add another player from the same device
+        // Generate tournament code
+        function generateCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // Create Tournament
+        async function createTournament() {
+            const name = document.getElementById('tournamentName').value.trim() || 'Turniej';
+            const mode = document.getElementById('tournamentMode').value;
+            const groupCount = parseInt(document.getElementById('groupCount').value);
+            const level = document.getElementById('tournamentLevel').value;
+            const pointsToWin = parseInt(document.getElementById('pointsToWin').value);
+            const timePressure = document.getElementById('timePressure').checked;
+            const code = generateCode();
+
+            const tournament = {
+                code,
+                name,
+                mode,
+                groupCount: mode === 'groups' ? groupCount : 0,
+                level,
+                pointsToWin,
+                timePressure,
+                status: 'lobby',
+                host: 'host_' + Date.now(),
+                participants: {},
+                groups: null,
+                groupMatches: null,
+                bracket: null,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            try {
+                await db.ref('tournaments/' + code).set(tournament);
+                currentTournament = { ...tournament, code };
+                currentPlayer = { id: tournament.host, name: 'Prowadzący', isHost: true };
+                isHost = true;
+
+                showLobby(code);
+                listenToTournament(code);
+            } catch (error) {
+                alert('Błąd tworzenia turnieju: ' + error.message);
+            }
+        }
+
+        // Add another player from same device
         async function addAnotherPlayer() {
             const code = document.getElementById('joinCode').value.trim().toUpperCase();
             const name = document.getElementById('playerName').value.trim();
@@ -952,7 +1101,7 @@
             }
             container.innerHTML = `
                 <div style="color: #27ae60; font-size: 0.9rem; margin-bottom: 5px;">
-                    Dodani z tego urządzenia (${addedPlayersFromDevice.length}):
+                    ✓ Dodani z tego urządzenia (${addedPlayersFromDevice.length}):
                 </div>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                     ${addedPlayersFromDevice.map(p => `
@@ -962,50 +1111,6 @@
                     `).join('')}
                 </div>
             `;
-        }
-
-        // Generate tournament code
-        function generateCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        }
-
-        // Create Tournament
-        async function createTournament() {
-            const name = document.getElementById('tournamentName').value.trim() || 'Turniej';
-            const level = document.getElementById('tournamentLevel').value;
-            const pointsToWin = parseInt(document.getElementById('pointsToWin').value);
-            const timePressure = document.getElementById('timePressure').checked;
-            const code = generateCode();
-
-            const tournament = {
-                code: code,
-                name: name,
-                level: level,
-                pointsToWin: pointsToWin,
-                timePressure: timePressure,
-                status: 'lobby',
-                host: 'host_' + Date.now(),
-                participants: {},
-                bracket: null,
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            };
-
-            try {
-                await db.ref('tournaments/' + code).set(tournament);
-                currentTournament = { ...tournament, code };
-                currentPlayer = { id: tournament.host, name: 'Prowadzący', isHost: true };
-                isHost = true;
-
-                showLobby(code);
-                listenToTournament(code);
-            } catch (error) {
-                alert('Błąd tworzenia turnieju: ' + error.message);
-            }
         }
 
         // Join Tournament
@@ -1018,8 +1123,13 @@
                 return;
             }
 
-            if (!name) {
-                alert('Podaj swoje imię');
+            // If name provided, add this player too
+            if (name) {
+                await addAnotherPlayer();
+            }
+
+            if (addedPlayersFromDevice.length === 0) {
+                alert('Dodaj przynajmniej jednego uczestnika');
                 return;
             }
 
@@ -1031,21 +1141,10 @@
                 }
 
                 const tournament = snapshot.val();
-                if (tournament.status !== 'lobby') {
-                    alert('Ten turniej już się rozpoczął lub zakończył');
-                    return;
-                }
-
-                const playerId = 'player_' + Date.now();
-                currentPlayer = { id: playerId, name: name, isHost: false };
+                currentTournament = { ...tournament, code };
+                currentPlayer = addedPlayersFromDevice[0];
                 isHost = false;
 
-                await db.ref('tournaments/' + code + '/participants/' + playerId).set({
-                    name: name,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                currentTournament = { ...tournament, code };
                 showLobby(code);
                 listenToTournament(code);
             } catch (error) {
@@ -1071,6 +1170,10 @@
 
         // Listen to tournament changes
         function listenToTournament(code) {
+            if (tournamentRef) {
+                tournamentRef.off();
+            }
+
             tournamentRef = db.ref('tournaments/' + code);
 
             tournamentRef.on('value', (snapshot) => {
@@ -1083,21 +1186,17 @@
                 const tournament = snapshot.val();
                 currentTournament = { ...tournament, code };
 
-                // Update participants list
-                updateParticipantsList(tournament.participants);
-
-                // Check if tournament started
-                if (tournament.status === 'active' && document.getElementById('lobbyPanel').classList.contains('hidden') === false) {
-                    showTournamentBracket();
+                // Update participants list in lobby
+                if (tournament.status === 'lobby') {
+                    updateParticipantsList(tournament.participants);
                 }
 
-                // Update bracket if active
-                if (tournament.status === 'active' && tournament.bracket) {
-                    renderBracket(tournament.bracket);
-                }
-
-                // Check for champion
-                if (tournament.status === 'finished' && tournament.champion) {
+                // Handle different tournament phases
+                if (tournament.status === 'groups') {
+                    showGroupStage();
+                } else if (tournament.status === 'knockout') {
+                    showKnockoutStage();
+                } else if (tournament.status === 'finished' && tournament.champion) {
                     showChampion(tournament.champion);
                 }
             });
@@ -1125,9 +1224,12 @@
                 </div>
             `).join('');
 
-            document.getElementById('startTournamentBtn').disabled = entries.length < 2;
+            const minPlayers = currentTournament.mode === 'groups' ? 4 : 2;
+            document.getElementById('startTournamentBtn').disabled = entries.length < minPlayers;
             document.getElementById('startTournamentBtn').textContent =
-                entries.length < 2 ? 'Rozpocznij turniej (min. 2 graczy)' : `Rozpocznij turniej (${entries.length} graczy)`;
+                entries.length < minPlayers
+                    ? `Rozpocznij turniej (min. ${minPlayers} graczy)`
+                    : `Rozpocznij turniej (${entries.length} graczy)`;
         }
 
         // Start Tournament
@@ -1135,7 +1237,7 @@
             if (!currentTournament || !currentTournament.participants) return;
 
             const participants = Object.entries(currentTournament.participants).map(([id, p]) => ({
-                id, name: p.name
+                id, name: p.name, points: 0, wins: 0, played: 0
             }));
 
             // Shuffle participants
@@ -1144,22 +1246,70 @@
                 [participants[i], participants[j]] = [participants[j], participants[i]];
             }
 
-            // Create bracket
+            if (currentTournament.mode === 'groups') {
+                await startGroupStage(participants);
+            } else {
+                await startKnockoutStage(participants);
+            }
+        }
+
+        // Start Group Stage
+        async function startGroupStage(participants) {
+            const groupCount = currentTournament.groupCount;
+            const groups = [];
+            const groupMatches = [];
+
+            // Distribute players to groups
+            for (let i = 0; i < groupCount; i++) {
+                groups.push({ name: `Grupa ${String.fromCharCode(65 + i)}`, players: [] });
+            }
+
+            participants.forEach((p, i) => {
+                groups[i % groupCount].players.push(p);
+            });
+
+            // Generate matches for each group (round-robin)
+            let matchId = 0;
+            groups.forEach((group, groupIndex) => {
+                const players = group.players;
+                for (let i = 0; i < players.length; i++) {
+                    for (let j = i + 1; j < players.length; j++) {
+                        groupMatches.push({
+                            id: `gm${matchId++}`,
+                            groupIndex,
+                            player1: players[i],
+                            player2: players[j],
+                            score1: 0,
+                            score2: 0,
+                            winner: null,
+                            status: 'pending'
+                        });
+                    }
+                }
+            });
+
+            await db.ref('tournaments/' + currentTournament.code).update({
+                status: 'groups',
+                groups,
+                groupMatches
+            });
+        }
+
+        // Start Knockout Stage (direct or after groups)
+        async function startKnockoutStage(participants) {
             const bracket = createBracket(participants);
 
             await db.ref('tournaments/' + currentTournament.code).update({
-                status: 'active',
-                bracket: bracket
+                status: 'knockout',
+                bracket
             });
         }
 
         // Create bracket structure
         function createBracket(participants) {
-            // Find next power of 2
             let size = 1;
             while (size < participants.length) size *= 2;
 
-            // Create first round with byes
             const rounds = [];
             const firstRound = [];
 
@@ -1177,7 +1327,6 @@
                     status: 'pending'
                 };
 
-                // Handle byes
                 if (p1 && !p2) {
                     match.winner = p1.id;
                     match.status = 'completed';
@@ -1192,7 +1341,6 @@
             }
             rounds.push(firstRound);
 
-            // Create subsequent rounds
             let prevRound = firstRound;
             let roundNum = 2;
             while (prevRound.length > 1) {
@@ -1213,13 +1361,10 @@
                 roundNum++;
             }
 
-            // Advance bye winners
             advanceWinners(rounds);
-
             return rounds;
         }
 
-        // Advance winners through bracket
         function advanceWinners(rounds) {
             for (let r = 0; r < rounds.length - 1; r++) {
                 const currentRound = rounds[r];
@@ -1238,33 +1383,165 @@
                             nextMatch.player2 = winner;
                         }
 
-                        // Check if next match is ready
                         if (nextMatch.player1 && nextMatch.player2) {
                             nextMatch.status = 'ready';
-                        } else if (nextMatch.player1 && !nextMatch.player2) {
-                            // Check if other match is also a bye
-                            const otherMatch = currentRound[m + 1];
-                            if (otherMatch && otherMatch.status === 'completed') {
-                                nextMatch.status = 'ready';
-                            }
                         }
                     }
                 }
             }
         }
 
-        // Show tournament bracket
-        function showTournamentBracket() {
+        // Show Group Stage
+        function showGroupStage() {
+            hideAllPanels();
+            document.getElementById('groupStagePanel').classList.remove('hidden');
+            document.getElementById('groupStageTitle').textContent = currentTournament.name;
+
+            renderGroups();
+            renderGroupMatches();
+        }
+
+        function renderGroups() {
+            const container = document.getElementById('groupsContainer');
+            const groups = currentTournament.groups;
+            const matches = currentTournament.groupMatches || [];
+
+            // Calculate standings
+            groups.forEach((group, gi) => {
+                group.players.forEach(p => {
+                    p.points = 0;
+                    p.wins = 0;
+                    p.played = 0;
+                });
+
+                matches.filter(m => m.groupIndex === gi && m.status === 'completed').forEach(m => {
+                    const p1 = group.players.find(p => p.id === m.player1.id);
+                    const p2 = group.players.find(p => p.id === m.player2.id);
+
+                    if (p1 && p2) {
+                        p1.played++;
+                        p2.played++;
+
+                        if (m.winner === m.player1.id) {
+                            p1.points += 3;
+                            p1.wins++;
+                        } else if (m.winner === m.player2.id) {
+                            p2.points += 3;
+                            p2.wins++;
+                        }
+                    }
+                });
+
+                // Sort by points
+                group.players.sort((a, b) => b.points - a.points || b.wins - a.wins);
+            });
+
+            container.innerHTML = groups.map((group, gi) => `
+                <div class="group-card">
+                    <h3>${group.name}</h3>
+                    <table class="group-table">
+                        <thead>
+                            <tr><th>Gracz</th><th>M</th><th>W</th><th>Pkt</th></tr>
+                        </thead>
+                        <tbody>
+                            ${group.players.map((p, pi) => `
+                                <tr>
+                                    <td>${pi < 2 ? '▸ ' : ''}${p.name}</td>
+                                    <td>${p.played}</td>
+                                    <td>${p.wins}</td>
+                                    <td><strong>${p.points}</strong></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `).join('');
+        }
+
+        function renderGroupMatches() {
+            const container = document.getElementById('groupMatchList');
+            const matches = currentTournament.groupMatches || [];
+
+            const pending = matches.filter(m => m.status !== 'completed');
+            const completed = matches.filter(m => m.status === 'completed');
+
+            // Check if all matches done
+            if (pending.length === 0 && completed.length > 0 && isHost) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="margin-bottom: 15px;">Wszystkie mecze grupowe zakończone!</p>
+                        <button class="btn btn-primary" onclick="startPlayoffs()">Rozpocznij fazę pucharową</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pending.map(match => `
+                <div class="match-item ${match.status === 'ready' ? 'active' : ''}">
+                    <div class="match-players">
+                        <span>${currentTournament.groups[match.groupIndex].name}:</span>
+                        <strong>${match.player1.name}</strong>
+                        <span class="vs">vs</span>
+                        <strong>${match.player2.name}</strong>
+                    </div>
+                    <button class="match-btn" onclick="startGroupMatch('${match.id}')">Graj!</button>
+                </div>
+            `).join('') + (completed.length > 0 ? `
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <h4 style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 10px;">Zakończone (${completed.length}):</h4>
+                    ${completed.slice(-5).reverse().map(m => `
+                        <div class="match-item completed">
+                            <div class="match-players">
+                                ${m.player1.name} <span class="match-score">${m.score1}</span>
+                                <span class="vs">:</span>
+                                <span class="match-score">${m.score2}</span> ${m.player2.name}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '');
+        }
+
+        // Start group match
+        function startGroupMatch(matchId) {
+            const match = currentTournament.groupMatches.find(m => m.id === matchId);
+            if (!match) return;
+
+            currentMatch = { ...match, isGroupMatch: true };
+            initializeGame();
+        }
+
+        // Start playoffs after group stage
+        async function startPlayoffs() {
+            const groups = currentTournament.groups;
+            const qualifiers = [];
+
+            groups.forEach(group => {
+                // Top 2 from each group
+                qualifiers.push(group.players[0]);
+                if (group.players[1]) qualifiers.push(group.players[1]);
+            });
+
+            // Shuffle qualifiers for fair bracket
+            const shuffled = [...qualifiers].sort(() => Math.random() - 0.5);
+
+            await startKnockoutStage(shuffled);
+        }
+
+        // Show Knockout Stage
+        function showKnockoutStage() {
             hideAllPanels();
             document.getElementById('tournamentPanel').classList.remove('hidden');
             document.getElementById('tournamentTitle').textContent = currentTournament.name;
+            document.getElementById('knockoutPhaseIndicator').textContent =
+                currentTournament.mode === 'groups' ? 'Faza pucharowa - najlepsi z grup' : 'Faza pucharowa';
+
+            renderBracket(currentTournament.bracket);
         }
 
-        // Render bracket
         function renderBracket(rounds) {
             const container = document.getElementById('bracketContainer');
 
-            const roundNames = ['Runda 1', 'Runda 2', 'Ćwierćfinały', 'Półfinały', 'Finał'];
             const getRoundName = (index, total) => {
                 if (total === 1) return 'Finał';
                 if (index === total - 1) return 'Finał';
@@ -1276,72 +1553,56 @@
             container.innerHTML = rounds.map((round, roundIndex) => `
                 <div class="round">
                     <div class="round-title">${getRoundName(roundIndex, rounds.length)}</div>
-                    ${round.map((match, matchIndex) => renderMatch(match, roundIndex, matchIndex)).join('')}
+                    ${round.map((match, matchIndex) => renderBracketMatch(match, roundIndex)).join('')}
                 </div>
             `).join('');
         }
 
-        // Render single match
-        function renderMatch(match, roundIndex, matchIndex) {
+        function renderBracketMatch(match, roundIndex) {
             const canPlay = match.status === 'ready' && match.player1 && match.player2;
-            const isMyMatch = canPlay && (
-                match.player1?.id === currentPlayer?.id ||
-                match.player2?.id === currentPlayer?.id ||
-                isHost
-            );
 
             return `
                 <div class="match ${match.status === 'ready' ? 'active' : ''} ${match.status === 'completed' ? 'completed' : ''}">
-                    <div class="match-number">Mecz ${matchIndex + 1}</div>
                     <div class="match-player ${match.winner === match.player1?.id ? 'winner' : ''} ${match.winner && match.winner !== match.player1?.id ? 'loser' : ''}">
                         <span>${match.player1?.name || '---'}</span>
-                        ${match.status === 'completed' ? `<span class="score">${match.score1}</span>` : ''}
+                        ${match.status === 'completed' ? `<span>${match.score1}</span>` : ''}
                     </div>
                     <div class="match-player ${match.winner === match.player2?.id ? 'winner' : ''} ${match.winner && match.winner !== match.player2?.id ? 'loser' : ''}">
                         <span>${match.player2?.name || '---'}</span>
-                        ${match.status === 'completed' ? `<span class="score">${match.score2}</span>` : ''}
+                        ${match.status === 'completed' ? `<span>${match.score2}</span>` : ''}
                     </div>
-                    ${isMyMatch ? `<button class="play-match-btn" onclick="startMatch('${match.id}')">Graj!</button>` : ''}
+                    ${canPlay ? `<button class="play-match-btn" onclick="startBracketMatch('${match.id}', ${roundIndex})">Graj!</button>` : ''}
                 </div>
             `;
         }
 
-        // Start a match
-        function startMatch(matchId) {
-            // Find match in bracket
-            for (let r = 0; r < currentTournament.bracket.length; r++) {
-                for (let m = 0; m < currentTournament.bracket[r].length; m++) {
-                    if (currentTournament.bracket[r][m].id === matchId) {
-                        currentMatch = {
-                            ...currentTournament.bracket[r][m],
-                            roundIndex: r,
-                            matchIndex: m
-                        };
-                        break;
-                    }
-                }
-            }
+        // Start bracket match
+        function startBracketMatch(matchId, roundIndex) {
+            const round = currentTournament.bracket[roundIndex];
+            const match = round.find(m => m.id === matchId);
+            if (!match) return;
 
-            if (!currentMatch) return;
+            currentMatch = { ...match, roundIndex, isGroupMatch: false };
+            initializeGame();
+        }
 
-            // Initialize game state
+        // Initialize Game
+        function initializeGame() {
             gameState = {
                 board: ['', '', '', '', '', '', '', '', ''],
                 currentPlayer: 'X',
-                score1: currentMatch.score1,
-                score2: currentMatch.score2,
+                score1: 0,
+                score2: 0,
                 selectedCell: null,
                 correctAnswer: null
             };
 
-            // Clear asked questions for new match
-            askedQuestions.clear();
+            askedQuestions = [];
 
-            // Setup game modal
             document.getElementById('gamePlayerX').textContent = currentMatch.player1.name;
             document.getElementById('gamePlayerO').textContent = currentMatch.player2.name;
-            document.getElementById('gameScoreX').textContent = gameState.score1;
-            document.getElementById('gameScoreO').textContent = gameState.score2;
+            document.getElementById('gameScoreX').textContent = '0';
+            document.getElementById('gameScoreO').textContent = '0';
             document.getElementById('pointsToWinDisplay').textContent = currentTournament.pointsToWin;
 
             resetBoard();
@@ -1349,7 +1610,6 @@
             updateGamePlayerHighlight();
         }
 
-        // Reset board for new round
         function resetBoard() {
             gameState.board = ['', '', '', '', '', '', '', '', ''];
             gameState.currentPlayer = 'X';
@@ -1366,7 +1626,6 @@
             document.getElementById('gameBoard').style.display = 'grid';
         }
 
-        // Update player highlight
         function updateGamePlayerHighlight() {
             document.getElementById('gamePlayerX').classList.toggle('active', gameState.currentPlayer === 'X');
             document.getElementById('gamePlayerO').classList.toggle('active', gameState.currentPlayer === 'O');
@@ -1375,22 +1634,34 @@
             document.getElementById('questionPlayerTurn').textContent = `Odpowiada: ${currentName}`;
         }
 
-        // Handle cell click in game
         function handleGameCellClick(index) {
             if (gameState.board[index] !== '') return;
-
             gameState.selectedCell = index;
             showGameQuestion();
         }
 
-        // Generate unique question (avoid repetition)
+        // Get time limit based on phase
+        function getTimeLimit() {
+            if (!currentTournament.timePressure) return 0;
+
+            if (currentMatch.isGroupMatch) return 5;
+
+            const totalRounds = currentTournament.bracket.length;
+            const currentRound = currentMatch.roundIndex;
+
+            if (currentRound === totalRounds - 1) return 3; // Final
+            if (currentRound === totalRounds - 2) return 4; // Semi
+            return 5;
+        }
+
+        // Generate unique question
         function generateUniqueQuestion(level) {
             let a, b, questionKey;
             let attempts = 0;
 
-            // Clear history if too many questions asked
-            if (askedQuestions.size > (level.max * level.max) / 2) {
-                askedQuestions.clear();
+            // Clear if too many asked
+            if (askedQuestions.length > 30) {
+                askedQuestions = [];
             }
 
             do {
@@ -1398,36 +1669,22 @@
                 b = Math.floor(Math.random() * level.max) + level.min;
                 questionKey = a <= b ? `${a}x${b}` : `${b}x${a}`;
                 attempts++;
-            } while (askedQuestions.has(questionKey) && attempts < 50);
+                if (attempts > 50) break; // Prevent infinite loop
+            } while (askedQuestions.includes(questionKey));
 
-            askedQuestions.add(questionKey);
+            askedQuestions.push(questionKey);
             return { a, b };
         }
 
-        // Get time limit based on round
-        function getTimeLimit() {
-            if (!currentTournament.timePressure) return 0;
-
-            const totalRounds = currentTournament.bracket.length;
-            const currentRound = currentMatch.roundIndex;
-
-            // Finał = ostatnia runda
-            if (currentRound === totalRounds - 1) return 3; // Finał: 3s
-            // Półfinał = przedostatnia
-            if (currentRound === totalRounds - 2) return 4; // Półfinał: 4s
-            // Pozostałe rundy
-            return 5; // Rundy wcześniejsze: 5s
-        }
-
-        // Show question
         function showGameQuestion() {
             const level = LEVELS[currentTournament.level];
             const { a, b } = generateUniqueQuestion(level);
             gameState.correctAnswer = a * b;
 
-            // Generate wrong answers
             const answers = [gameState.correctAnswer];
-            while (answers.length < 4) {
+            let attempts = 0;
+            while (answers.length < 4 && attempts < 20) {
+                attempts++;
                 let wrong;
                 const errorType = Math.random();
                 if (errorType < 0.3) wrong = a * (b + 1);
@@ -1440,7 +1697,12 @@
                 }
             }
 
-            // Shuffle
+            // Fill remaining with random if needed
+            while (answers.length < 4) {
+                const wrong = gameState.correctAnswer + answers.length * 2;
+                if (!answers.includes(wrong)) answers.push(wrong);
+            }
+
             answers.sort(() => Math.random() - 0.5);
 
             document.getElementById('questionText').textContent = `${a} × ${b} = ?`;
@@ -1451,28 +1713,33 @@
             document.getElementById('questionPanel').classList.remove('hidden');
             updateGamePlayerHighlight();
 
-            // Start timer if time pressure enabled
+            // Timer
             const timeLimit = getTimeLimit();
             const timerDisplay = document.getElementById('timerDisplay');
+
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
 
             if (timeLimit > 0) {
                 let timeLeft = timeLimit;
                 timerDisplay.textContent = timeLeft;
                 timerDisplay.style.display = 'block';
-                timerDisplay.style.color = '#ffd700';
+                timerDisplay.className = 'timer-display';
 
                 timerInterval = setInterval(() => {
                     timeLeft--;
                     timerDisplay.textContent = timeLeft;
 
                     if (timeLeft <= 2) {
-                        timerDisplay.style.color = '#e74c3c';
+                        timerDisplay.classList.add('warning');
                     }
 
                     if (timeLeft <= 0) {
                         clearInterval(timerInterval);
                         timerInterval = null;
-                        checkGameAnswer(-1); // Timeout
+                        checkGameAnswer(-1);
                     }
                 }, 1000);
             } else {
@@ -1480,9 +1747,7 @@
             }
         }
 
-        // Check answer
         function checkGameAnswer(answer) {
-            // Clear timer
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
@@ -1507,14 +1772,12 @@
                 if (answer === gameState.correctAnswer) {
                     placeGameMarker();
                 } else {
-                    // Wrong answer or timeout - switch player
                     gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
                     updateGamePlayerHighlight();
                 }
-            }, isTimeout ? 300 : 800);
+            }, isTimeout ? 300 : 700);
         }
 
-        // Place marker
         function placeGameMarker() {
             const index = gameState.selectedCell;
             gameState.board[index] = gameState.currentPlayer;
@@ -1535,14 +1798,12 @@
                 document.getElementById('gameScoreX').textContent = gameState.score1;
                 document.getElementById('gameScoreO').textContent = gameState.score2;
 
-                // Check if match is over
                 if (gameState.score1 >= currentTournament.pointsToWin || gameState.score2 >= currentTournament.pointsToWin) {
                     showMatchResult();
                 } else {
                     showRoundResult();
                 }
             } else if (gameState.board.every(cell => cell !== '')) {
-                // Draw
                 showRoundResult(true);
             } else {
                 gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
@@ -1550,14 +1811,12 @@
             }
         }
 
-        // Check win
         function checkGameWin() {
             return WIN_PATTERNS.some(pattern =>
                 pattern.every(index => gameState.board[index] === gameState.currentPlayer)
             );
         }
 
-        // Highlight winning cells
         function highlightGameWinningCells() {
             WIN_PATTERNS.forEach(pattern => {
                 if (pattern.every(index => gameState.board[index] === gameState.currentPlayer)) {
@@ -1568,9 +1827,7 @@
             });
         }
 
-        // Show round result
         function showRoundResult(isDraw = false) {
-            const resultEl = document.getElementById('roundResult');
             const textEl = document.getElementById('roundResultText');
 
             if (isDraw) {
@@ -1580,29 +1837,24 @@
                 textEl.textContent = `${winner} wygrywa rundę!`;
             }
 
-            resultEl.classList.remove('hidden');
+            document.getElementById('roundResult').classList.remove('hidden');
         }
 
-        // Next round
         function nextRound() {
             resetBoard();
         }
 
-        // Show match result
         function showMatchResult() {
             const winner = gameState.score1 >= currentTournament.pointsToWin ? currentMatch.player1 : currentMatch.player2;
 
             document.getElementById('matchResultText').textContent = `${winner.name} wygrywa mecz!`;
 
-            // Show final board state for verification
-            const boardDisplay = document.getElementById('finalBoardDisplay');
-            boardDisplay.innerHTML = `
-                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">
-                    Ostatnia plansza (weryfikacja):
-                </div>
+            // Show final board
+            document.getElementById('finalBoardDisplay').innerHTML = `
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">Plansza (weryfikacja):</div>
                 <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; justify-content: center;">
-                    ${gameState.board.map((cell, i) => `
-                        <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: ${cell === 'X' ? '#e74c3c' : cell === 'O' ? '#3498db' : 'transparent'};">
+                    ${gameState.board.map(cell => `
+                        <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: ${cell === 'X' ? '#e74c3c' : cell === 'O' ? '#3498db' : 'rgba(255,255,255,0.2)'};">
                             ${cell || '·'}
                         </div>
                     `).join('')}
@@ -1612,70 +1864,87 @@
             document.getElementById('gameBoard').style.display = 'none';
             document.getElementById('matchResult').classList.remove('hidden');
 
-            // Update bracket in Firebase
-            updateBracket(winner);
+            updateMatchResult(winner);
         }
 
-        // Update bracket after match
-        async function updateBracket(winner) {
-            const bracket = JSON.parse(JSON.stringify(currentTournament.bracket));
-            const match = bracket[currentMatch.roundIndex][currentMatch.matchIndex];
+        async function updateMatchResult(winner) {
+            if (currentMatch.isGroupMatch) {
+                // Update group match
+                const matches = [...currentTournament.groupMatches];
+                const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
 
-            match.score1 = gameState.score1;
-            match.score2 = gameState.score2;
-            match.winner = winner.id;
-            match.status = 'completed';
-
-            // Advance winner to next round
-            if (currentMatch.roundIndex < bracket.length - 1) {
-                const nextMatchIndex = Math.floor(currentMatch.matchIndex / 2);
-                const nextMatch = bracket[currentMatch.roundIndex + 1][nextMatchIndex];
-
-                if (currentMatch.matchIndex % 2 === 0) {
-                    nextMatch.player1 = winner;
-                } else {
-                    nextMatch.player2 = winner;
-                }
-
-                if (nextMatch.player1 && nextMatch.player2) {
-                    nextMatch.status = 'ready';
-                }
-            } else {
-                // This was the final - we have a champion!
-                await db.ref('tournaments/' + currentTournament.code).update({
-                    status: 'finished',
-                    champion: winner.name
-                });
-
-                // Save to history
-                const historyEntry = {
-                    name: currentTournament.name,
-                    champion: winner.name,
-                    level: currentTournament.level,
-                    participantCount: Object.keys(currentTournament.participants || {}).length,
-                    finishedAt: firebase.database.ServerValue.TIMESTAMP
+                matches[matchIndex] = {
+                    ...matches[matchIndex],
+                    score1: gameState.score1,
+                    score2: gameState.score2,
+                    winner: winner.id,
+                    status: 'completed'
                 };
-                await db.ref('tournamentHistory').push(historyEntry);
-            }
 
-            await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
+                await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
+            } else {
+                // Update bracket match
+                const bracket = JSON.parse(JSON.stringify(currentTournament.bracket));
+                const match = bracket[currentMatch.roundIndex].find(m => m.id === currentMatch.id);
+
+                match.score1 = gameState.score1;
+                match.score2 = gameState.score2;
+                match.winner = winner.id;
+                match.status = 'completed';
+
+                // Advance winner
+                if (currentMatch.roundIndex < bracket.length - 1) {
+                    const matchIndex = bracket[currentMatch.roundIndex].indexOf(match);
+                    const nextMatchIndex = Math.floor(matchIndex / 2);
+                    const nextMatch = bracket[currentMatch.roundIndex + 1][nextMatchIndex];
+
+                    if (matchIndex % 2 === 0) {
+                        nextMatch.player1 = winner;
+                    } else {
+                        nextMatch.player2 = winner;
+                    }
+
+                    if (nextMatch.player1 && nextMatch.player2) {
+                        nextMatch.status = 'ready';
+                    }
+                } else {
+                    // Champion!
+                    await db.ref('tournaments/' + currentTournament.code).update({
+                        status: 'finished',
+                        champion: winner.name
+                    });
+
+                    // Save to history
+                    await db.ref('tournamentHistory').push({
+                        name: currentTournament.name,
+                        champion: winner.name,
+                        level: currentTournament.level,
+                        mode: currentTournament.mode,
+                        participantCount: Object.keys(currentTournament.participants || {}).length,
+                        finishedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+
+                await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
+            }
         }
 
-        // Close game modal
         function closeGame() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             document.getElementById('gameModal').classList.remove('active');
             currentMatch = null;
             gameState = null;
         }
 
-        // Show champion
         function showChampion(championName) {
             hideAllPanels();
             document.getElementById('championPanel').classList.remove('hidden');
             document.getElementById('championName').textContent = championName;
         }
 
-        // Cancel tournament
         async function cancelTournament() {
             if (confirm('Czy na pewno chcesz anulować turniej?')) {
                 await db.ref('tournaments/' + currentTournament.code).remove();
@@ -1683,17 +1952,65 @@
             }
         }
 
-        // Cleanup old tournaments (older than 24h)
-        async function cleanupOldTournaments() {
-            const cutoff = Date.now() - (24 * 60 * 60 * 1000);
-            const snapshot = await db.ref('tournaments').orderByChild('createdAt').endAt(cutoff).once('value');
+        // History
+        async function showHistory() {
+            hideAllPanels();
+            document.getElementById('historyPanel').classList.remove('hidden');
 
-            snapshot.forEach(child => {
-                child.ref.remove();
-            });
+            try {
+                const snapshot = await db.ref('tournamentHistory').orderByChild('finishedAt').limitToLast(20).once('value');
+                const container = document.getElementById('historyContent');
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center;">Brak zapisanych turniejów</p>';
+                    return;
+                }
+
+                const tournaments = [];
+                snapshot.forEach(child => {
+                    tournaments.push({ id: child.key, ...child.val() });
+                });
+
+                tournaments.reverse();
+
+                container.innerHTML = tournaments.map(t => {
+                    const date = new Date(t.finishedAt).toLocaleDateString('pl-PL', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    return `
+                        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: #ffd700;">${t.name}</strong>
+                                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">${date}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="color: #27ae60; font-weight: bold;">🏆 ${t.champion}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 8px;">
+                                ${t.mode === 'groups' ? 'Grupowy' : 'Pucharowy'} | ${LEVELS[t.level]?.name || t.level} | ${t.participantCount} graczy
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                document.getElementById('historyContent').innerHTML = '<p style="color: #e74c3c;">Błąd ładowania historii</p>';
+            }
         }
 
-        // Run cleanup on load
+        // Cleanup old tournaments
+        async function cleanupOldTournaments() {
+            try {
+                const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+                const snapshot = await db.ref('tournaments').orderByChild('createdAt').endAt(cutoff).once('value');
+                snapshot.forEach(child => child.ref.remove());
+            } catch (e) {
+                console.log('Cleanup skipped');
+            }
+        }
+
         cleanupOldTournaments();
     </script>
 
