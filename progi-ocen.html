@@ -95,28 +95,6 @@
             margin-left: 10px;
         }
 
-        .precise-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 15px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            color: #555;
-        }
-
-        .precise-toggle input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .precise-toggle span {
-            font-size: 0.95rem;
-            margin-left: 0;
-        }
-
         .grades-container {
             display: flex;
             flex-direction: column;
@@ -292,12 +270,8 @@
             <label for="testName">Nazwa sprawdzianu:</label>
             <input type="text" id="testName" placeholder="np. Sprawdzian z równań" oninput="updateTitle()" style="width: 100%; margin-bottom: 20px;">
             <label for="maxPoints">Maksymalna liczba punktów:</label>
-            <input type="number" id="maxPoints" min="1" max="1000" placeholder="np. 50" oninput="calculateRanges()">
+            <input type="number" id="maxPoints" min="1" max="1000" placeholder="np. 50" oninput="calculateRanges()" step="0.5">
             <span>pkt</span>
-            <label class="precise-toggle">
-                <input type="checkbox" id="preciseMode" onchange="calculateRanges()">
-                <span>Pokaż dokładnie</span>
-            </label>
         </div>
 
         <div class="test-title" id="testTitle"></div>
@@ -349,42 +323,23 @@
 
             let html = '';
 
-            const preciseMode = document.getElementById('preciseMode').checked;
-
             GRADES.forEach((grade, index) => {
                 let rangeText = '';
                 let percentText = '';
 
-                if (preciseMode) {
-                    // Tryb dokładny - pokazuj przedziały
-                    const minPoints = ((grade.minPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
-                    const maxPointsForGrade = ((grade.maxPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
+                // Oblicz dokładne wartości punktowe
+                const minPoints = ((grade.minPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
+                const maxPointsForGrade = ((grade.maxPercent / 100) * maxPoints).toFixed(2).replace(/\.?0+$/, '');
 
-                    if (grade.minPercent === 100) {
-                        rangeText = `${maxPoints} pkt`;
-                        percentText = '100%';
-                    } else if (grade.minPercent === 0) {
-                        rangeText = `0 - ${maxPointsForGrade} pkt`;
-                        percentText = `0% - ${grade.maxPercent}%`;
-                    } else {
-                        rangeText = `${minPoints} - ${maxPointsForGrade} pkt`;
-                        percentText = `${grade.minPercent}% - ${grade.maxPercent}%`;
-                    }
+                if (grade.minPercent === 100) {
+                    rangeText = `${maxPoints} pkt`;
+                    percentText = '100%';
+                } else if (grade.minPercent === 0) {
+                    rangeText = `0 - ${maxPointsForGrade} pkt`;
+                    percentText = `0% - ${grade.maxPercent}%`;
                 } else {
-                    // Tryb zaokrąglony - tylko dolny próg
-                    const minPoints = Math.round(((grade.minPercent / 100) * maxPoints) * 2) / 2;
-
-                    if (grade.minPercent === 100) {
-                        rangeText = `${maxPoints} pkt`;
-                        percentText = '100%';
-                    } else if (grade.minPercent === 0) {
-                        const nextGradeMin = Math.round(((34 / 100) * maxPoints) * 2) / 2;
-                        rangeText = `poniżej ${nextGradeMin} pkt`;
-                        percentText = 'poniżej 34%';
-                    } else {
-                        rangeText = `od ${minPoints} pkt`;
-                        percentText = `od ${grade.minPercent}%`;
-                    }
+                    rangeText = `${minPoints} - ${maxPointsForGrade} pkt`;
+                    percentText = `${grade.minPercent}% - ${grade.maxPercent}%`;
                 }
 
                 html += `
