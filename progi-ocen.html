@@ -285,7 +285,9 @@
         <button class="print-btn" onclick="window.print()">Drukuj / Zapisz PDF</button>
 
         <div class="info-box">
-            Progi zgodne ze statutem szkoły: celujący (100%), bardzo dobry (od 91%), dobry (od 75%), dostateczny (od 51%), dopuszczający (od 34%), niedostateczny (poniżej 34%)
+            <strong>Progi zaokrąglone do 0,5 punkta</strong> (standardowa dokładność oceniania)
+            <br><br>
+            Progi procentowe: celujący (100%), bardzo dobry (od 91%), dobry (od 75%), dostateczny (od 51%), dopuszczający (od 34%), niedostateczny (poniżej 34%)
             <br><br>
             <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank" style="color: #0056b3;">Statystyki odwiedzin</a>
         </div>
@@ -304,20 +306,23 @@
         }
 
         const GRADES = [
-            { name: 'Celujący', number: 6, minPercent: 100, maxPercent: 100, class: 'grade-6' },
-            { name: 'Bardzo dobry', number: 5, minPercent: 91, maxPercent: 99, class: 'grade-5' },
-            { name: 'Dobry', number: 4, minPercent: 75, maxPercent: 90, class: 'grade-4' },
-            { name: 'Dostateczny', number: 3, minPercent: 51, maxPercent: 74, class: 'grade-3' },
-            { name: 'Dopuszczający', number: 2, minPercent: 34, maxPercent: 50, class: 'grade-2' },
-            { name: 'Niedostateczny', number: 1, minPercent: 0, maxPercent: 33, class: 'grade-1' }
+            { name: 'Celujący', number: 6, minPercent: 100, class: 'grade-6' },
+            { name: 'Bardzo dobry', number: 5, minPercent: 91, class: 'grade-5' },
+            { name: 'Dobry', number: 4, minPercent: 75, class: 'grade-4' },
+            { name: 'Dostateczny', number: 3, minPercent: 51, class: 'grade-3' },
+            { name: 'Dopuszczający', number: 2, minPercent: 34, class: 'grade-2' },
+            { name: 'Niedostateczny', number: 1, minPercent: 0, class: 'grade-1' }
         ];
 
-        // Formatuj liczbę - max 2 miejsca po przecinku, usuń zbędne zera
+        // Zaokrąglij W GÓRĘ do najbliższego 0.5
+        function ceilToHalf(num) {
+            return Math.ceil(num * 2) / 2;
+        }
+
+        // Formatuj liczbę - usuń zbędne .0
         function formatPoints(num) {
-            // Jeśli liczba jest całkowita, pokaż bez przecinka
             if (Number.isInteger(num)) return num.toString();
-            // W przeciwnym razie max 2 miejsca po przecinku
-            return num.toFixed(2).replace(/\.?0+$/, '');
+            return num.toFixed(1).replace(/\.0$/, '');
         }
 
         function calculateRanges() {
@@ -331,22 +336,34 @@
 
             let html = '';
 
-            GRADES.forEach((grade, index) => {
+            // Najpierw oblicz rzeczywiste progi (zaokrąglone do 0.5)
+            const thresholds = GRADES.map((grade, index) => {
+                const exactMin = (grade.minPercent / 100) * maxPoints;
+                const actualMin = grade.minPercent === 0 ? 0 : ceilToHalf(exactMin);
+                return { ...grade, exactMin, actualMin };
+            });
+
+            thresholds.forEach((grade, index) => {
                 let rangeText = '';
-                let percentText = '';
+                let percentText = `od ${grade.minPercent}%`;
 
-                const minPoints = formatPoints((grade.minPercent / 100) * maxPoints);
-                const maxPointsForGrade = formatPoints((grade.maxPercent / 100) * maxPoints);
-
-                if (grade.minPercent === 100) {
-                    rangeText = `${maxPoints} pkt`;
+                // Oblicz max dla tej oceny (= próg następnej oceny - 0.5)
+                let actualMax;
+                if (index === 0) {
+                    // Celujący = dokładnie max punktów
+                    actualMax = maxPoints;
+                    rangeText = `${formatPoints(maxPoints)} pkt`;
                     percentText = '100%';
-                } else if (grade.minPercent === 0) {
-                    rangeText = `0 - ${maxPointsForGrade} pkt`;
-                    percentText = `0% - ${grade.maxPercent}%`;
                 } else {
-                    rangeText = `${minPoints} - ${maxPointsForGrade} pkt`;
-                    percentText = `${grade.minPercent}% - ${grade.maxPercent}%`;
+                    // Max = próg wyższej oceny - 0.5
+                    actualMax = thresholds[index - 1].actualMin - 0.5;
+
+                    if (grade.minPercent === 0) {
+                        rangeText = `0 - ${formatPoints(actualMax)} pkt`;
+                        percentText = `poniżej ${thresholds[index - 1].minPercent}%`;
+                    } else {
+                        rangeText = `${formatPoints(grade.actualMin)} - ${formatPoints(actualMax)} pkt`;
+                    }
                 }
 
                 html += `
