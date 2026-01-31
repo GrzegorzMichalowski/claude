@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klasowy Stworek</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #e8f5e9 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .home-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.1);
+            color: #333;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .home-btn:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #2e7d32;
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+        }
+
+        .status-text {
+            color: #558b2f;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            min-height: 30px;
+            font-weight: 500;
+        }
+
+        /* Main creature container */
+        .creature-stage {
+            position: relative;
+            width: 300px;
+            height: 340px;
+            margin: 0 auto 20px;
+        }
+
+        .creature {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .creature svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
+        }
+
+        /* Ear animations */
+        .ear-left, .ear-right {
+            transform-origin: center bottom;
+            transition: transform 0.3s ease;
+        }
+
+        .creature.reading .ear-left {
+            animation: earWiggleLeft 4s ease-in-out infinite;
+        }
+
+        .creature.reading .ear-right {
+            animation: earWiggleRight 4s ease-in-out infinite;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes earWiggleLeft {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(5deg); }
+        }
+
+        @keyframes earWiggleRight {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            75% { transform: rotate(-5deg); }
+        }
+
+        /* Blinking animation */
+        .eyelid {
+            transform-origin: center top;
+            animation: blink 4s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 90%, 100% { transform: scaleY(0); }
+            95% { transform: scaleY(1); }
+        }
+
+        /* Body breathing animation */
+        .body-group {
+            transform-origin: center center;
+        }
+
+        .creature.reading .body-group {
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.02) translateY(-3px); }
+        }
+
+        /* Reading eyes - looking at book */
+        .pupil-left, .pupil-right {
+            transition: all 0.3s ease;
+        }
+
+        .creature.reading .pupil-left,
+        .creature.reading .pupil-right {
+            animation: readingEyes 3s ease-in-out infinite;
+        }
+
+        @keyframes readingEyes {
+            0%, 100% { transform: translate(-3px, 8px); }
+            50% { transform: translate(3px, 8px); }
+        }
+
+        /* Looking around when noisy */
+        .creature.annoyed .pupil-left,
+        .creature.annoyed .pupil-right {
+            animation: lookAround 2s ease-in-out infinite;
+        }
+
+        .creature.frustrated .pupil-left,
+        .creature.frustrated .pupil-right {
+            animation: lookAroundFast 1s ease-in-out infinite;
+        }
+
+        .creature.angry .pupil-left,
+        .creature.angry .pupil-right {
+            animation: lookAroundPanic 0.5s ease-in-out infinite;
+        }
+
+        @keyframes lookAround {
+            0%, 100% { transform: translate(-5px, 0); }
+            25% { transform: translate(5px, -3px); }
+            50% { transform: translate(5px, 0); }
+            75% { transform: translate(-5px, -3px); }
+        }
+
+        @keyframes lookAroundFast {
+            0%, 100% { transform: translate(-7px, -2px); }
+            25% { transform: translate(7px, 2px); }
+            50% { transform: translate(7px, -2px); }
+            75% { transform: translate(-7px, 2px); }
+        }
+
+        @keyframes lookAroundPanic {
+            0%, 100% { transform: translate(-8px, -3px) scale(0.8); }
+            25% { transform: translate(8px, 3px) scale(0.8); }
+            50% { transform: translate(8px, -3px) scale(0.8); }
+            75% { transform: translate(-8px, 3px) scale(0.8); }
+        }
+
+        /* Eyebrow animations */
+        .eyebrow-left, .eyebrow-right {
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+
+        .creature.annoyed .eyebrow-left {
+            transform: rotate(10deg) translateY(3px);
+        }
+        .creature.annoyed .eyebrow-right {
+            transform: rotate(-10deg) translateY(3px);
+        }
+
+        .creature.frustrated .eyebrow-left {
+            transform: rotate(20deg) translateY(6px);
+        }
+        .creature.frustrated .eyebrow-right {
+            transform: rotate(-20deg) translateY(6px);
+        }
+
+        .creature.angry .eyebrow-left {
+            transform: rotate(30deg) translateY(10px);
+        }
+        .creature.angry .eyebrow-right {
+            transform: rotate(-30deg) translateY(10px);
+        }
+
+        /* Annoyed state */
+        .creature.annoyed .body-group {
+            animation: slightShake 0.8s ease-in-out infinite;
+        }
+
+        .creature.annoyed .ear-left,
+        .creature.annoyed .ear-right {
+            animation: earAlert 0.5s ease-in-out infinite;
+        }
+
+        @keyframes slightShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+
+        @keyframes earAlert {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        /* Frustrated state */
+        .creature.frustrated .body-group {
+            animation: frustratedShake 0.4s ease-in-out infinite;
+        }
+
+        .creature.frustrated .ear-left {
+            animation: earFrustrated 0.3s ease-in-out infinite;
+        }
+
+        .creature.frustrated .ear-right {
+            animation: earFrustrated 0.3s ease-in-out infinite reverse;
+        }
+
+        @keyframes frustratedShake {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-3px) rotate(-1deg); }
+            75% { transform: translateX(3px) rotate(1deg); }
+        }
+
+        @keyframes earFrustrated {
+            0%, 100% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg); }
+        }
+
+        /* Angry/Panic state */
+        .creature.angry .body-group {
+            animation: panicShake 0.15s ease-in-out infinite;
+        }
+
+        .creature.angry .ear-left,
+        .creature.angry .ear-right {
+            animation: earPanic 0.2s ease-in-out infinite;
+        }
+
+        @keyframes panicShake {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-5px) rotate(-3deg); }
+            75% { transform: translateX(5px) rotate(3deg); }
+        }
+
+        @keyframes earPanic {
+            0%, 100% { transform: rotate(-25deg) scale(0.9); }
+            50% { transform: rotate(25deg) scale(0.9); }
+        }
+
+        /* Sweat drops */
+        .sweat {
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .creature.angry .sweat {
+            opacity: 1;
+            animation: sweatDrop 0.8s ease-in infinite;
+        }
+
+        @keyframes sweatDrop {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(20px); opacity: 0; }
+        }
+
+        /* Mouth transitions */
+        .mouth-happy, .mouth-annoyed, .mouth-sad {
+            transition: opacity 0.3s ease;
+        }
+
+        /* Speech bubble */
+        .speech-bubble {
+            position: absolute;
+            top: 10px;
+            right: -20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+            font-size: 1.5rem;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 25px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid white;
+        }
+
+        .creature.annoyed .speech-bubble,
+        .creature.frustrated .speech-bubble,
+        .creature.angry .speech-bubble {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Stars system */
+        .stars-container {
+            background: white;
+            border-radius: 15px;
+            padding: 12px 25px;
+            margin-bottom: 15px;
+            display: inline-block;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .stars-label {
+            color: #78909c;
+            font-size: 0.85rem;
+            margin-bottom: 3px;
+        }
+
+        .stars-count {
+            color: #ffa000;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .star-icon {
+            display: inline-block;
+            animation: starPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes starPulse {
+            0%, 100% { transform: scale(1) rotate(0); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        /* Noise meter */
+        .noise-meter {
+            background: #e0e0e0;
+            border-radius: 25px;
+            height: 25px;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 20px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .noise-level {
+            height: 100%;
+            background: linear-gradient(90deg, #66bb6a, #ffee58, #ffa726, #ef5350);
+            width: 0%;
+            transition: width 0.1s ease;
+            border-radius: 25px;
+        }
+
+        .noise-labels {
+            display: flex;
+            justify-content: space-between;
+            max-width: 300px;
+            margin: -10px auto 15px;
+            font-size: 0.7rem;
+            color: #90a4ae;
+        }
+
+        /* Start button */
+        .start-btn {
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(102, 187, 106, 0.4);
+            transition: all 0.3s;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 187, 106, 0.5);
+        }
+
+        .start-btn.active {
+            background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+            box-shadow: 0 5px 20px rgba(239, 83, 80, 0.4);
+        }
+
+        /* Settings */
+        .settings {
+            margin-top: 20px;
+            color: #78909c;
+            font-size: 0.85rem;
+        }
+
+        .sensitivity-slider {
+            width: 200px;
+            margin-top: 8px;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            outline: none;
+        }
+
+        .sensitivity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #66bb6a;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* Star popup */
+        .star-popup {
+            position: fixed;
+            font-size: 2.5rem;
+            pointer-events: none;
+            animation: starFloat 1.5s ease-out forwards;
+            z-index: 100;
+            text-shadow: 0 0 10px rgba(255,193,7,0.5);
+        }
+
+        @keyframes starFloat {
+            0% { transform: translateY(0) scale(0.5) rotate(0); opacity: 1; }
+            100% { transform: translateY(-150px) scale(1.2) rotate(20deg); opacity: 0; }
+        }
+
+        .info-box {
+            margin-top: 20px;
+            padding: 12px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #78909c;
+        }
+
+        .info-box a {
+            color: #66bb6a;
+        }
+
+        @media (max-width: 400px) {
+            .creature-stage {
+                width: 240px;
+                height: 280px;
+            }
+            h1 { font-size: 1.5rem; }
+            .status-text { font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+
+    <div class="container">
+        <h1>Klasowy Stworek</h1>
+        <p class="status-text" id="statusText">Kliknij Start, aby stworek zaczął czytać!</p>
+
+        <div class="creature-stage">
+            <div class="creature reading" id="creature">
+                <svg viewBox="0 0 220 250" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#8bc34a"/>
+                            <stop offset="100%" style="stop-color:#689f38"/>
+                        </linearGradient>
+                        <linearGradient id="earGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#9ccc65"/>
+                            <stop offset="100%" style="stop-color:#7cb342"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Left Ear -->
+                    <g class="ear-left">
+                        <ellipse cx="55" cy="45" rx="18" ry="28" fill="url(#earGradient)"/>
+                        <ellipse cx="55" cy="40" rx="10" ry="15" fill="#aed581" opacity="0.6"/>
+                    </g>
+
+                    <!-- Right Ear -->
+                    <g class="ear-right">
+                        <ellipse cx="165" cy="45" rx="18" ry="28" fill="url(#earGradient)"/>
+                        <ellipse cx="165" cy="40" rx="10" ry="15" fill="#aed581" opacity="0.6"/>
+                    </g>
+
+                    <!-- Body Group (for animations) -->
+                    <g class="body-group">
+                        <!-- Main Body -->
+                        <ellipse cx="110" cy="120" rx="75" ry="85" fill="url(#bodyGradient)"/>
+                        <ellipse cx="110" cy="115" rx="65" ry="73" fill="#8bc34a"/>
+                        <ellipse cx="90" cy="95" rx="25" ry="30" fill="#9ccc65" opacity="0.4"/>
+
+                        <!-- Sweat drops -->
+                        <ellipse class="sweat" cx="175" cy="70" rx="6" ry="9" fill="#4fc3f7"/>
+                        <ellipse class="sweat" cx="45" cy="75" rx="5" ry="7" fill="#4fc3f7" style="animation-delay: 0.4s"/>
+
+                        <!-- Eyebrows -->
+                        <rect class="eyebrow-left" x="58" y="70" width="30" height="6" rx="3" fill="#5d4037"/>
+                        <rect class="eyebrow-right" x="132" y="70" width="30" height="6" rx="3" fill="#5d4037"/>
+
+                        <!-- Eyes -->
+                        <ellipse cx="75" cy="100" rx="24" ry="28" fill="white"/>
+                        <ellipse cx="145" cy="100" rx="24" ry="28" fill="white"/>
+
+                        <!-- Eyelids (for blinking) -->
+                        <ellipse class="eyelid" cx="75" cy="85" rx="26" ry="15" fill="#8bc34a"/>
+                        <ellipse class="eyelid" cx="145" cy="85" rx="26" ry="15" fill="#8bc34a"/>
+
+                        <!-- Pupils -->
+                        <g class="pupil-left">
+                            <circle cx="75" cy="105" r="12" fill="#4e342e"/>
+                            <circle cx="79" cy="100" r="4" fill="white"/>
+                        </g>
+                        <g class="pupil-right">
+                            <circle cx="145" cy="105" r="12" fill="#4e342e"/>
+                            <circle cx="149" cy="100" r="4" fill="white"/>
+                        </g>
+
+                        <!-- Mouth - Happy -->
+                        <path class="mouth-happy" d="M 90 145 Q 110 165, 130 145" stroke="#5d4037" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+                        <!-- Mouth - Annoyed (straight line) -->
+                        <line class="mouth-annoyed" x1="90" y1="150" x2="130" y2="150" stroke="#5d4037" stroke-width="5" stroke-linecap="round" opacity="0"/>
+
+                        <!-- Mouth - Sad -->
+                        <path class="mouth-sad" d="M 90 155 Q 110 140, 130 155" stroke="#5d4037" stroke-width="5" fill="none" stroke-linecap="round" opacity="0"/>
+
+                        <!-- Cheeks (blush) -->
+                        <ellipse cx="50" cy="125" rx="12" ry="8" fill="#ff8a80" opacity="0.4"/>
+                        <ellipse cx="170" cy="125" rx="12" ry="8" fill="#ff8a80" opacity="0.4"/>
+                    </g>
+
+                    <!-- Hands -->
+                    <ellipse cx="45" cy="195" rx="18" ry="14" fill="#7cb342"/>
+                    <ellipse cx="175" cy="195" rx="18" ry="14" fill="#7cb342"/>
+
+                    <!-- Book (cover facing us) -->
+                    <g class="book" transform="translate(55, 175)">
+                        <!-- Book back -->
+                        <rect x="0" y="0" width="110" height="70" rx="3" fill="#5d4037"/>
+                        <!-- Book cover -->
+                        <rect x="3" y="3" width="104" height="64" rx="2" fill="#c62828"/>
+                        <!-- Book spine decoration -->
+                        <rect x="3" y="3" width="8" height="64" fill="#b71c1c"/>
+                        <!-- Title area -->
+                        <rect x="15" y="10" width="85" height="35" rx="2" fill="#ffecb3"/>
+                        <!-- Title text -->
+                        <text x="57" y="24" font-family="Georgia, serif" font-size="7" fill="#5d4037" text-anchor="middle" font-weight="bold">PAN TADEUSZ</text>
+                        <text x="57" y="34" font-family="Georgia, serif" font-size="5" fill="#795548" text-anchor="middle">Adam Mickiewicz</text>
+                        <!-- Decorative element -->
+                        <rect x="35" y="50" width="40" height="3" fill="#ffd54f"/>
+                        <circle cx="55" cy="56" r="4" fill="#ffd54f"/>
+                    </g>
+                </svg>
+
+                <div class="speech-bubble" id="speechBubble">🤫</div>
+            </div>
+        </div>
+
+        <div class="stars-container">
+            <div class="stars-label">Gwiazdki za ciszę:</div>
+            <div class="stars-count"><span class="star-icon">⭐</span> <span id="starsCount">0</span></div>
+        </div>
+
+        <div class="noise-meter">
+            <div class="noise-level" id="noiseLevel"></div>
+        </div>
+        <div class="noise-labels">
+            <span>Cisza</span>
+            <span>Hałas</span>
+        </div>
+
+        <button class="start-btn" id="startBtn" onclick="toggleListening()">▶ Start</button>
+
+        <div class="settings">
+            <label>Czułość mikrofonu:</label><br>
+            <input type="range" class="sensitivity-slider" id="sensitivity" min="1" max="10" value="5">
+        </div>
+
+        <div class="info-box">
+            Stworek czyta "Pana Tadeusza" gdy jest cicho i zbiera gwiazdki!<br>
+            Hałas mu przeszkadza - pomóż mu się skupić! 📚
+            <br><br>
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
+        </div>
+    </div>
+
+    <script>
+        let audioContext;
+        let analyser;
+        let microphone;
+        let isListening = false;
+        let stars = 0;
+        let quietStreak = 0;
+        let lastStarTime = 0;
+
+        const creature = document.getElementById('creature');
+        const statusText = document.getElementById('statusText');
+        const startBtn = document.getElementById('startBtn');
+        const noiseLevelBar = document.getElementById('noiseLevel');
+        const starsCountEl = document.getElementById('starsCount');
+        const speechBubble = document.getElementById('speechBubble');
+        const sensitivitySlider = document.getElementById('sensitivity');
+
+        // Mouth elements
+        const mouthHappy = document.querySelector('.mouth-happy');
+        const mouthAnnoyed = document.querySelector('.mouth-annoyed');
+        const mouthSad = document.querySelector('.mouth-sad');
+
+        const states = {
+            reading: {
+                min: 0, max: 25,
+                text: 'Stworek czyta "Pana Tadeusza"... 📖',
+                emoji: '😊',
+                mouth: 'happy'
+            },
+            annoyed: {
+                min: 25, max: 45,
+                text: 'Ktoś mi przeszkadza w czytaniu... 🤨',
+                emoji: '🤫',
+                mouth: 'annoyed'
+            },
+            frustrated: {
+                min: 45, max: 65,
+                text: 'Nie mogę się skupić na lekturze! 😤',
+                emoji: '😤',
+                mouth: 'sad'
+            },
+            angry: {
+                min: 65, max: 100,
+                text: 'ZA GŁOŚNO!!! Nie słyszę własnych myśli! 😫',
+                emoji: '🆘',
+                mouth: 'sad'
+            }
+        };
+
+        function setMouth(type) {
+            mouthHappy.style.opacity = type === 'happy' ? '1' : '0';
+            mouthAnnoyed.style.opacity = type === 'annoyed' ? '1' : '0';
+            mouthSad.style.opacity = type === 'sad' ? '1' : '0';
+        }
+
+        async function toggleListening() {
+            if (isListening) {
+                stopListening();
+            } else {
+                await startListening();
+            }
+        }
+
+        async function startListening() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    }
+                });
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.8;
+                microphone.connect(analyser);
+
+                isListening = true;
+                startBtn.textContent = '⏹ Stop';
+                startBtn.classList.add('active');
+
+                updateNoiseLevel();
+            } catch (err) {
+                console.error('Microphone error:', err);
+                statusText.textContent = '❌ Brak dostępu do mikrofonu';
+                alert('Nie udało się uzyskać dostępu do mikrofonu.\n\nSprawdź:\n1. Czy przeglądarka ma uprawnienia do mikrofonu\n2. Mac: Preferencje systemowe → Prywatność → Mikrofon\n3. Czy używasz HTTPS lub localhost');
+            }
+        }
+
+        function stopListening() {
+            if (microphone) microphone.disconnect();
+            if (audioContext) audioContext.close();
+            isListening = false;
+            startBtn.textContent = '▶ Start';
+            startBtn.classList.remove('active');
+            statusText.textContent = 'Kliknij Start, aby stworek zaczął czytać!';
+            creature.className = 'creature reading';
+            noiseLevelBar.style.width = '0%';
+            setMouth('happy');
+        }
+
+        function updateNoiseLevel() {
+            if (!isListening) return;
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            let average = sum / dataArray.length;
+
+            const sensitivity = sensitivitySlider.value;
+            let noisePercent = Math.min(100, (average / 128) * 100 * (sensitivity / 5));
+
+            noiseLevelBar.style.width = noisePercent + '%';
+
+            let currentState = 'reading';
+            for (const [state, config] of Object.entries(states)) {
+                if (noisePercent >= config.min && noisePercent < config.max) {
+                    currentState = state;
+                    break;
+                }
+            }
+            if (noisePercent >= 65) currentState = 'angry';
+
+            creature.className = 'creature ' + currentState;
+            statusText.textContent = states[currentState].text;
+            speechBubble.textContent = states[currentState].emoji;
+            setMouth(states[currentState].mouth);
+
+            // Award stars for quiet reading
+            const now = Date.now();
+            if (noisePercent < 25) {
+                quietStreak++;
+                if (quietStreak > 50 && now - lastStarTime > 5000) {
+                    addStar();
+                    lastStarTime = now;
+                }
+            } else {
+                quietStreak = Math.max(0, quietStreak - 5);
+            }
+
+            requestAnimationFrame(updateNoiseLevel);
+        }
+
+        function addStar() {
+            stars++;
+            starsCountEl.textContent = stars;
+            localStorage.setItem('creatureStars', stars);
+
+            const starPopup = document.createElement('div');
+            starPopup.className = 'star-popup';
+            starPopup.textContent = '⭐';
+            starPopup.style.left = (Math.random() * 60 + 20) + '%';
+            starPopup.style.top = '40%';
+            document.body.appendChild(starPopup);
+            setTimeout(() => starPopup.remove(), 1500);
+        }
+
+        // Load saved stars
+        const savedStars = localStorage.getItem('creatureStars');
+        if (savedStars) {
+            stars = parseInt(savedStars);
+            starsCountEl.textContent = stars;
+        }
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
