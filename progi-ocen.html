@@ -158,6 +158,117 @@
             font-size: 1rem;
         }
 
+        /* Sekcja obliczeń */
+        .calculations-section {
+            margin-top: 25px;
+            border-top: 2px solid #eee;
+            padding-top: 15px;
+        }
+
+        .calculations-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #555;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .calculations-toggle:hover {
+            background: #e9ecef;
+        }
+
+        .calculations-toggle .arrow {
+            transition: transform 0.3s;
+        }
+
+        .calculations-toggle.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .calculations-content {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .calculations-content.visible {
+            display: block;
+        }
+
+        .calc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .calc-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .calc-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .calc-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .calc-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .calc-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .calc-table .grade-num {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .calc-table .exact {
+            font-family: 'Courier New', monospace;
+            color: #666;
+        }
+
+        .calc-table .rounded {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .calc-table .arrow-cell {
+            color: #999;
+            text-align: center;
+        }
+
+        .calc-formula {
+            margin-top: 15px;
+            padding: 12px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #0056b3;
+        }
+
+        .calc-formula code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
         .test-title {
             text-align: center;
             font-size: 1.3rem;
@@ -284,6 +395,35 @@
 
         <button class="print-btn" onclick="window.print()">Drukuj / Zapisz PDF</button>
 
+        <!-- Sekcja obliczeń dla dociekliwych -->
+        <div class="calculations-section" id="calculationsSection" style="display: none;">
+            <button class="calculations-toggle" onclick="toggleCalculations()">
+                <span class="arrow">▼</span>
+                <span>Pokaż obliczenia (dla dociekliwych)</span>
+            </button>
+            <div class="calculations-content" id="calculationsContent">
+                <table class="calc-table">
+                    <thead>
+                        <tr>
+                            <th>Ocena</th>
+                            <th>Próg %</th>
+                            <th>Obliczenie</th>
+                            <th></th>
+                            <th>Zaokr. do 0,5</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calcTableBody">
+                    </tbody>
+                </table>
+                <div class="calc-formula">
+                    <strong>Wzór:</strong> <code>próg % × max pkt = dokładna wartość</code> → zaokrąglenie W GÓRĘ do najbliższego 0,5
+                    <br><br>
+                    <strong>Dlaczego zaokrąglamy w górę?</strong> Bo nauczyciele oceniają z dokładnością do 0,5 punkta.
+                    Jeśli próg na "5" to 16,38 pkt, to pierwszy osiągalny wynik ≥ 16,38 to 16,5 pkt.
+                </div>
+            </div>
+        </div>
+
         <div class="info-box">
             <strong>Progi zaokrąglone do 0,5 punkta</strong> (standardowa dokładność oceniania)
             <br><br>
@@ -379,6 +519,40 @@
             });
 
             container.innerHTML = html;
+
+            // Pokaż sekcję obliczeń i wypełnij tabelę
+            document.getElementById('calculationsSection').style.display = 'block';
+
+            let calcHtml = '';
+            thresholds.forEach((grade, index) => {
+                const exactValue = (grade.minPercent / 100) * maxPoints;
+                const roundedValue = grade.actualMin;
+
+                calcHtml += `
+                    <tr>
+                        <td class="grade-num">${grade.number} ${grade.name}</td>
+                        <td>${grade.minPercent}%</td>
+                        <td class="exact">${grade.minPercent}% × ${maxPoints} = ${exactValue.toFixed(2)}</td>
+                        <td class="arrow-cell">→</td>
+                        <td class="rounded">${formatPoints(roundedValue)} pkt</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('calcTableBody').innerHTML = calcHtml;
+        }
+
+        function toggleCalculations() {
+            const btn = document.querySelector('.calculations-toggle');
+            const content = document.getElementById('calculationsContent');
+            btn.classList.toggle('open');
+            content.classList.toggle('visible');
+
+            const text = btn.querySelector('span:last-child');
+            if (content.classList.contains('visible')) {
+                text.textContent = 'Ukryj obliczenia';
+            } else {
+                text.textContent = 'Pokaż obliczenia (dla dociekliwych)';
+            }
         }
     </script>
 
