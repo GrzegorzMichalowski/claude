@@ -96,25 +96,28 @@
 
         @keyframes earWiggleLeft {
             0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-10deg); }
-            75% { transform: rotate(5deg); }
+            25% { transform: rotate(-4deg); }
+            75% { transform: rotate(2deg); }
         }
 
         @keyframes earWiggleRight {
             0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(10deg); }
-            75% { transform: rotate(-5deg); }
+            25% { transform: rotate(4deg); }
+            75% { transform: rotate(-2deg); }
         }
 
-        /* Blinking animation */
+        /* Blinking animation - eyelids slide down from above */
         .eyelid {
-            transform-origin: center top;
             animation: blink 4s ease-in-out infinite;
         }
 
+        .eyelid-right {
+            animation-delay: 0.1s;
+        }
+
         @keyframes blink {
-            0%, 90%, 100% { transform: scaleY(0); }
-            95% { transform: scaleY(1); }
+            0%, 85%, 100% { transform: translateY(-35px); }
+            92%, 96% { transform: translateY(0); }
         }
 
         /* Body breathing animation */
@@ -227,8 +230,8 @@
         }
 
         @keyframes earAlert {
-            0%, 100% { transform: rotate(-5deg); }
-            50% { transform: rotate(5deg); }
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
         }
 
         /* Frustrated state */
@@ -251,8 +254,8 @@
         }
 
         @keyframes earFrustrated {
-            0%, 100% { transform: rotate(-15deg); }
-            50% { transform: rotate(15deg); }
+            0%, 100% { transform: rotate(-6deg); }
+            50% { transform: rotate(6deg); }
         }
 
         /* Angry/Panic state */
@@ -272,8 +275,8 @@
         }
 
         @keyframes earPanic {
-            0%, 100% { transform: rotate(-25deg) scale(0.9); }
-            50% { transform: rotate(25deg) scale(0.9); }
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
         }
 
         /* Sweat drops */
@@ -508,6 +511,13 @@
                             <stop offset="0%" style="stop-color:#9ccc65"/>
                             <stop offset="100%" style="stop-color:#7cb342"/>
                         </linearGradient>
+                        <!-- Clip paths for eyelids - only show within eye area -->
+                        <clipPath id="leftEyeClip">
+                            <ellipse cx="75" cy="100" rx="24" ry="28"/>
+                        </clipPath>
+                        <clipPath id="rightEyeClip">
+                            <ellipse cx="145" cy="100" rx="24" ry="28"/>
+                        </clipPath>
                     </defs>
 
                     <!-- Left Ear -->
@@ -541,9 +551,13 @@
                         <ellipse cx="75" cy="100" rx="24" ry="28" fill="white"/>
                         <ellipse cx="145" cy="100" rx="24" ry="28" fill="white"/>
 
-                        <!-- Eyelids (for blinking) -->
-                        <ellipse class="eyelid" cx="75" cy="85" rx="26" ry="15" fill="#8bc34a"/>
-                        <ellipse class="eyelid" cx="145" cy="85" rx="26" ry="15" fill="#8bc34a"/>
+                        <!-- Eyelids (for blinking) - clipped to eye area -->
+                        <g clip-path="url(#leftEyeClip)">
+                            <ellipse class="eyelid eyelid-left" cx="75" cy="72" rx="28" ry="25" fill="#8bc34a"/>
+                        </g>
+                        <g clip-path="url(#rightEyeClip)">
+                            <ellipse class="eyelid eyelid-right" cx="145" cy="72" rx="28" ry="25" fill="#8bc34a"/>
+                        </g>
 
                         <!-- Pupils -->
                         <g class="pupil-left">
@@ -657,10 +671,21 @@
 
         let currentEmojiIndex = 0;
         let lastEmojiChange = 0;
+        let lastTextChange = 0;          // Osobny timer dla tekstu
+        let currentTextIndex = 0;
         let displayedState = 'reading';  // Stan wyświetlany (z bezwładnością)
         let actualState = 'reading';     // Faktyczny stan z mikrofonu
         let lastHighNoiseTime = 0;       // Czas ostatniego wysokiego hałasu
         let calmDownDelay = 2500;        // 2.5 sekundy na uspokojenie
+
+        // Interwały zmiany tekstu dla różnych stanów (w ms)
+        const textChangeIntervals = {
+            reading: 5000,      // 5 sekund - dużo czasu na przeczytanie
+            calmingDown: 3000,  // 3 sekundy
+            annoyed: 2000,      // 2 sekundy
+            frustrated: 1500,   // 1.5 sekundy
+            angry: 1000         // 1 sekunda - szybka zmiana przy panice
+        };
 
         const states = {
             reading: {
@@ -756,6 +781,10 @@
                 startBtn.textContent = '⏹ Stop';
                 startBtn.classList.add('active');
 
+                // Ustaw początkowy tekst
+                statusText.textContent = states.reading.texts[0];
+                lastTextChange = Date.now();
+
                 updateNoiseLevel();
             } catch (err) {
                 console.error('Microphone error:', err);
@@ -777,6 +806,8 @@
             displayedState = 'reading';
             actualState = 'reading';
             lastHighNoiseTime = 0;
+            lastTextChange = 0;
+            currentTextIndex = 0;
             speechBubble.textContent = '📖';
         }
 
@@ -842,8 +873,8 @@
             // Losowy tekst dla stanu
             const stateConfig = states[displayedState];
 
-            // Zmień emotkę co 800ms
-            if (now - lastEmojiChange > 800) {
+            // Zmień emotkę co 1.5s (wolniej niż wcześniej)
+            if (now - lastEmojiChange > 1500) {
                 currentEmojiIndex++;
                 lastEmojiChange = now;
             }
@@ -851,10 +882,13 @@
             const emojiSet = emojis[displayedState] || emojis.reading;
             const currentEmoji = emojiSet[currentEmojiIndex % emojiSet.length];
 
-            // Losowy tekst (zmienia się rzadziej)
-            if (now - lastEmojiChange < 100) {
+            // Zmień tekst zgodnie z interwałem dla danego stanu
+            const textInterval = textChangeIntervals[displayedState] || 3000;
+            if (now - lastTextChange > textInterval) {
+                currentTextIndex++;
                 const texts = stateConfig.texts;
-                statusText.textContent = getRandomItem(texts);
+                statusText.textContent = texts[currentTextIndex % texts.length];
+                lastTextChange = now;
             }
 
             speechBubble.textContent = currentEmoji;
