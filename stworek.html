@@ -327,9 +327,16 @@
 
         .creature.annoyed .speech-bubble,
         .creature.frustrated .speech-bubble,
-        .creature.angry .speech-bubble {
+        .creature.angry .speech-bubble,
+        .speech-bubble.visible {
             opacity: 1;
             transform: scale(1);
+        }
+
+        /* Pokazuj dymek podczas czytania z inną emotką */
+        .creature.reading .speech-bubble {
+            opacity: 0.9;
+            transform: scale(0.9);
         }
 
         /* Stars system */
@@ -639,30 +646,77 @@
         const mouthAnnoyed = document.querySelector('.mouth-annoyed');
         const mouthSad = document.querySelector('.mouth-sad');
 
+        // Emotikony dla różnych stanów
+        const emojis = {
+            reading: ['📖', '📚', '🤓', '😊', '😌', '🧐', '📕', '✨'],
+            annoyed: ['🤨', '😐', '🙄', '😑', '👀', '❓', '🤫', '😶'],
+            frustrated: ['😤', '😠', '🙁', '😣', '😖', '💢', '😒', '🤯'],
+            angry: ['😫', '🆘', '😱', '🤬', '💥', '🔊', '❌', '😵'],
+            calmingDown: ['😮‍💨', '😌', '🙂', '😤➡️😊', '💆', '🧘', '😅', '🫣']
+        };
+
+        let currentEmojiIndex = 0;
+        let lastEmojiChange = 0;
+        let displayedState = 'reading';  // Stan wyświetlany (z bezwładnością)
+        let actualState = 'reading';     // Faktyczny stan z mikrofonu
+        let lastHighNoiseTime = 0;       // Czas ostatniego wysokiego hałasu
+        let calmDownDelay = 2500;        // 2.5 sekundy na uspokojenie
+
         const states = {
             reading: {
                 min: 0, max: 25,
-                text: 'Stworek czyta "Pana Tadeusza"... 📖',
-                emoji: '😊',
+                texts: [
+                    'Stworek czyta "Pana Tadeusza"... 📖',
+                    'Jaka piękna lektura! 📚',
+                    'Litwo, Ojczyzno moja... 🇵🇱',
+                    'Cicho sza, czytam! 🤫',
+                    'Cudownie się skupiam! ✨'
+                ],
                 mouth: 'happy'
             },
             annoyed: {
                 min: 25, max: 45,
-                text: 'Ktoś mi przeszkadza w czytaniu... 🤨',
-                emoji: '🤫',
+                texts: [
+                    'Ktoś mi przeszkadza w czytaniu... 🤨',
+                    'Halo? Próbuję czytać! 😐',
+                    'Co to za hałas? 👀',
+                    'Ciii... jeszcze chwilka ciszy! 🤫',
+                    'Słyszę was... 🙄'
+                ],
                 mouth: 'annoyed'
             },
             frustrated: {
                 min: 45, max: 65,
-                text: 'Nie mogę się skupić na lekturze! 😤',
-                emoji: '😤',
+                texts: [
+                    'Nie mogę się skupić na lekturze! 😤',
+                    'No już, ciszej proszę! 😠',
+                    'Zgubiłem wątek przez was! 😣',
+                    'Moja głowa zaraz eksploduje! 🤯',
+                    'Mickiewicz płacze w grobie! 😖'
+                ],
                 mouth: 'sad'
             },
             angry: {
                 min: 65, max: 100,
-                text: 'ZA GŁOŚNO!!! Nie słyszę własnych myśli! 😫',
-                emoji: '🆘',
+                texts: [
+                    'ZA GŁOŚNO!!! Nie słyszę własnych myśli! 😫',
+                    'RATUNKU! Uszy mi pękają! 🆘',
+                    'TO JEST KOSZMAR!!! 😱',
+                    'CISZA!!! BŁAGAM!!! 🤬',
+                    'Nie wytrzymuję tego hałasu! 💥'
+                ],
                 mouth: 'sad'
+            },
+            calmingDown: {
+                min: 0, max: 25,
+                texts: [
+                    'Uff... już lepiej... 😮‍💨',
+                    'Zaraz wrócę do czytania... 😌',
+                    'Spokojnie... oddycham... 💆',
+                    'Dobrze, że się uspokoiliście... 🙂',
+                    'Muszę ochłonąć po tym hałasie... 😅'
+                ],
+                mouth: 'annoyed'
             }
         };
 
@@ -720,6 +774,14 @@
             creature.className = 'creature reading';
             noiseLevelBar.style.width = '0%';
             setMouth('happy');
+            displayedState = 'reading';
+            actualState = 'reading';
+            lastHighNoiseTime = 0;
+            speechBubble.textContent = '📖';
+        }
+
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
         }
 
         function updateNoiseLevel() {
@@ -739,23 +801,73 @@
 
             noiseLevelBar.style.width = noisePercent + '%';
 
-            let currentState = 'reading';
-            for (const [state, config] of Object.entries(states)) {
-                if (noisePercent >= config.min && noisePercent < config.max) {
-                    currentState = state;
-                    break;
+            const now = Date.now();
+
+            // Określ aktualny stan na podstawie hałasu
+            let newActualState = 'reading';
+            if (noisePercent >= 65) {
+                newActualState = 'angry';
+            } else if (noisePercent >= 45) {
+                newActualState = 'frustrated';
+            } else if (noisePercent >= 25) {
+                newActualState = 'annoyed';
+            }
+
+            // Jeśli jest hałas, natychmiast reaguj
+            if (newActualState !== 'reading') {
+                lastHighNoiseTime = now;
+                actualState = newActualState;
+                displayedState = newActualState;
+            } else {
+                // Jest cicho - sprawdź bezwładność
+                actualState = 'reading';
+
+                if (displayedState !== 'reading') {
+                    const timeSinceNoise = now - lastHighNoiseTime;
+
+                    if (timeSinceNoise < calmDownDelay) {
+                        // Jeszcze się uspokaja
+                        displayedState = 'calmingDown';
+                    } else {
+                        // Już spokojny
+                        displayedState = 'reading';
+                    }
                 }
             }
-            if (noisePercent >= 65) currentState = 'angry';
 
-            creature.className = 'creature ' + currentState;
-            statusText.textContent = states[currentState].text;
-            speechBubble.textContent = states[currentState].emoji;
-            setMouth(states[currentState].mouth);
+            // Aktualizuj wygląd stworka
+            const stateForAnimation = displayedState === 'calmingDown' ? 'annoyed' : displayedState;
+            creature.className = 'creature ' + stateForAnimation;
+
+            // Losowy tekst dla stanu
+            const stateConfig = states[displayedState];
+
+            // Zmień emotkę co 800ms
+            if (now - lastEmojiChange > 800) {
+                currentEmojiIndex++;
+                lastEmojiChange = now;
+            }
+
+            const emojiSet = emojis[displayedState] || emojis.reading;
+            const currentEmoji = emojiSet[currentEmojiIndex % emojiSet.length];
+
+            // Losowy tekst (zmienia się rzadziej)
+            if (now - lastEmojiChange < 100) {
+                const texts = stateConfig.texts;
+                statusText.textContent = getRandomItem(texts);
+            }
+
+            speechBubble.textContent = currentEmoji;
+            setMouth(stateConfig.mouth);
+
+            // Pokaż dymek także podczas uspokajania
+            if (displayedState === 'calmingDown') {
+                speechBubble.style.opacity = '1';
+                speechBubble.style.transform = 'scale(1)';
+            }
 
             // Award stars for quiet reading
-            const now = Date.now();
-            if (noisePercent < 25) {
+            if (displayedState === 'reading') {
                 quietStreak++;
                 if (quietStreak > 50 && now - lastStarTime > 5000) {
                     addStar();
