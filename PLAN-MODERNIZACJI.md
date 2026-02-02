@@ -243,12 +243,18 @@
   - Best Practices
   - SEO
 
-### Zadanie 3.3: PWA support (opcjonalnie)
-- [ ] **Status:** Do zrobienia
+### Zadanie 3.3: PWA support
+- [x] **Status:** Zakończone (2026-02-02)
 - **Opis:** Service Worker dla offline access
-- **Pliki:**
-  - manifest.json
-  - service-worker.js
+- **Pliki utworzone:**
+  - manifest.json - metadane aplikacji, ikony
+  - service-worker.js - cache'owanie dla trybu offline
+  - icons/ - ikony PNG w różnych rozmiarach (72-512px)
+- **Zmiany w HTML:**
+  - Dodano meta theme-color do wszystkich stron
+  - Dodano link do manifest.json
+  - Dodano ikony apple-touch-icon
+  - Rejestracja Service Worker w index.html
 
 ---
 
