@@ -981,17 +981,33 @@
         let addedPlayersFromDevice = [];
         let timerInterval = null;
         let askedQuestions = [];
+        let isProcessing = false; // Blokada podczas przetwarzania odpowiedzi
+        let isModalOpen = false; // Czy modal gry jest otwarty
 
-        // Cleanup function
-        function cleanup() {
+        // Bezpieczne czyszczenie timera
+        function clearTimer() {
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (timerDisplay) {
+                timerDisplay.style.display = 'none';
+                timerDisplay.classList.remove('warning');
+            }
+        }
+
+        // Cleanup function
+        function cleanup() {
+            clearTimer();
+            isProcessing = false;
+            isModalOpen = false;
             if (tournamentRef) {
                 tournamentRef.off();
                 tournamentRef = null;
             }
+            // Usuń wszystkie ogłoszenia
+            document.querySelectorAll('.round-announcement').forEach(el => el.remove());
         }
 
         // Connection status
@@ -1550,8 +1566,12 @@
 
         // Start group match
         function startGroupMatch(matchId) {
+            // Zabezpieczenie przed wielokrotnym uruchomieniem
+            if (isModalOpen || isProcessing) return;
+            if (!currentTournament?.groupMatches) return;
+
             const match = currentTournament.groupMatches.find(m => m.id === matchId);
-            if (!match) return;
+            if (!match || !match.player1 || !match.player2) return;
 
             currentMatch = { ...match, isGroupMatch: true };
             initializeGame();
@@ -1624,9 +1644,13 @@
 
         // Start bracket match
         function startBracketMatch(matchId, roundIndex) {
+            // Zabezpieczenie przed wielokrotnym uruchomieniem
+            if (isModalOpen || isProcessing) return;
+            if (!currentTournament?.bracket?.[roundIndex]) return;
+
             const round = currentTournament.bracket[roundIndex];
             const match = round.find(m => m.id === matchId);
-            if (!match) return;
+            if (!match || !match.player1 || !match.player2) return;
 
             currentMatch = { ...match, roundIndex, isGroupMatch: false };
             initializeGame();
@@ -1634,6 +1658,13 @@
 
         // Initialize Game
         function initializeGame() {
+            // Zabezpieczenie przed podwójnym otwarciem
+            if (isModalOpen) return;
+
+            clearTimer();
+            isProcessing = false;
+            isModalOpen = true;
+
             gameState = {
                 board: ['', '', '', '', '', '', '', '', ''],
                 currentPlayer: 'X',
@@ -1642,23 +1673,36 @@
                 selectedCell: null,
                 correctAnswer: null,
                 isSelectingCell: false,
-                clickedCells: []
+                clickedCells: [],
+                boardActive: false
             };
 
             askedQuestions = [];
 
-            document.getElementById('gamePlayerX').textContent = currentMatch.player1.name;
-            document.getElementById('gamePlayerO').textContent = currentMatch.player2.name;
-            document.getElementById('gameScoreX').textContent = '0';
-            document.getElementById('gameScoreO').textContent = '0';
-            document.getElementById('pointsToWinDisplay').textContent = currentTournament.pointsToWin;
+            const gamePlayerX = document.getElementById('gamePlayerX');
+            const gamePlayerO = document.getElementById('gamePlayerO');
+            const gameScoreX = document.getElementById('gameScoreX');
+            const gameScoreO = document.getElementById('gameScoreO');
+            const pointsToWinDisplay = document.getElementById('pointsToWinDisplay');
+            const gameModal = document.getElementById('gameModal');
 
-            document.getElementById('gameModal').classList.add('active');
+            if (gamePlayerX) gamePlayerX.textContent = currentMatch.player1.name;
+            if (gamePlayerO) gamePlayerO.textContent = currentMatch.player2.name;
+            if (gameScoreX) gameScoreX.textContent = '0';
+            if (gameScoreO) gameScoreO.textContent = '0';
+            if (pointsToWinDisplay) pointsToWinDisplay.textContent = currentTournament.pointsToWin;
+
+            if (gameModal) gameModal.classList.add('active');
             resetBoard(true); // Show announcement
             updateGamePlayerHighlight();
         }
 
         function resetBoard(showAnnouncement = true) {
+            if (!gameState) return;
+
+            clearTimer();
+            isProcessing = false;
+
             gameState.board = ['', '', '', '', '', '', '', '', ''];
             gameState.currentPlayer = 'X';
             gameState.isSelectingCell = false;
@@ -1669,18 +1713,25 @@
                 cell.textContent = '';
                 cell.className = 'game-cell';
                 cell.onclick = () => {
-                    if (gameState.boardActive) handleGameCellClick(parseInt(cell.dataset.index));
+                    if (gameState && gameState.boardActive) {
+                        handleGameCellClick(parseInt(cell.dataset.index));
+                    }
                 };
             });
 
-            document.getElementById('questionPanel').classList.add('hidden');
-            document.getElementById('roundResult').classList.add('hidden');
-            document.getElementById('matchResult').classList.add('hidden');
-            document.getElementById('gameBoard').style.display = 'grid';
+            const questionPanel = document.getElementById('questionPanel');
+            const roundResult = document.getElementById('roundResult');
+            const matchResult = document.getElementById('matchResult');
+            const gameBoard = document.getElementById('gameBoard');
 
-            if (showAnnouncement) {
+            if (questionPanel) questionPanel.classList.add('hidden');
+            if (roundResult) roundResult.classList.add('hidden');
+            if (matchResult) matchResult.classList.add('hidden');
+            if (gameBoard) gameBoard.style.display = 'grid';
+
+            if (showAnnouncement && currentMatch?.player1?.name) {
                 showTournamentAnnouncement('X', currentMatch.player1.name, () => {
-                    gameState.boardActive = true;
+                    if (gameState) gameState.boardActive = true;
                 });
             } else {
                 gameState.boardActive = true;
@@ -1688,14 +1739,25 @@
         }
 
         function updateGamePlayerHighlight() {
-            document.getElementById('gamePlayerX').classList.toggle('active', gameState.currentPlayer === 'X');
-            document.getElementById('gamePlayerO').classList.toggle('active', gameState.currentPlayer === 'O');
+            if (!gameState || !currentMatch) return;
 
-            const currentName = gameState.currentPlayer === 'X' ? currentMatch.player1.name : currentMatch.player2.name;
-            document.getElementById('questionPlayerTurn').textContent = `Odpowiada: ${currentName}`;
+            const gamePlayerX = document.getElementById('gamePlayerX');
+            const gamePlayerO = document.getElementById('gamePlayerO');
+            const questionPlayerTurn = document.getElementById('questionPlayerTurn');
+
+            if (gamePlayerX) gamePlayerX.classList.toggle('active', gameState.currentPlayer === 'X');
+            if (gamePlayerO) gamePlayerO.classList.toggle('active', gameState.currentPlayer === 'O');
+
+            const currentName = gameState.currentPlayer === 'X' ? currentMatch.player1?.name : currentMatch.player2?.name;
+            if (questionPlayerTurn && currentName) {
+                questionPlayerTurn.textContent = `Odpowiada: ${currentName}`;
+            }
         }
 
         function showTournamentAnnouncement(playerSymbol, playerName, callback) {
+            // Usuń poprzednie ogłoszenia przed utworzeniem nowego
+            document.querySelectorAll('.round-announcement').forEach(el => el.remove());
+
             const announcement = document.createElement('div');
             announcement.className = 'round-announcement';
             announcement.innerHTML = `
@@ -1708,16 +1770,24 @@
             document.body.appendChild(announcement);
 
             setTimeout(() => {
-                announcement.style.opacity = '0';
-                announcement.style.transition = 'opacity 0.3s';
-                setTimeout(() => {
-                    announcement.remove();
-                    if (callback) callback();
-                }, 300);
+                if (announcement.parentNode) {
+                    announcement.style.opacity = '0';
+                    announcement.style.transition = 'opacity 0.3s';
+                    setTimeout(() => {
+                        if (announcement.parentNode) {
+                            announcement.remove();
+                        }
+                        if (callback) callback();
+                    }, 300);
+                } else if (callback) {
+                    callback();
+                }
             }, 1500);
         }
 
         function handleGameCellClick(index) {
+            // Zabezpieczenia przed błędami
+            if (!gameState || !gameState.boardActive || isProcessing) return;
             if (gameState.board[index] !== '') return;
 
             // Check for cheating - clicking multiple cells
@@ -1728,6 +1798,7 @@
                     penalizeGamePlayer();
                     return;
                 }
+                return; // Ignore additional clicks
             }
 
             gameState.isSelectingCell = true;
@@ -1737,22 +1808,32 @@
         }
 
         function penalizeGamePlayer() {
-            // Clear any timer
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            document.getElementById('timerDisplay').style.display = 'none';
-            document.getElementById('questionPanel').classList.add('hidden');
+            if (isProcessing) return;
+            isProcessing = true;
+
+            clearTimer();
+
+            const questionPanel = document.getElementById('questionPanel');
+            if (questionPanel) questionPanel.classList.add('hidden');
 
             // Reset selection state
-            gameState.isSelectingCell = false;
-            gameState.clickedCells = [];
+            if (gameState) {
+                gameState.isSelectingCell = false;
+                gameState.clickedCells = [];
+            }
 
             // Show penalty message
-            const currentName = gameState.currentPlayer === 'X' ? currentMatch.player1.name : currentMatch.player2.name;
+            const currentName = gameState?.currentPlayer === 'X' ? currentMatch?.player1?.name : currentMatch?.player2?.name;
+            if (!currentName) {
+                isProcessing = false;
+                return;
+            }
+
+            // Usuń poprzednie kary
+            document.querySelectorAll('.penalty-message').forEach(el => el.remove());
 
             const penaltyDiv = document.createElement('div');
+            penaltyDiv.className = 'penalty-message';
             penaltyDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #e74c3c; color: white; padding: 20px 40px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; z-index: 2000; text-align: center;';
             penaltyDiv.innerHTML = `${currentName} kliknął wiele pól!<br><span style="font-size: 0.9rem;">Traci turę ❌</span>`;
             document.body.appendChild(penaltyDiv);
@@ -1760,8 +1841,11 @@
             // Switch player after delay
             setTimeout(() => {
                 penaltyDiv.remove();
-                gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
-                updateGamePlayerHighlight();
+                if (gameState) {
+                    gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
+                    updateGamePlayerHighlight();
+                }
+                isProcessing = false;
             }, 1500);
         }
 
@@ -1781,29 +1865,52 @@
 
         // Generate unique question
         function generateUniqueQuestion(level) {
-            let a, b, questionKey;
-            let attempts = 0;
+            try {
+                let a, b, questionKey;
+                let attempts = 0;
 
-            // Clear if too many asked
-            if (askedQuestions.length > 30) {
-                askedQuestions = [];
+                // Clear if too many asked
+                if (askedQuestions.length > 30) {
+                    askedQuestions = [];
+                }
+
+                const min = level.min || 1;
+                const max = level.max || 10;
+                const range = max - min + 1;
+
+                do {
+                    a = Math.floor(Math.random() * range) + min;
+                    b = Math.floor(Math.random() * range) + min;
+                    questionKey = a <= b ? `${a}x${b}` : `${b}x${a}`;
+                    attempts++;
+                    if (attempts > 50) break; // Prevent infinite loop
+                } while (askedQuestions.includes(questionKey));
+
+                askedQuestions.push(questionKey);
+                return { a, b };
+            } catch (e) {
+                console.error('Błąd generowania pytania:', e);
+                return { a: 2, b: 3 }; // Fallback
             }
-
-            do {
-                a = Math.floor(Math.random() * level.max) + level.min;
-                b = Math.floor(Math.random() * level.max) + level.min;
-                questionKey = a <= b ? `${a}x${b}` : `${b}x${a}`;
-                attempts++;
-                if (attempts > 50) break; // Prevent infinite loop
-            } while (askedQuestions.includes(questionKey));
-
-            askedQuestions.push(questionKey);
-            return { a, b };
         }
 
         function showGameQuestion() {
+            if (!gameState || !currentTournament) return;
+
+            clearTimer();
+
             const level = LEVELS[currentTournament.level];
-            const { a, b } = generateUniqueQuestion(level);
+            if (!level) return;
+
+            let questionData;
+            try {
+                questionData = generateUniqueQuestion(level);
+            } catch (e) {
+                console.error('Błąd generowania pytania:', e);
+                return;
+            }
+
+            const { a, b } = questionData;
             gameState.correctAnswer = a * b;
 
             const answers = [gameState.correctAnswer];
@@ -1830,24 +1937,33 @@
 
             answers.sort(() => Math.random() - 0.5);
 
-            document.getElementById('questionText').textContent = `${a} × ${b} = ?`;
-            document.getElementById('answersContainer').innerHTML = answers.map(ans =>
-                `<button class="answer-btn" onclick="checkGameAnswer(${ans})">${ans}</button>`
-            ).join('');
+            const questionText = document.getElementById('questionText');
+            const answersContainer = document.getElementById('answersContainer');
+            const questionPanel = document.getElementById('questionPanel');
+            const timerDisplay = document.getElementById('timerDisplay');
 
-            document.getElementById('questionPanel').classList.remove('hidden');
+            if (questionText) questionText.textContent = `${a} × ${b} = ?`;
+
+            if (answersContainer) {
+                answersContainer.innerHTML = answers.map(ans =>
+                    `<button class="answer-btn" data-answer="${ans}">${ans}</button>`
+                ).join('');
+
+                // Użyj { once: true } aby zapobiec wielokrotnemu kliknięciu
+                answersContainer.querySelectorAll('.answer-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        checkGameAnswer(parseInt(this.dataset.answer));
+                    }, { once: true });
+                });
+            }
+
+            if (questionPanel) questionPanel.classList.remove('hidden');
             updateGamePlayerHighlight();
 
             // Timer
             const timeLimit = getTimeLimit();
-            const timerDisplay = document.getElementById('timerDisplay');
 
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-
-            if (timeLimit > 0) {
+            if (timeLimit > 0 && timerDisplay) {
                 let timeLeft = timeLimit;
                 timerDisplay.textContent = timeLeft;
                 timerDisplay.style.display = 'block';
@@ -1855,29 +1971,28 @@
 
                 timerInterval = setInterval(() => {
                     timeLeft--;
-                    timerDisplay.textContent = timeLeft;
+                    if (timerDisplay) timerDisplay.textContent = timeLeft;
 
-                    if (timeLeft <= 2) {
+                    if (timeLeft <= 2 && timerDisplay) {
                         timerDisplay.classList.add('warning');
                     }
 
                     if (timeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
+                        clearTimer();
                         checkGameAnswer(-1);
                     }
                 }, 1000);
-            } else {
+            } else if (timerDisplay) {
                 timerDisplay.style.display = 'none';
             }
         }
 
         function checkGameAnswer(answer) {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            document.getElementById('timerDisplay').style.display = 'none';
+            // Zabezpieczenie przed wielokrotnym wywołaniem
+            if (isProcessing || !gameState) return;
+            isProcessing = true;
+
+            clearTimer();
 
             // Reset selection tracking
             gameState.isSelectingCell = false;
@@ -1888,32 +2003,47 @@
 
             buttons.forEach(btn => {
                 btn.disabled = true;
-                if (parseInt(btn.textContent) === gameState.correctAnswer) {
+                const btnAnswer = parseInt(btn.dataset.answer || btn.textContent);
+                if (btnAnswer === gameState.correctAnswer) {
                     btn.classList.add('correct');
-                } else if (parseInt(btn.textContent) === answer && answer !== gameState.correctAnswer) {
+                } else if (btnAnswer === answer && answer !== gameState.correctAnswer) {
                     btn.classList.add('wrong');
                 }
             });
 
             setTimeout(() => {
-                document.getElementById('questionPanel').classList.add('hidden');
+                const questionPanel = document.getElementById('questionPanel');
+                if (questionPanel) questionPanel.classList.add('hidden');
+
+                if (!gameState) {
+                    isProcessing = false;
+                    return;
+                }
 
                 if (answer === gameState.correctAnswer) {
                     placeGameMarker();
                 } else {
                     gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
                     updateGamePlayerHighlight();
+                    isProcessing = false;
                 }
             }, isTimeout ? 300 : 700);
         }
 
         function placeGameMarker() {
+            if (!gameState) {
+                isProcessing = false;
+                return;
+            }
+
             const index = gameState.selectedCell;
             gameState.board[index] = gameState.currentPlayer;
 
             const cell = document.querySelector(`.game-cell[data-index="${index}"]`);
-            cell.textContent = gameState.currentPlayer;
-            cell.classList.add('taken', gameState.currentPlayer.toLowerCase());
+            if (cell) {
+                cell.textContent = gameState.currentPlayer;
+                cell.classList.add('taken', gameState.currentPlayer.toLowerCase());
+            }
 
             if (checkGameWin()) {
                 highlightGameWinningCells();
@@ -1924,19 +2054,22 @@
                     gameState.score2++;
                 }
 
-                document.getElementById('gameScoreX').textContent = gameState.score1;
-                document.getElementById('gameScoreO').textContent = gameState.score2;
+                const gameScoreX = document.getElementById('gameScoreX');
+                const gameScoreO = document.getElementById('gameScoreO');
+                if (gameScoreX) gameScoreX.textContent = gameState.score1;
+                if (gameScoreO) gameScoreO.textContent = gameState.score2;
 
                 if (gameState.score1 >= currentTournament.pointsToWin || gameState.score2 >= currentTournament.pointsToWin) {
                     showMatchResult();
                 } else {
                     showRoundResult();
                 }
-            } else if (gameState.board.every(cell => cell !== '')) {
+            } else if (gameState.board.every(c => c !== '')) {
                 showRoundResult(true);
             } else {
                 gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
                 updateGamePlayerHighlight();
+                isProcessing = false;
             }
         }
 
@@ -1957,113 +2090,151 @@
         }
 
         function showRoundResult(isDraw = false) {
-            const textEl = document.getElementById('roundResultText');
+            isProcessing = false; // Odblokuj po zakończeniu rundy
 
-            if (isDraw) {
-                textEl.textContent = 'Remis! Gramy dalej.';
-            } else {
-                const winner = gameState.currentPlayer === 'X' ? currentMatch.player1.name : currentMatch.player2.name;
-                textEl.textContent = `${winner} wygrywa rundę!`;
+            const textEl = document.getElementById('roundResultText');
+            const roundResult = document.getElementById('roundResult');
+
+            if (textEl) {
+                if (isDraw) {
+                    textEl.textContent = 'Remis! Gramy dalej.';
+                } else {
+                    const winner = gameState?.currentPlayer === 'X' ? currentMatch?.player1?.name : currentMatch?.player2?.name;
+                    textEl.textContent = winner ? `${winner} wygrywa rundę!` : 'Wygrana!';
+                }
             }
 
-            document.getElementById('roundResult').classList.remove('hidden');
+            if (roundResult) roundResult.classList.remove('hidden');
         }
 
         function nextRound() {
+            isProcessing = false;
             resetBoard();
         }
 
         function showMatchResult() {
+            isProcessing = false; // Odblokuj po zakończeniu meczu
+
+            if (!gameState || !currentTournament || !currentMatch) return;
+
             const winner = gameState.score1 >= currentTournament.pointsToWin ? currentMatch.player1 : currentMatch.player2;
 
-            document.getElementById('matchResultText').textContent = `${winner.name} wygrywa mecz!`;
+            const matchResultText = document.getElementById('matchResultText');
+            const finalBoardDisplay = document.getElementById('finalBoardDisplay');
+            const gameBoard = document.getElementById('gameBoard');
+            const matchResult = document.getElementById('matchResult');
+
+            if (matchResultText) matchResultText.textContent = `${winner.name} wygrywa mecz!`;
 
             // Show final board
-            document.getElementById('finalBoardDisplay').innerHTML = `
-                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">Plansza (weryfikacja):</div>
-                <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; justify-content: center;">
-                    ${gameState.board.map(cell => `
-                        <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: ${cell === 'X' ? '#e74c3c' : cell === 'O' ? '#3498db' : 'rgba(255,255,255,0.2)'};">
-                            ${cell || '·'}
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+            if (finalBoardDisplay) {
+                finalBoardDisplay.innerHTML = `
+                    <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">Plansza (weryfikacja):</div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; justify-content: center;">
+                        ${gameState.board.map(cell => `
+                            <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: ${cell === 'X' ? '#e74c3c' : cell === 'O' ? '#3498db' : 'rgba(255,255,255,0.2)'};">
+                                ${cell || '·'}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
 
-            document.getElementById('gameBoard').style.display = 'none';
-            document.getElementById('matchResult').classList.remove('hidden');
+            if (gameBoard) gameBoard.style.display = 'none';
+            if (matchResult) matchResult.classList.remove('hidden');
 
             updateMatchResult(winner);
         }
 
         async function updateMatchResult(winner) {
-            if (currentMatch.isGroupMatch) {
-                // Update group match
-                const matches = [...currentTournament.groupMatches];
-                const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
+            if (!currentMatch || !currentTournament || !gameState || !winner) return;
 
-                matches[matchIndex] = {
-                    ...matches[matchIndex],
-                    score1: gameState.score1,
-                    score2: gameState.score2,
-                    winner: winner.id,
-                    status: 'completed'
-                };
+            try {
+                if (currentMatch.isGroupMatch) {
+                    // Update group match
+                    if (!currentTournament.groupMatches) return;
 
-                await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
-            } else {
-                // Update bracket match
-                const bracket = JSON.parse(JSON.stringify(currentTournament.bracket));
-                const match = bracket[currentMatch.roundIndex].find(m => m.id === currentMatch.id);
+                    const matches = [...currentTournament.groupMatches];
+                    const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
+                    if (matchIndex === -1) return;
 
-                match.score1 = gameState.score1;
-                match.score2 = gameState.score2;
-                match.winner = winner.id;
-                match.status = 'completed';
+                    matches[matchIndex] = {
+                        ...matches[matchIndex],
+                        score1: gameState.score1,
+                        score2: gameState.score2,
+                        winner: winner.id,
+                        status: 'completed'
+                    };
 
-                // Advance winner
-                if (currentMatch.roundIndex < bracket.length - 1) {
-                    const matchIndex = bracket[currentMatch.roundIndex].indexOf(match);
-                    const nextMatchIndex = Math.floor(matchIndex / 2);
-                    const nextMatch = bracket[currentMatch.roundIndex + 1][nextMatchIndex];
-
-                    if (matchIndex % 2 === 0) {
-                        nextMatch.player1 = winner;
-                    } else {
-                        nextMatch.player2 = winner;
-                    }
-
-                    if (nextMatch.player1 && nextMatch.player2) {
-                        nextMatch.status = 'ready';
-                    }
+                    await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
                 } else {
-                    // Champion!
-                    await db.ref('tournaments/' + currentTournament.code).update({
-                        status: 'finished',
-                        champion: winner.name
-                    });
+                    // Update bracket match
+                    if (!currentTournament.bracket) return;
 
-                    // Save to history
-                    await db.ref('tournamentHistory').push({
-                        name: currentTournament.name,
-                        champion: winner.name,
-                        level: currentTournament.level,
-                        mode: currentTournament.mode,
-                        participantCount: Object.keys(currentTournament.participants || {}).length,
-                        finishedAt: firebase.database.ServerValue.TIMESTAMP
-                    });
+                    const bracket = JSON.parse(JSON.stringify(currentTournament.bracket));
+                    if (!bracket[currentMatch.roundIndex]) return;
+
+                    const match = bracket[currentMatch.roundIndex].find(m => m.id === currentMatch.id);
+                    if (!match) return;
+
+                    match.score1 = gameState.score1;
+                    match.score2 = gameState.score2;
+                    match.winner = winner.id;
+                    match.status = 'completed';
+
+                    // Advance winner
+                    if (currentMatch.roundIndex < bracket.length - 1) {
+                        const matchIndex = bracket[currentMatch.roundIndex].indexOf(match);
+                        const nextMatchIndex = Math.floor(matchIndex / 2);
+                        const nextMatch = bracket[currentMatch.roundIndex + 1]?.[nextMatchIndex];
+
+                        if (nextMatch) {
+                            if (matchIndex % 2 === 0) {
+                                nextMatch.player1 = winner;
+                            } else {
+                                nextMatch.player2 = winner;
+                            }
+
+                            if (nextMatch.player1 && nextMatch.player2) {
+                                nextMatch.status = 'ready';
+                            }
+                        }
+                    } else {
+                        // Champion!
+                        await db.ref('tournaments/' + currentTournament.code).update({
+                            status: 'finished',
+                            champion: winner.name
+                        });
+
+                        // Save to history
+                        await db.ref('tournamentHistory').push({
+                            name: currentTournament.name,
+                            champion: winner.name,
+                            level: currentTournament.level,
+                            mode: currentTournament.mode,
+                            participantCount: Object.keys(currentTournament.participants || {}).length,
+                            finishedAt: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    }
+
+                    await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
                 }
-
-                await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
+            } catch (error) {
+                console.error('Błąd aktualizacji wyniku meczu:', error);
             }
         }
 
         function closeGame() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            document.getElementById('gameModal').classList.remove('active');
+            clearTimer();
+            isProcessing = false;
+            isModalOpen = false;
+
+            // Usuń ogłoszenia i komunikaty kar
+            document.querySelectorAll('.round-announcement, .penalty-message').forEach(el => el.remove());
+
+            const gameModal = document.getElementById('gameModal');
+            if (gameModal) gameModal.classList.remove('active');
+
             currentMatch = null;
             gameState = null;
         }
