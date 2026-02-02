@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timer Egzaminu Ósmoklasisty</title>
+    <link rel="stylesheet" href="styles-common.css">
     <style>
         * {
             box-sizing: border-box;
@@ -107,14 +108,15 @@
             align-items: center;
             gap: 10px;
             padding: 12px 16px;
+            min-height: 44px;
             background: #2a2a3e;
             border-radius: 8px;
             cursor: pointer;
         }
 
         .checkbox-group input {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             cursor: pointer;
         }
 
@@ -209,7 +211,7 @@
         }
 
         .timer-main {
-            font-size: 10rem;
+            font-size: clamp(3.5rem, 12vw, 10rem);
             font-weight: 800;
             font-family: 'Courier New', monospace;
             line-height: 1;
@@ -231,7 +233,7 @@
         }
 
         .timer-seconds {
-            font-size: 4rem;
+            font-size: clamp(1.5rem, 5vw, 4rem);
             opacity: 0.7;
         }
 
@@ -378,14 +380,6 @@
         }
 
         @media (max-width: 768px) {
-            .timer-main {
-                font-size: 5rem;
-            }
-
-            .timer-seconds {
-                font-size: 2.5rem;
-            }
-
             .exam-name {
                 font-size: 1.5rem;
             }
@@ -393,11 +387,24 @@
             .setup-row {
                 flex-direction: column;
             }
+
+            .time-info {
+                gap: 20px;
+            }
         }
 
         @media (max-width: 480px) {
-            .timer-main {
-                font-size: 3.5rem;
+            .exam-name {
+                font-size: 1.2rem;
+            }
+
+            .time-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .btn-row {
+                flex-wrap: wrap;
             }
         }
 
@@ -432,7 +439,7 @@
             <div class="setup-row hide-when-running">
                 <div class="setup-group">
                     <label>Egzamin</label>
-                    <select id="examType" onchange="updateExamInfo()">
+                    <select id="examType">
                         <option value="polish">Język polski</option>
                         <option value="math">Matematyka</option>
                         <option value="english">Język angielski</option>
@@ -445,7 +452,7 @@
                 </div>
 
                 <label class="checkbox-group">
-                    <input type="checkbox" id="extendedTime" onchange="updateExamInfo()">
+                    <input type="checkbox" id="extendedTime">
                     <span>Wydłużony czas (SPE)</span>
                 </label>
             </div>
@@ -462,10 +469,10 @@
             </div>
 
             <div class="btn-row">
-                <button class="btn btn-start" id="btnStart" onclick="startTimer()">Start</button>
-                <button class="btn btn-pause" id="btnPause" onclick="pauseTimer()" disabled>Pauza</button>
-                <button class="btn btn-stop" id="btnStop" onclick="stopTimer()" disabled>Stop</button>
-                <button class="btn btn-fullscreen" onclick="toggleFullscreen()">Pełny ekran</button>
+                <button class="btn btn-start" id="btnStart">Start</button>
+                <button class="btn btn-pause" id="btnPause" disabled>Pauza</button>
+                <button class="btn btn-stop" id="btnStop" disabled>Stop</button>
+                <button class="btn btn-fullscreen" id="btnFullscreen">Pełny ekran</button>
             </div>
         </div>
 
@@ -709,6 +716,14 @@
 
         // Event listeners
         document.getElementById('startTime').addEventListener('change', updateEndTime);
+        document.getElementById('examType').addEventListener('change', updateExamInfo);
+        document.getElementById('extendedTime').addEventListener('change', updateExamInfo);
+
+        // Main control buttons
+        document.getElementById('btnStart').addEventListener('click', startTimer);
+        document.getElementById('btnPause').addEventListener('click', pauseTimer);
+        document.getElementById('btnStop').addEventListener('click', stopTimer);
+        document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
 
         // Initialize
         updateExamInfo();

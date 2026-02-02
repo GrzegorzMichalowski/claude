@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Klasowy Stworek</title>
+    <link rel="stylesheet" href="styles-common.css">
     <style>
         * {
             box-sizing: border-box;
@@ -406,6 +407,7 @@
         /* Start button */
         .start-btn {
             padding: 15px 50px;
+            min-height: 48px;
             font-size: 1.2rem;
             font-weight: 600;
             border: none;
@@ -446,11 +448,21 @@
 
         .sensitivity-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: #66bb6a;
             cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .sensitivity-slider::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #66bb6a;
+            cursor: pointer;
+            border: none;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
@@ -482,13 +494,44 @@
             color: #66bb6a;
         }
 
-        @media (max-width: 400px) {
+        @media (max-width: 480px) {
+            body {
+                padding-top: 60px;
+            }
+
+            .home-btn {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 100;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+
             .creature-stage {
                 width: 240px;
                 height: 280px;
             }
+
             h1 { font-size: 1.5rem; }
             .status-text { font-size: 0.95rem; }
+
+            .noise-meter {
+                max-width: 260px;
+            }
+
+            .noise-labels {
+                max-width: 260px;
+            }
+
+            .start-btn {
+                padding: 12px 40px;
+            }
+
+            .sensitivity-slider {
+                width: 180px;
+            }
         }
     </style>
 </head>
@@ -623,7 +666,7 @@
             <span>Hałas</span>
         </div>
 
-        <button class="start-btn" id="startBtn" onclick="toggleListening()">▶ Start</button>
+        <button class="start-btn" id="startBtn">▶ Start</button>
 
         <div class="settings">
             <label>Czułość mikrofonu:</label><br>
@@ -934,6 +977,9 @@
             stars = parseInt(savedStars);
             starsCountEl.textContent = stars;
         }
+
+        // Event listeners
+        startBtn.addEventListener('click', toggleListening);
     </script>
 
     <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>

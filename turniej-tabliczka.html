@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turniej Tabliczki Mnożenia</title>
+    <link rel="stylesheet" href="styles-common.css">
+    <script src="scripts-common.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -981,7 +983,42 @@
         let addedPlayersFromDevice = [];
         let timerInterval = null;
         let askedQuestions = [];
+        let tournamentQuestionsKey = null;
         let isProcessing = false; // Blokada podczas przetwarzania odpowiedzi
+
+        // Funkcje do zarządzania pytaniami na poziomie turnieju
+        function getAskedQuestionsKey(tournamentCode, level) {
+            return `turniej_pytania_${tournamentCode}_${level}`;
+        }
+
+        function loadAskedQuestions(tournamentCode, level) {
+            tournamentQuestionsKey = getAskedQuestionsKey(tournamentCode, level);
+            const saved = localStorage.getItem(tournamentQuestionsKey);
+            askedQuestions = saved ? JSON.parse(saved) : [];
+        }
+
+        function saveAskedQuestions() {
+            if (tournamentQuestionsKey) {
+                localStorage.setItem(tournamentQuestionsKey, JSON.stringify(askedQuestions));
+            }
+        }
+
+        function clearTournamentQuestions(tournamentCode) {
+            // Wyczyść pytania dla wszystkich poziomów tego turnieju
+            Object.keys(LEVELS).forEach(level => {
+                localStorage.removeItem(getAskedQuestionsKey(tournamentCode, level));
+            });
+            askedQuestions = [];
+            tournamentQuestionsKey = null;
+        }
+
+        function getMaxQuestionsForLevel(level) {
+            const levelConfig = LEVELS[level];
+            if (!levelConfig) return 30;
+            const range = levelConfig.max - levelConfig.min + 1;
+            // Liczba unikalnych kombinacji (a*b gdzie a <= b)
+            return (range * (range + 1)) / 2;
+        }
         let isModalOpen = false; // Czy modal gry jest otwarty
 
         // Bezpieczne czyszczenie timera
@@ -1247,6 +1284,9 @@
 
                 const tournament = snapshot.val();
                 currentTournament = { ...tournament, code };
+
+                // Załaduj pytania dla tego turnieju
+                loadAskedQuestions(code, tournament.level);
 
                 // Update participants list in lobby
                 if (tournament.status === 'lobby') {
@@ -1677,7 +1717,7 @@
                 boardActive: false
             };
 
-            askedQuestions = [];
+            // Pytania są ładowane per turniej, nie resetujemy ich per mecz
 
             const gamePlayerX = document.getElementById('gamePlayerX');
             const gamePlayerO = document.getElementById('gamePlayerO');
@@ -1869,24 +1909,29 @@
                 let a, b, questionKey;
                 let attempts = 0;
 
-                // Clear if too many asked
-                if (askedQuestions.length > 30) {
-                    askedQuestions = [];
-                }
-
                 const min = level.min || 1;
                 const max = level.max || 10;
                 const range = max - min + 1;
+
+                // Oblicz maksymalną liczbę unikalnych pytań dla tego poziomu
+                const maxQuestions = (range * (range + 1)) / 2;
+
+                // Wyczyść tylko gdy wykorzystano wszystkie kombinacje
+                if (askedQuestions.length >= maxQuestions) {
+                    askedQuestions = [];
+                    saveAskedQuestions();
+                }
 
                 do {
                     a = Math.floor(Math.random() * range) + min;
                     b = Math.floor(Math.random() * range) + min;
                     questionKey = a <= b ? `${a}x${b}` : `${b}x${a}`;
                     attempts++;
-                    if (attempts > 50) break; // Prevent infinite loop
+                    if (attempts > 100) break; // Prevent infinite loop
                 } while (askedQuestions.includes(questionKey));
 
                 askedQuestions.push(questionKey);
+                saveAskedQuestions(); // Zapisz do localStorage
                 return { a, b };
             } catch (e) {
                 console.error('Błąd generowania pytania:', e);
@@ -2243,10 +2288,19 @@
             hideAllPanels();
             document.getElementById('championPanel').classList.remove('hidden');
             document.getElementById('championName').textContent = championName;
+
+            // Wyczyść pytania turnieju - turniej zakończony
+            if (currentTournament && currentTournament.code) {
+                clearTournamentQuestions(currentTournament.code);
+            }
         }
 
         async function cancelTournament() {
             if (confirm('Czy na pewno chcesz anulować turniej?')) {
+                // Wyczyść pytania przed anulowaniem
+                if (currentTournament && currentTournament.code) {
+                    clearTournamentQuestions(currentTournament.code);
+                }
                 await db.ref('tournaments/' + currentTournament.code).remove();
                 showStartScreen();
             }

@@ -80,11 +80,12 @@
   - Opcja resetu w ustawieniach
 
 ### Zadanie 1.4: Integracja z turniej-tabliczka.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Opis:** Turniej już ma `askedQuestions` ale tylko per mecz
 - **Zmiany:**
-  - Rozszerzyć na cały turniej (nie per mecz)
-  - Persystencja w localStorage dla dłuższych turniejów
+  - Rozszerzone na cały turniej (nie per mecz)
+  - Persystencja w localStorage z kluczem per turniej i poziom
+  - Czyszczenie pytań po zakończeniu/anulowaniu turnieju
 
 ---
 
@@ -139,34 +140,41 @@
   - Touch targets dla checkboxów
 
 ### Zadanie 2.4: timer-kartkowka.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Problemy:**
   - Font-size timera stały (nie fluid)
   - Własne kolory
+  - Inline onclick handlers
 - **Zmiany:**
   - Import styles-common.css
-  - Fluid typography dla timera
-  - Ujednolicenie z timer-egzamin.html
+  - Fluid typography dla timera (clamp)
+  - Zamiana onclick na addEventListener
+  - Touch targets dla przycisków szybkiego czasu
 
 ### Zadanie 2.5: timer-egzamin.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Problemy:**
   - Font-size timera stały
   - Własne kolory
+  - Inline onclick handlers
 - **Zmiany:**
   - Import styles-common.css
-  - Fluid typography
-  - Lepsze fullscreen support
+  - Fluid typography (clamp)
+  - Zamiana onclick na addEventListener
+  - Touch targets dla checkbox
 
 ### Zadanie 2.6: stworek.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Problemy:**
   - Position: fixed może zakrywać na mobile
   - Breakpoint 400px (niestandardowy)
+  - Inline onclick handler
 - **Zmiany:**
   - Import styles-common.css
-  - Standardowe breakpointy
-  - Sprawdzenie fixed elements na mobile
+  - Breakpoint 480px zamiast 400px
+  - Padding-top na mobile dla fixed home-btn
+  - Touch targets dla slidera i przycisku
+  - Zamiana onclick na addEventListener
 
 ### Zadanie 2.7: mapa-polski.html
 - [x] **Status:** Zakończone (2026-02-02)
@@ -193,23 +201,26 @@
   - Pokazanie postępu pytań
 
 ### Zadanie 2.9: turniej-tabliczka.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Problemy:**
   - Największy plik (84KB)
   - Pytania śledzne tylko per mecz
 - **Zmiany:**
   - Import styles-common.css i scripts-common.js
-  - Rozszerzony QuestionTracker (per turniej)
-  - Ujednolicenie stylów
+  - Śledzenie pytań per turniej z persystencją w localStorage
+  - Obliczanie maksymalnej liczby pytań dla poziomu
+  - Czyszczenie pytań po zakończeniu/anulowaniu turnieju
 
 ### Zadanie 2.10: index.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Problemy:**
   - Własne style (duplikacja)
+  - Breakpoint 500px (niestandardowy)
 - **Zmiany:**
   - Import styles-common.css
-  - Usunięcie zduplikowanych stylów
-  - Ewentualne dodanie nowych narzędzi
+  - Użycie CSS variables zamiast hardcoded wartości
+  - Breakpoint 480px zamiast 500px
+  - Touch targets dla linków w stopce
 
 ---
 
@@ -350,6 +361,9 @@ class QuestionTracker {
 | Data | Zadanie | Status | Uwagi |
 |------|---------|--------|-------|
 | 2026-02-02 | Plan utworzony | Zakończone | - |
+| 2026-02-02 | Faza 0 (0.1, 0.2) | Zakończone | styles-common.css, scripts-common.js |
+| 2026-02-02 | Faza 1 (1.1-1.4) | Zakończone | QuestionTracker w mapa-polski, tabliczka, turniej |
+| 2026-02-02 | Faza 2 (2.1-2.10) | Zakończone | Wszystkie pliki zrefaktoryzowane |
 | | | | |
 
 ---
