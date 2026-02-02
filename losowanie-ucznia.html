@@ -4,18 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Losowanie Ucznia</title>
+    <link rel="stylesheet" href="styles-common.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        /* Nadpisanie dla tej strony */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            padding: 20px;
+            background: var(--gradient-dark);
+            padding: var(--spacing-lg);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -329,6 +323,118 @@
             border-color: #ffd700;
             color: #ffd700;
         }
+
+        /* ============================================
+           RESPONSIVE - KRYTYCZNE!
+           ============================================ */
+
+        /* Tablet: 768px i mniej */
+        @media (max-width: 768px) {
+            body {
+                padding: var(--spacing-md);
+            }
+
+            .machine {
+                padding: 20px;
+            }
+
+            .display-number {
+                font-size: 4rem;
+            }
+        }
+
+        /* Mobile: 480px i mniej */
+        @media (max-width: 480px) {
+            body {
+                padding: var(--spacing-sm);
+                align-items: flex-start;
+                padding-top: var(--spacing-md);
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            h1 {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+
+            .machine {
+                padding: 15px;
+                border-radius: 15px;
+            }
+
+            .settings {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .settings input[type="number"] {
+                width: 80px;
+                min-height: var(--touch-target-min);
+            }
+
+            .checkbox-wrapper {
+                min-height: var(--touch-target-min);
+            }
+
+            .checkbox-wrapper input[type="checkbox"] {
+                width: 24px;
+                height: 24px;
+            }
+
+            .display-container {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .display {
+                height: 80px;
+            }
+
+            .display-number {
+                font-size: clamp(2.5rem, 15vw, 4rem);
+            }
+
+            .spin-btn {
+                padding: 15px;
+                font-size: 1.2rem;
+                min-height: var(--touch-target-min);
+            }
+
+            .info-panel {
+                padding: 12px;
+            }
+
+            .info-row {
+                padding: 6px 0;
+            }
+
+            .absent-input {
+                min-height: var(--touch-target-min);
+            }
+
+            .reset-btn {
+                min-height: var(--touch-target-min);
+            }
+
+            .history-item {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Bardzo małe ekrany: 320px */
+        @media (max-width: 320px) {
+            .display-number {
+                font-size: 2rem;
+            }
+
+            h1 {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -339,10 +445,10 @@
         <div class="machine">
             <div class="settings">
                 <label for="studentCount">Uczniów:</label>
-                <input type="number" id="studentCount" min="2" max="40" value="25" onchange="updateSettings()">
+                <input type="number" id="studentCount" min="2" max="40" value="25">
 
                 <div class="checkbox-wrapper">
-                    <input type="checkbox" id="noRepeat" checked onchange="updateSettings()">
+                    <input type="checkbox" id="noRepeat" checked>
                     <label for="noRepeat">Bez powtórzeń</label>
                 </div>
             </div>
@@ -354,7 +460,7 @@
                 <div class="display-label">Numer z dziennika</div>
             </div>
 
-            <button class="spin-btn" id="spinBtn" onclick="spin()">🎰 Losuj!</button>
+            <button class="spin-btn" id="spinBtn">🎰 Losuj!</button>
 
             <div class="info-panel">
                 <div class="info-row">
@@ -368,21 +474,21 @@
 
                 <div class="absent-section">
                     <label class="absent-label">Nieobecni (wykluczeni):</label>
-                    <input type="text" class="absent-input" id="absentInput" placeholder="np. 3, 7, 15" onchange="updateSettings()">
+                    <input type="text" class="absent-input" id="absentInput" placeholder="np. 3, 7, 15">
                     <div class="absent-hint">Numery oddzielone przecinkami</div>
                 </div>
 
                 <div class="history-section">
                     <div class="history-header">
                         <span class="history-label">Historia losowań:</span>
-                        <button class="clear-btn" onclick="clearHistory()">Wyczyść</button>
+                        <button class="clear-btn" id="clearHistoryBtn">Wyczyść</button>
                     </div>
                     <div class="history-list" id="historyList">
                         <span class="history-empty">-</span>
                     </div>
                 </div>
 
-                <button class="reset-btn" onclick="resetDrawn()">🔄 Resetuj losowania (zacznij od nowa)</button>
+                <button class="reset-btn" id="resetBtn">🔄 Resetuj losowania (zacznij od nowa)</button>
             </div>
         </div>
 
@@ -392,14 +498,36 @@
     </div>
 
     <script>
+        // Stałe
+        const HISTORY_LIMIT = 100; // Limit historii dla zapobiegania memory leak
+
+        // Stan
         let totalStudents = 25;
         let drawnNumbers = [];
         let absentNumbers = [];
         let isSpinning = false;
 
+        // Elementy DOM (cache)
+        let elements = {};
+
+        function cacheElements() {
+            elements = {
+                studentCount: document.getElementById('studentCount'),
+                noRepeat: document.getElementById('noRepeat'),
+                absentInput: document.getElementById('absentInput'),
+                spinBtn: document.getElementById('spinBtn'),
+                displayNumber: document.getElementById('displayNumber'),
+                availableCount: document.getElementById('availableCount'),
+                drawnCount: document.getElementById('drawnCount'),
+                historyList: document.getElementById('historyList'),
+                clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+                resetBtn: document.getElementById('resetBtn')
+            };
+        }
+
         function getAvailableNumbers() {
             const all = Array.from({ length: totalStudents }, (_, i) => i + 1);
-            const noRepeat = document.getElementById('noRepeat').checked;
+            const noRepeat = elements.noRepeat?.checked ?? true;
 
             return all.filter(n => {
                 if (absentNumbers.includes(n)) return false;
@@ -409,9 +537,9 @@
         }
 
         function updateSettings() {
-            totalStudents = parseInt(document.getElementById('studentCount').value) || 25;
+            totalStudents = parseInt(elements.studentCount?.value) || 25;
 
-            const absentInput = document.getElementById('absentInput').value;
+            const absentInput = elements.absentInput?.value || '';
             absentNumbers = absentInput
                 .split(',')
                 .map(n => parseInt(n.trim()))
@@ -422,16 +550,22 @@
 
         function updateDisplay() {
             const available = getAvailableNumbers();
-            document.getElementById('availableCount').textContent = available.length;
-            document.getElementById('drawnCount').textContent = drawnNumbers.length;
 
-            const spinBtn = document.getElementById('spinBtn');
-            if (available.length === 0) {
-                spinBtn.disabled = true;
-                spinBtn.textContent = 'Brak dostępnych';
-            } else {
-                spinBtn.disabled = false;
-                spinBtn.textContent = '🎰 Losuj!';
+            if (elements.availableCount) {
+                elements.availableCount.textContent = available.length;
+            }
+            if (elements.drawnCount) {
+                elements.drawnCount.textContent = drawnNumbers.length;
+            }
+
+            if (elements.spinBtn) {
+                if (available.length === 0) {
+                    elements.spinBtn.disabled = true;
+                    elements.spinBtn.textContent = 'Brak dostępnych';
+                } else {
+                    elements.spinBtn.disabled = isSpinning;
+                    elements.spinBtn.textContent = '🎰 Losuj!';
+                }
             }
         }
 
@@ -440,9 +574,11 @@
             if (isSpinning || available.length === 0) return;
 
             isSpinning = true;
-            document.getElementById('spinBtn').disabled = true;
+            if (elements.spinBtn) elements.spinBtn.disabled = true;
 
-            const display = document.getElementById('displayNumber');
+            const display = elements.displayNumber;
+            if (!display) return;
+
             display.classList.remove('winner');
             display.classList.add('spinning');
 
@@ -471,7 +607,12 @@
                         display.classList.remove('spinning');
                         display.classList.add('winner');
 
+                        // Dodaj do historii z limitem
                         drawnNumbers.push(winner);
+                        if (drawnNumbers.length > HISTORY_LIMIT) {
+                            drawnNumbers = drawnNumbers.slice(-HISTORY_LIMIT);
+                        }
+
                         updateHistory();
                         updateDisplay();
 
@@ -482,32 +623,65 @@
         }
 
         function updateHistory() {
-            const list = document.getElementById('historyList');
+            if (!elements.historyList) return;
+
             if (drawnNumbers.length === 0) {
-                list.innerHTML = '<span class="history-empty">-</span>';
+                elements.historyList.innerHTML = '<span class="history-empty">-</span>';
                 return;
             }
-            list.innerHTML = drawnNumbers
+
+            elements.historyList.innerHTML = drawnNumbers
                 .slice()
                 .reverse()
+                .slice(0, 50) // Pokazuj max 50 ostatnich w UI
                 .map(n => `<span class="history-item">${n}</span>`)
                 .join('');
         }
 
         function clearHistory() {
             drawnNumbers = [];
-            document.getElementById('displayNumber').textContent = '?';
-            document.getElementById('displayNumber').classList.remove('winner');
+            if (elements.displayNumber) {
+                elements.displayNumber.textContent = '?';
+                elements.displayNumber.classList.remove('winner');
+            }
             updateHistory();
             updateDisplay();
         }
 
-        function resetDrawn() {
-            clearHistory();
-        }
+        // Inicjalizacja po załadowaniu DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            cacheElements();
 
-        // Initialize
-        updateSettings();
+            // Event listeners
+            if (elements.studentCount) {
+                elements.studentCount.addEventListener('change', updateSettings);
+                elements.studentCount.addEventListener('input', updateSettings);
+            }
+
+            if (elements.noRepeat) {
+                elements.noRepeat.addEventListener('change', updateSettings);
+            }
+
+            if (elements.absentInput) {
+                elements.absentInput.addEventListener('change', updateSettings);
+                elements.absentInput.addEventListener('input', updateSettings);
+            }
+
+            if (elements.spinBtn) {
+                elements.spinBtn.addEventListener('click', spin);
+            }
+
+            if (elements.clearHistoryBtn) {
+                elements.clearHistoryBtn.addEventListener('click', clearHistory);
+            }
+
+            if (elements.resetBtn) {
+                elements.resetBtn.addEventListener('click', clearHistory);
+            }
+
+            // Początkowa konfiguracja
+            updateSettings();
+        });
     </script>
 
     <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>

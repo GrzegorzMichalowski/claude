@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa Polski - Quiz Województw</title>
+    <link rel="stylesheet" href="styles-common.css">
+    <script src="scripts-common.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -283,17 +285,35 @@
             color: #ffd700;
         }
 
-        @media (max-width: 400px) {
+        /* Mobile: 480px i mniej */
+        @media (max-width: 480px) {
+            body {
+                padding: var(--spacing-sm, 10px);
+            }
+
             .answers {
                 grid-template-columns: 1fr;
             }
 
             .answer-btn {
                 padding: 12px;
+                min-height: var(--touch-target-min, 44px);
             }
 
             .question-text {
                 font-size: 1rem;
+            }
+
+            .mode-btn {
+                min-height: var(--touch-target-min, 44px);
+            }
+
+            h1 {
+                font-size: 1.2rem;
+            }
+
+            .game-container {
+                padding: 15px;
             }
         }
     </style>
@@ -306,8 +326,8 @@
 
         <div class="game-container">
             <div class="mode-selector">
-                <button class="mode-btn active" onclick="setMode('capitals')">Stolice</button>
-                <button class="mode-btn" onclick="setMode('names')">Nazwy</button>
+                <button class="mode-btn active" data-mode="capitals">Stolice</button>
+                <button class="mode-btn" data-mode="names">Nazwy</button>
             </div>
 
             <div class="score-bar">
@@ -341,10 +361,10 @@
             </div>
 
             <div class="answers" id="answersContainer">
-                <button class="answer-btn" onclick="checkAnswer(0)">-</button>
-                <button class="answer-btn" onclick="checkAnswer(1)">-</button>
-                <button class="answer-btn" onclick="checkAnswer(2)">-</button>
-                <button class="answer-btn" onclick="checkAnswer(3)">-</button>
+                <button class="answer-btn" data-index="0">-</button>
+                <button class="answer-btn" data-index="1">-</button>
+                <button class="answer-btn" data-index="2">-</button>
+                <button class="answer-btn" data-index="3">-</button>
             </div>
         </div>
 
@@ -359,7 +379,7 @@
             <div class="result-title" id="resultTitle">Gratulacje!</div>
             <div class="result-score" id="resultScore">16/16</div>
             <div class="result-text" id="resultText">Świetnie znasz polskie województwa!</div>
-            <button class="play-again-btn" onclick="startGame()">Zagraj ponownie</button>
+            <button class="play-again-btn" id="playAgainBtn">Zagraj ponownie</button>
         </div>
     </div>
 
@@ -383,16 +403,35 @@
             { id: 'zachodniopomorskie', name: 'zachodniopomorskie', capital: 'Szczecin' }
         ];
 
+        // Stan gry
         let currentMode = 'capitals';
         let questions = [];
         let currentQuestion = 0;
         let score = 0;
         let answered = false;
 
-        function setMode(mode) {
+        // QuestionTracker dla każdego trybu - pytania nie powtarzają się między grami!
+        let trackerCapitals = null;
+        let trackerNames = null;
+
+        function getTracker() {
+            if (currentMode === 'capitals') {
+                if (!trackerCapitals) {
+                    trackerCapitals = new QuestionTracker('mapa-polski-stolice', VOIVODESHIPS);
+                }
+                return trackerCapitals;
+            } else {
+                if (!trackerNames) {
+                    trackerNames = new QuestionTracker('mapa-polski-nazwy', VOIVODESHIPS);
+                }
+                return trackerNames;
+            }
+        }
+
+        function setMode(mode, btn) {
             currentMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
             startGame();
         }
 
@@ -406,8 +445,20 @@
         }
 
         function startGame() {
-            document.getElementById('resultOverlay').classList.remove('visible');
-            questions = shuffle([...VOIVODESHIPS]);
+            const resultOverlay = document.getElementById('resultOverlay');
+            if (resultOverlay) resultOverlay.classList.remove('visible');
+
+            const tracker = getTracker();
+
+            // Pobierz 16 pytań z trackera (wszystkie województwa)
+            questions = [];
+            for (let i = 0; i < 16; i++) {
+                const result = tracker.getNextAndMark();
+                if (result) {
+                    questions.push(result.question);
+                }
+            }
+
             currentQuestion = 0;
             score = 0;
             answered = false;
@@ -416,9 +467,13 @@
         }
 
         function updateScore() {
-            document.getElementById('score').textContent = score;
-            document.getElementById('total').textContent = currentQuestion;
-            document.getElementById('current').textContent = currentQuestion + 1;
+            const scoreEl = document.getElementById('score');
+            const totalEl = document.getElementById('total');
+            const currentEl = document.getElementById('current');
+
+            if (scoreEl) scoreEl.textContent = score;
+            if (totalEl) totalEl.textContent = currentQuestion;
+            if (currentEl) currentEl.textContent = currentQuestion + 1;
         }
 
         function showQuestion() {
@@ -436,13 +491,15 @@
             });
 
             // Highlight current voivodeship
-            document.getElementById(q.id).classList.add('highlighted');
+            const voivodeshipEl = document.getElementById(q.id);
+            if (voivodeshipEl) voivodeshipEl.classList.add('highlighted');
 
             // Set question text
+            const questionTextEl = document.getElementById('questionText');
             const questionText = currentMode === 'capitals'
                 ? `Jaka jest stolica województwa ${q.name.toLowerCase()}?`
                 : `Jak nazywa się podświetlone województwo?`;
-            document.getElementById('questionText').textContent = questionText;
+            if (questionTextEl) questionTextEl.textContent = questionText;
 
             // Generate answers
             const correctAnswer = currentMode === 'capitals' ? q.capital : q.name;
@@ -468,6 +525,8 @@
 
             const buttons = document.querySelectorAll('.answer-btn');
             const selectedBtn = buttons[index];
+            if (!selectedBtn) return;
+
             const isCorrect = selectedBtn.dataset.correct === 'true';
 
             const q = questions[currentQuestion];
@@ -476,12 +535,16 @@
             if (isCorrect) {
                 score++;
                 selectedBtn.classList.add('correct');
-                voivodeshipEl.classList.remove('highlighted');
-                voivodeshipEl.classList.add('correct');
+                if (voivodeshipEl) {
+                    voivodeshipEl.classList.remove('highlighted');
+                    voivodeshipEl.classList.add('correct');
+                }
             } else {
                 selectedBtn.classList.add('wrong');
-                voivodeshipEl.classList.remove('highlighted');
-                voivodeshipEl.classList.add('wrong');
+                if (voivodeshipEl) {
+                    voivodeshipEl.classList.remove('highlighted');
+                    voivodeshipEl.classList.add('wrong');
+                }
                 // Show correct answer
                 buttons.forEach(btn => {
                     if (btn.dataset.correct === 'true') {
@@ -527,16 +590,44 @@
                 text = 'Nauka czyni mistrza - spróbuj jeszcze raz!';
             }
 
-            document.getElementById('resultIcon').textContent = icon;
-            document.getElementById('resultTitle').textContent = title;
-            document.getElementById('resultScore').textContent = `${score}/16`;
-            document.getElementById('resultText').textContent = text;
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultScore = document.getElementById('resultScore');
+            const resultText = document.getElementById('resultText');
 
-            overlay.classList.add('visible');
+            if (resultIcon) resultIcon.textContent = icon;
+            if (resultTitle) resultTitle.textContent = title;
+            if (resultScore) resultScore.textContent = `${score}/16`;
+            if (resultText) resultText.textContent = text;
+
+            if (overlay) overlay.classList.add('visible');
         }
 
-        // Start game on load
-        startGame();
+        // Inicjalizacja po załadowaniu DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    setMode(this.dataset.mode, this);
+                });
+            });
+
+            // Answer buttons
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    checkAnswer(parseInt(this.dataset.index));
+                });
+            });
+
+            // Play again button
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            if (playAgainBtn) {
+                playAgainBtn.addEventListener('click', startGame);
+            }
+
+            // Start game
+            startGame();
+        });
     </script>
 
     <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>

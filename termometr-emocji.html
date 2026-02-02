@@ -4,18 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Termometr Emocji</title>
+    <link rel="stylesheet" href="styles-common.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        /* Nadpisanie gradientu tła dla tej strony */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-            min-height: 100vh;
-            padding: 15px;
+            padding: var(--spacing-md);
         }
 
         .container {
@@ -249,7 +243,8 @@
             color: #667eea;
         }
 
-        @media (max-width: 380px) {
+        /* Mobile: 480px i mniej */
+        @media (max-width: 480px) {
             .emotions-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
@@ -261,6 +256,12 @@
             }
             .current-name {
                 font-size: 1.5rem;
+            }
+            .main-card {
+                padding: var(--spacing-md);
+            }
+            h1 {
+                font-size: var(--font-size-xl);
             }
         }
     </style>
