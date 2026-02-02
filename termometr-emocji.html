@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termometr Emocji</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+
+        .home-btn {
+            display: inline-block;
+            margin-bottom: 10px;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .home-btn:hover {
+            background: #764ba2;
+        }
+
+        h1 {
+            text-align: center;
+            color: #5d4037;
+            margin-bottom: 5px;
+            font-size: 1.6rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8d6e63;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Main card */
+        .main-card {
+            background: white;
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        }
+
+        /* Current emotion display */
+        .emotion-display {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .current-emoji {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .current-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .current-intensity {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* Emotion selector */
+        .section-title {
+            font-size: 1rem;
+            color: #5d4037;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .emotions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .emotion-btn {
+            aspect-ratio: 1;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .emotion-btn:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .emotion-btn.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            transform: scale(1.05);
+        }
+
+        .emotion-btn .emoji {
+            font-size: 1.8rem;
+            margin-bottom: 3px;
+        }
+
+        .emotion-btn .label {
+            font-size: 0.65rem;
+            color: #666;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Thermometer */
+        .thermometer-section {
+            margin-bottom: 25px;
+        }
+
+        .thermometer-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .thermometer {
+            flex: 1;
+            height: 50px;
+            background: linear-gradient(90deg,
+                #a5d6a7 0%,
+                #fff59d 33%,
+                #ffcc80 66%,
+                #ef9a9a 100%
+            );
+            border-radius: 25px;
+            position: relative;
+            box-shadow: inset 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .thermometer-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 5px;
+        }
+
+        .thermometer-slider {
+            width: 100%;
+            height: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .thermometer-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid #667eea;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            cursor: grab;
+        }
+
+        .thermometer-slider::-webkit-slider-thumb:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+
+        .thermometer-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .intensity-emoji {
+            font-size: 2rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Talk prompt */
+        .talk-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .talk-prompt {
+            font-size: 1.1rem;
+            color: #5d4037;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .talk-tips {
+            font-size: 0.85rem;
+            color: #888;
+            font-style: italic;
+        }
+
+        /* Info box */
+        .info-box {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #8d6e63;
+            text-align: center;
+        }
+
+        .info-box a {
+            color: #667eea;
+        }
+
+        @media (max-width: 380px) {
+            .emotions-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .emotion-btn .emoji {
+                font-size: 1.5rem;
+            }
+            .current-emoji {
+                font-size: 3rem;
+            }
+            .current-name {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+        <h1>Termometr Emocji</h1>
+        <p class="subtitle">Jak się teraz czujesz?</p>
+
+        <div class="main-card">
+            <!-- Current emotion display -->
+            <div class="emotion-display">
+                <span class="current-emoji" id="currentEmoji">🤔</span>
+                <div class="current-name" id="currentName">Wybierz emocję</div>
+                <div class="current-intensity" id="currentIntensity">i ustaw jej siłę</div>
+            </div>
+
+            <!-- Emotion selector -->
+            <div class="section-title">Wybierz emocję:</div>
+            <div class="emotions-grid" id="emotionsGrid">
+                <!-- Emotions will be added by JS -->
+            </div>
+
+            <!-- Thermometer -->
+            <div class="thermometer-section">
+                <div class="section-title">Jak mocno to czujesz?</div>
+                <div class="thermometer-container">
+                    <span class="intensity-emoji" id="intensityEmoji">😐</span>
+                    <div class="thermometer">
+                        <div class="thermometer-track">
+                            <input type="range" class="thermometer-slider" id="intensitySlider" min="1" max="5" value="3">
+                        </div>
+                    </div>
+                </div>
+                <div class="thermometer-labels">
+                    <span>trochę</span>
+                    <span>średnio</span>
+                    <span>bardzo mocno</span>
+                </div>
+            </div>
+
+            <!-- Talk section -->
+            <div class="talk-section">
+                <div class="talk-prompt" id="talkPrompt">
+                    Opowiedz, co sprawiło, że tak się czujesz?
+                </div>
+                <div class="talk-tips" id="talkTips">
+                    Możesz powiedzieć pedagogowi o swoich uczuciach
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            Narzędzie dla pedagoga i psychologa szkolnego<br>
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
+        </div>
+    </div>
+
+    <script>
+        const emotions = [
+            { emoji: '😊', name: 'Radość', color: '#4caf50', prompts: [
+                'Co Cię dzisiaj ucieszyło?',
+                'Opowiedz o tym, co wywołało Twój uśmiech!',
+                'Podziel się swoją radością!'
+            ]},
+            { emoji: '😢', name: 'Smutek', color: '#2196f3', prompts: [
+                'Co Cię zasmuciło?',
+                'Czy chcesz o tym porozmawiać?',
+                'Pamiętaj, że smutek to normalna emocja.'
+            ]},
+            { emoji: '😠', name: 'Złość', color: '#f44336', prompts: [
+                'Co Cię zezłościło?',
+                'Jak możemy razem poradzić sobie ze złością?',
+                'Weź głęboki oddech i opowiedz mi o tym.'
+            ]},
+            { emoji: '😨', name: 'Strach', color: '#9c27b0', prompts: [
+                'Czego się boisz?',
+                'Opowiedz mi, co Cię niepokoi.',
+                'Razem możemy znaleźć sposób, żeby było mniej straszno.'
+            ]},
+            { emoji: '😲', name: 'Zaskoczenie', color: '#ff9800', prompts: [
+                'Co Cię tak zaskoczyło?',
+                'Opowiedz o tej niespodziance!',
+                'Czy to była dobra czy zła niespodzianka?'
+            ]},
+            { emoji: '🤢', name: 'Obrzydzenie', color: '#795548', prompts: [
+                'Co wywołało taką reakcję?',
+                'Opowiedz mi, co Ci się nie podoba.',
+                'Czy mogę jakoś pomóc?'
+            ]},
+            { emoji: '😟', name: 'Niepokój', color: '#607d8b', prompts: [
+                'O co się martwisz?',
+                'Porozmawiajmy o Twoich obawach.',
+                'Co mogłoby Ci pomóc poczuć się bezpieczniej?'
+            ]},
+            { emoji: '😔', name: 'Rozczarowanie', color: '#78909c', prompts: [
+                'Co Cię rozczarowało?',
+                'Opowiedz, czego się spodziewałeś/aś.',
+                'Rozczarowanie bywa bolesne - porozmawiajmy.'
+            ]},
+            { emoji: '😤', name: 'Frustracja', color: '#e91e63', prompts: [
+                'Co Cię frustruje?',
+                'Czy coś nie idzie po Twojej myśli?',
+                'Porozmawiajmy, jak możemy to rozwiązać.'
+            ]},
+            { emoji: '🥰', name: 'Miłość', color: '#e91e63', prompts: [
+                'Kogo lub co kochasz?',
+                'Opowiedz o tym ciepłym uczuciu!',
+                'To piękne uczucie - podziel się nim!'
+            ]},
+            { emoji: '😌', name: 'Spokój', color: '#00bcd4', prompts: [
+                'Jak udało Ci się osiągnąć spokój?',
+                'To wspaniale, że czujesz się spokojnie!',
+                'Co pomaga Ci się relaksować?'
+            ]},
+            { emoji: '🤔', name: 'Zamyślenie', color: '#9e9e9e', prompts: [
+                'O czym myślisz?',
+                'Czy chcesz podzielić się swoimi przemyśleniami?',
+                'Czasem warto pogłówkować razem!'
+            ]}
+        ];
+
+        const intensityLevels = [
+            { emoji: '😶', label: 'ledwo czuję' },
+            { emoji: '🙂', label: 'trochę' },
+            { emoji: '😐', label: 'średnio' },
+            { emoji: '😣', label: 'mocno' },
+            { emoji: '🤯', label: 'bardzo mocno!' }
+        ];
+
+        const intensityNames = [
+            'Ledwo to czuję',
+            'Trochę to czuję',
+            'Czuję to średnio',
+            'Czuję to mocno',
+            'Czuję to bardzo mocno!'
+        ];
+
+        let selectedEmotion = null;
+        let currentIntensity = 3;
+
+        // Create emotion buttons
+        const emotionsGrid = document.getElementById('emotionsGrid');
+        emotions.forEach((emotion, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'emotion-btn';
+            btn.innerHTML = `
+                <span class="emoji">${emotion.emoji}</span>
+                <span class="label">${emotion.name}</span>
+            `;
+            btn.addEventListener('click', () => selectEmotion(index));
+            emotionsGrid.appendChild(btn);
+        });
+
+        // Intensity slider
+        const intensitySlider = document.getElementById('intensitySlider');
+        intensitySlider.addEventListener('input', (e) => {
+            currentIntensity = parseInt(e.target.value);
+            updateDisplay();
+        });
+
+        function selectEmotion(index) {
+            selectedEmotion = index;
+
+            // Update button states
+            document.querySelectorAll('.emotion-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const currentEmoji = document.getElementById('currentEmoji');
+            const currentName = document.getElementById('currentName');
+            const currentIntensityEl = document.getElementById('currentIntensity');
+            const intensityEmoji = document.getElementById('intensityEmoji');
+            const talkPrompt = document.getElementById('talkPrompt');
+            const talkTips = document.getElementById('talkTips');
+            const emotionDisplay = document.querySelector('.emotion-display');
+
+            // Update intensity emoji
+            intensityEmoji.textContent = intensityLevels[currentIntensity - 1].emoji;
+
+            if (selectedEmotion !== null) {
+                const emotion = emotions[selectedEmotion];
+
+                currentEmoji.textContent = emotion.emoji;
+                currentName.textContent = emotion.name;
+                currentIntensityEl.textContent = intensityNames[currentIntensity - 1];
+
+                // Change background color based on emotion
+                emotionDisplay.style.background = `linear-gradient(135deg, ${emotion.color} 0%, ${adjustColor(emotion.color, -30)} 100%)`;
+
+                // Random prompt for this emotion
+                const randomPrompt = emotion.prompts[Math.floor(Math.random() * emotion.prompts.length)];
+                talkPrompt.textContent = randomPrompt;
+
+                // Tips based on intensity
+                if (currentIntensity >= 4) {
+                    talkTips.textContent = 'To silne uczucie - warto o nim porozmawiać.';
+                } else if (currentIntensity <= 2) {
+                    talkTips.textContent = 'Nawet małe uczucia są ważne!';
+                } else {
+                    talkTips.textContent = 'Możesz powiedzieć pedagogowi o swoich uczuciach.';
+                }
+            } else {
+                currentEmoji.textContent = '🤔';
+                currentName.textContent = 'Wybierz emocję';
+                currentIntensityEl.textContent = 'i ustaw jej siłę';
+                emotionDisplay.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                talkPrompt.textContent = 'Opowiedz, co sprawiło, że tak się czujesz?';
+                talkTips.textContent = 'Możesz powiedzieć pedagogowi o swoich uczuciach';
+            }
+        }
+
+        // Helper function to adjust color brightness
+        function adjustColor(color, amount) {
+            const hex = color.replace('#', '');
+            const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount));
+            const g = Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16) + amount));
+            const b = Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16) + amount));
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        // Initialize
+        updateDisplay();
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
