@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Kółko i Krzyżyk</title>
+    <link rel="stylesheet" href="styles-common.css">
+    <script src="scripts-common.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -1042,9 +1044,23 @@
                     hard: { name: '🤖 Wszystkie', count: 16 },
                     master: { name: '🧠 Odwrotnie', count: 16, reverse: true }
                 },
-                generate: (level) => {
+                tracker: null,
+                getTracker: function(level) {
+                    const key = `kolko-krzyzyk-wojewodztwa-${level.count}-${level.reverse ? 'rev' : 'std'}`;
+                    if (!this.tracker || this.tracker.categoryId !== key) {
+                        const data = POLAND_VOIVODESHIPS.slice(0, level.count);
+                        this.tracker = new QuestionTracker(key, data);
+                    }
+                    return this.tracker;
+                },
+                generate: function(level) {
                     const data = POLAND_VOIVODESHIPS.slice(0, level.count);
-                    const item = data[Math.floor(Math.random() * data.length)];
+                    const tracker = this.getTracker(level);
+
+                    // Pobierz pytanie z trackera (bez powtórzeń!)
+                    const result = tracker.getNextAndMark();
+                    const item = result ? result.question : data[Math.floor(Math.random() * data.length)];
+
                     const others = data.filter(d => d.capital !== item.capital);
                     const wrongCaps = others.sort(() => Math.random() - 0.5).slice(0, 3).map(d => d.capital);
 
@@ -1074,9 +1090,23 @@
                     hard: { name: '🤖 Cała Europa', filter: ['easy', 'medium', 'hard'] },
                     master: { name: '🧠 + mikropaństwa', filter: ['easy', 'medium', 'hard', 'master'] }
                 },
-                generate: (level) => {
+                trackers: {},
+                getTracker: function(level) {
+                    const key = level.filter.join('-');
+                    if (!this.trackers[key]) {
+                        const data = EUROPE_COUNTRIES.filter(c => level.filter.includes(c.level));
+                        this.trackers[key] = new QuestionTracker(`kolko-krzyzyk-europa-${key}`, data);
+                    }
+                    return this.trackers[key];
+                },
+                generate: function(level) {
                     const data = EUROPE_COUNTRIES.filter(c => level.filter.includes(c.level));
-                    const item = data[Math.floor(Math.random() * data.length)];
+                    const tracker = this.getTracker(level);
+
+                    // Pobierz pytanie z trackera (bez powtórzeń!)
+                    const result = tracker.getNextAndMark();
+                    const item = result ? result.question : data[Math.floor(Math.random() * data.length)];
+
                     const others = data.filter(d => d.capital !== item.capital);
                     const wrongCaps = others.sort(() => Math.random() - 0.5).slice(0, 3).map(d => d.capital);
 

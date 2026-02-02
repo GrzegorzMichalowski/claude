@@ -65,7 +65,7 @@
   - Osobne śledzenie dla trybu "stolice" vs "województwa"
 
 ### Zadanie 1.3: Integracja z tabliczka-kolko-krzyzyk.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Obecny system:** Losowe mnożenie + kategorie quizowe
 - **Kategorie do obsłużenia:**
   - Tabliczka mnożenia (dynamiczne generowanie - bez zmian)
@@ -181,7 +181,7 @@
   - Optymalizacja SVG (opcjonalnie)
 
 ### Zadanie 2.8: tabliczka-kolko-krzyzyk.html
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-02)
 - **Problemy:**
   - Duży plik (59KB)
   - Niekompletne media queries
