@@ -743,7 +743,7 @@
         // Game state
         let board = ['', '', '', '', '', '', '', '', ''];
         let currentPlayer = 'X';
-        let gameActive = true;
+        let gameActive = false;
         let selectedCell = null;
         let correctAnswer = null;
         let scores = { X: 0, O: 0, draw: 0 };
@@ -751,9 +751,8 @@
         let lastWinner = null;
         let timerInterval = null;
         let timeLeft = 3;
-        let askedQuestions = new Set(); // Track asked questions to avoid repetition
-        let isSelectingCell = false; // Track if player is in cell selection mode
-        let clickedCells = []; // Track clicked cells to detect cheating
+        let isProcessing = false; // Blokada podczas przetwarzania
+        let isModalOpen = false; // Czy modal jest otwarty
 
         const LEVELS = {
             easy: { min: 1, max: 5, name: 'Kurczaczek' },
@@ -1120,69 +1119,60 @@
         updateLevelOptions();
         loadRanking();
 
+        // Automatycznie rozpocznij grę po załadowaniu
+        setTimeout(() => {
+            newGame();
+        }, 500);
+
         function handleCellClick(cell) {
+            // Blokuj kliknięcia gdy gra nieaktywna lub trwa przetwarzanie
+            if (!gameActive || isProcessing || isModalOpen) return;
+
             const index = parseInt(cell.dataset.index);
+            if (board[index] !== '') return;
 
-            if (board[index] !== '' || !gameActive) return;
-
-            // Check for cheating - clicking multiple cells
-            if (isSelectingCell) {
-                // Player clicked another cell while question is shown - PENALTY!
-                clickedCells.push(index);
-                if (clickedCells.length >= 2) {
-                    // Cheater detected!
-                    penalizePlayer();
-                    return;
-                }
-            }
-
-            isSelectingCell = true;
-            clickedCells = [index];
+            isProcessing = true;
             selectedCell = index;
             showQuestion();
         }
 
-        function penalizePlayer() {
-            // Clear any timer
+        // Funkcja do bezpiecznego czyszczenia timera
+        function clearTimer() {
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
-            document.getElementById('timerDisplay').classList.remove('active', 'warning');
-            document.getElementById('modalOverlay').classList.remove('active');
-
-            // Reset selection state
-            isSelectingCell = false;
-            clickedCells = [];
-
-            // Show penalty message
-            const resultDiv = document.getElementById('resultMessage');
-            resultDiv.textContent = `Gracz ${currentPlayer} kliknął wiele pól - traci turę! ❌`;
-            resultDiv.className = 'result-message visible';
-            resultDiv.style.background = '#e74c3c';
-
-            // Switch player after delay
-            setTimeout(() => {
-                resultDiv.className = 'result-message';
-                resultDiv.style.background = '';
-                switchPlayer();
-            }, 1500);
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (timerDisplay) {
+                timerDisplay.classList.remove('active', 'warning');
+            }
         }
 
         function showQuestion() {
+            // Zabezpieczenie przed wielokrotnym otwarciem
+            if (isModalOpen) return;
+
             const topic = document.getElementById('topic').value;
             const levelKey = document.getElementById('level').value;
             const topicData = TOPICS[topic];
             const level = topicData.levels[levelKey];
 
             // Generate question using topic generator
-            const q = topicData.generate(level);
+            let q;
+            try {
+                q = topicData.generate(level);
+            } catch (e) {
+                console.error('Błąd generowania pytania:', e);
+                isProcessing = false;
+                return;
+            }
+
             correctAnswer = q.answer;
             const isTextAnswer = q.isText || false;
 
             // Build answers array
             const answers = [q.answer];
-            const wrongAnswers = q.wrongAnswers.filter(w =>
+            const wrongAnswers = (q.wrongAnswers || []).filter(w =>
                 w !== q.answer &&
                 w !== null &&
                 w !== undefined &&
@@ -1198,9 +1188,14 @@
             }
 
             // Fill remaining with variations if needed
+            let counter = 1;
             while (answers.length < 4) {
-                const filler = isTextAnswer ? '?' : (typeof q.answer === 'number' ? q.answer + answers.length * 3 : answers.length);
-                if (!answers.includes(filler)) answers.push(filler);
+                const filler = isTextAnswer ? `Opcja ${counter}` : (typeof q.answer === 'number' ? q.answer + counter * 3 : counter);
+                if (!answers.includes(filler)) {
+                    answers.push(filler);
+                }
+                counter++;
+                if (counter > 20) break; // Zabezpieczenie przed nieskończoną pętlą
             }
 
             // Shuffle answers
@@ -1214,21 +1209,29 @@
             modalPlayer.className = `modal-player player-${currentPlayer.toLowerCase()}`;
 
             const container = document.getElementById('answersContainer');
-            if (isTextAnswer) {
-                container.innerHTML = answers.map(ans =>
-                    `<button class="answer-btn" onclick="checkAnswer('${ans}')" style="font-size: 1rem;">${ans}</button>`
-                ).join('');
-            } else {
-                container.innerHTML = answers.map(ans =>
-                    `<button class="answer-btn" onclick="checkAnswer(${ans})">${ans}</button>`
-                ).join('');
-            }
+            container.innerHTML = '';
 
+            answers.forEach(ans => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.textContent = ans;
+                if (isTextAnswer) {
+                    btn.style.fontSize = '1rem';
+                }
+                btn.addEventListener('click', function() {
+                    checkAnswer(isTextAnswer ? ans : Number(ans));
+                }, { once: true }); // once: true zapobiega wielokrotnemu kliknięciu
+                container.appendChild(btn);
+            });
+
+            isModalOpen = true;
             document.getElementById('modalOverlay').classList.add('active');
 
             // Start timer if lightning mode is enabled
             const lightningMode = document.getElementById('lightningMode').checked;
             const timerDisplay = document.getElementById('timerDisplay');
+
+            clearTimer(); // Wyczyść poprzedni timer
 
             if (lightningMode) {
                 timeLeft = 3;
@@ -1245,9 +1248,7 @@
                     }
 
                     if (timeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                        // Time's up - wrong answer
+                        clearTimer();
                         checkAnswer(-1); // -1 indicates timeout
                     }
                 }, 1000);
@@ -1257,22 +1258,19 @@
         }
 
         function checkAnswer(answer) {
-            // Clear timer if running
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            document.getElementById('timerDisplay').classList.remove('active', 'warning');
+            // Zabezpieczenie przed wielokrotnym wywołaniem
+            if (!isModalOpen) return;
 
-            // Reset selection tracking
-            isSelectingCell = false;
-            clickedCells = [];
+            clearTimer();
 
             const buttons = document.querySelectorAll('.answer-btn');
             const isTextAnswer = typeof correctAnswer === 'string';
 
+            // Wyłącz wszystkie przyciski
             buttons.forEach(btn => {
                 btn.disabled = true;
+                btn.style.pointerEvents = 'none';
+
                 const btnValue = isTextAnswer ? btn.textContent : parseInt(btn.textContent);
                 if (btnValue === correctAnswer || btn.textContent === String(correctAnswer)) {
                     btn.classList.add('correct');
@@ -1285,34 +1283,46 @@
             const isTimeout = answer === -1;
             const isCorrect = answer === correctAnswer || String(answer) === String(correctAnswer);
 
+            const delay = isTimeout ? 300 : 800;
+
             setTimeout(() => {
+                isModalOpen = false;
                 document.getElementById('modalOverlay').classList.remove('active');
 
-                if (isCorrect) {
-                    placeMarker();
-                } else {
-                    // Wrong answer or timeout - switch player
-                    switchPlayer();
-                }
-            }, isTimeout ? 300 : 800);
+                // Krótkie opóźnienie przed następną akcją
+                setTimeout(() => {
+                    if (isCorrect) {
+                        placeMarker();
+                    } else {
+                        switchPlayer();
+                    }
+                    isProcessing = false;
+                }, 100);
+            }, delay);
         }
 
         function placeMarker() {
+            if (selectedCell === null || selectedCell < 0 || selectedCell > 8) return;
+
             board[selectedCell] = currentPlayer;
             const cell = document.querySelector(`[data-index="${selectedCell}"]`);
-            cell.textContent = currentPlayer;
-            cell.classList.add('taken', currentPlayer.toLowerCase());
+            if (cell) {
+                cell.textContent = currentPlayer;
+                cell.classList.add('taken', currentPlayer.toLowerCase());
+            }
 
             if (checkWin()) {
                 gameActive = false;
+                isProcessing = false;
                 highlightWinningCells();
                 showResult(`Wygrywa Gracz ${currentPlayer}! 🎉`);
                 scores[currentPlayer]++;
                 lastWinner = currentPlayer;
                 updateScores();
                 showWinnerForm();
-            } else if (board.every(cell => cell !== '')) {
+            } else if (board.every(c => c !== '')) {
                 gameActive = false;
+                isProcessing = false;
                 showResult('Remis! 🤝');
                 scores.draw++;
                 lastWinner = null;
@@ -1334,6 +1344,9 @@
         }
 
         function showRoundAnnouncement(player, callback) {
+            // Usuń poprzednie ogłoszenia
+            document.querySelectorAll('.round-announcement').forEach(el => el.remove());
+
             const announcement = document.createElement('div');
             announcement.className = 'round-announcement';
             announcement.innerHTML = `
@@ -1345,13 +1358,20 @@
             `;
             document.body.appendChild(announcement);
 
+            // Użyj requestAnimationFrame dla płynniejszej animacji
             setTimeout(() => {
-                announcement.style.opacity = '0';
-                announcement.style.transition = 'opacity 0.3s';
-                setTimeout(() => {
-                    announcement.remove();
-                    if (callback) callback();
-                }, 300);
+                if (announcement.parentNode) {
+                    announcement.style.opacity = '0';
+                    announcement.style.transition = 'opacity 0.3s';
+                    setTimeout(() => {
+                        if (announcement.parentNode) {
+                            announcement.remove();
+                        }
+                        if (callback) callback();
+                    }, 300);
+                } else if (callback) {
+                    callback();
+                }
             }, 1500);
         }
 
@@ -1397,34 +1417,37 @@
         }
 
         function newGame() {
+            // Zatrzymaj wszystko
+            gameActive = false;
+            isProcessing = false;
+            isModalOpen = false;
+            clearTimer();
+
+            // Reset stanu gry
             board = ['', '', '', '', '', '', '', '', ''];
             currentPlayer = 'X';
-            gameActive = false; // Disable until announcement is done
             selectedCell = null;
             lastWinner = null;
-            askedQuestions.clear(); // Reset question history for new game
-            isSelectingCell = false;
-            clickedCells = [];
 
-            // Clear any running timer
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-
+            // Wyczyść planszę
             document.querySelectorAll('.cell').forEach(cell => {
                 cell.textContent = '';
                 cell.className = 'cell';
             });
 
+            // Ukryj elementy UI
+            document.getElementById('modalOverlay').classList.remove('active');
             document.getElementById('resultMessage').className = 'result-message';
             document.getElementById('winnerForm').classList.remove('visible');
-            document.getElementById('timerDisplay').classList.remove('active', 'warning');
             updateCurrentPlayerDisplay();
 
-            // Show announcement who starts
+            // Usuń poprzednie ogłoszenia jeśli istnieją
+            document.querySelectorAll('.round-announcement').forEach(el => el.remove());
+
+            // Pokaż ogłoszenie kto zaczyna
             showRoundAnnouncement('X', () => {
                 gameActive = true;
+                isProcessing = false;
             });
         }
 
