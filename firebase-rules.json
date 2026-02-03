@@ -155,6 +155,21 @@
     },
 
     // ==========================================
+    // KONFIGURACJA ADMINA (Milionerzy)
+    // ==========================================
+    "adminConfig": {
+      // Odczyt dozwolony (potrzebny do weryfikacji hasła)
+      ".read": true,
+
+      "passwordHash": {
+        // Zapis tylko jeśli nie istnieje (jednorazowa inicjalizacja)
+        // Po ustawieniu, zmiana tylko przez Firebase Console
+        ".write": "!data.exists()",
+        ".validate": "newData.isString() && newData.val().length == 64"
+      }
+    },
+
+    // ==========================================
     // BLOKADA WSZYSTKIEGO INNEGO
     // ==========================================
     "$other": {

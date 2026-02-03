@@ -1304,8 +1304,8 @@ Wrocław
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Admin password (simple protection)
-        const ADMIN_CODE = 'Ins0mia1981ADM';
+        // Admin session - password verified per action via Firebase
+        let adminSession = null;
     </script>
 
     <script>
@@ -1822,12 +1822,47 @@ Wrocław
         // ADMIN FUNCTIONS
         // =====================
 
-        function showAdmin() {
+        // Simple hash function for password verification
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password + 'milionerzy_salt_2024');
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function verifyAdminPassword(password) {
+            try {
+                const snapshot = await db.ref('adminConfig/passwordHash').once('value');
+                if (!snapshot.exists()) {
+                    // First time setup - store the hash
+                    // Change this password after first use!
+                    const defaultHash = await hashPassword('ZmienMniePoPierwszymUzyciu2024!');
+                    await db.ref('adminConfig/passwordHash').set(defaultHash);
+                    console.log('Admin password initialized. Please change it!');
+                }
+
+                const storedHash = snapshot.val();
+                const inputHash = await hashPassword(password);
+                return inputHash === storedHash;
+            } catch (error) {
+                console.error('Błąd weryfikacji:', error);
+                return false;
+            }
+        }
+
+        async function showAdmin() {
             const code = prompt('Podaj kod moderatora:');
-            if (code !== ADMIN_CODE) {
+            if (!code) return;
+
+            const isValid = await verifyAdminPassword(code);
+            if (!isValid) {
                 alert('Nieprawidłowy kod!');
                 return;
             }
+
+            // Store session (expires on page reload)
+            adminSession = { verified: true, timestamp: Date.now() };
 
             hideAll();
             document.getElementById('adminPanel').classList.add('active');
@@ -1881,6 +1916,13 @@ Wrocław
         }
 
         async function approveSet(setId) {
+            // Verify session is still valid
+            if (!adminSession || !adminSession.verified) {
+                alert('Sesja wygasła. Zaloguj się ponownie.');
+                showStartScreen();
+                return;
+            }
+
             if (!confirm('Zatwierdzić ten zestaw?')) return;
 
             try {
@@ -1893,6 +1935,13 @@ Wrocław
         }
 
         async function rejectSet(setId) {
+            // Verify session is still valid
+            if (!adminSession || !adminSession.verified) {
+                alert('Sesja wygasła. Zaloguj się ponownie.');
+                showStartScreen();
+                return;
+            }
+
             if (!confirm('Odrzucić ten zestaw? Zostanie usunięty.')) return;
 
             try {
