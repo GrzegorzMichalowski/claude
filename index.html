@@ -31,69 +31,131 @@
         h1 {
             text-align: center;
             color: white;
-            margin-bottom: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
             font-size: 2rem;
             text-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: var(--radius-full);
+            background: transparent;
+            color: rgba(255,255,255,0.8);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-height: 44px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.6);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--color-primary-dark);
+            border-color: white;
+        }
+
+        .tab-btn .tab-icon {
+            margin-right: var(--spacing-xs);
+        }
+
+        .tab-btn .tab-count {
+            background: rgba(0,0,0,0.15);
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            margin-left: var(--spacing-xs);
+        }
+
+        .tab-btn.active .tab-count {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        /* Cards */
         .cards {
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-lg);
+            gap: var(--spacing-md);
+        }
+
+        .cards-group {
+            display: none;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .cards-group.active {
+            display: flex;
         }
 
         .card {
             background: white;
             border-radius: var(--radius-lg);
-            padding: var(--spacing-xl);
+            padding: var(--spacing-lg);
             min-height: 48px;
             text-decoration: none;
             color: inherit;
             box-shadow: var(--shadow-lg);
-            transition: var(--transition);
+            transition: var(--transition-normal);
             display: flex;
             align-items: center;
-            gap: var(--spacing-lg);
+            gap: var(--spacing-md);
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
         }
 
         .card-icon {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             flex-shrink: 0;
         }
 
-        .card-1 .card-icon { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); }
-        .card-2 .card-icon { background: linear-gradient(135deg, var(--color-success) 0%, #20c997 100%); }
-        .card-3 .card-icon { background: linear-gradient(135deg, #FF6B6B 0%, #FFD93D 100%); }
-        .card-4 .card-icon { background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); }
-        .card-5 .card-icon { background: linear-gradient(135deg, var(--color-danger) 0%, #3498db 100%); }
-        .card-6 .card-icon { background: linear-gradient(135deg, var(--color-warning) 0%, #e67e22 100%); }
-        .card-7 .card-icon { background: linear-gradient(135deg, #1a5f2a 0%, #2d8f4e 100%); }
-        .card-8 .card-icon { background: linear-gradient(135deg, #7ed56f 0%, #28b485 100%); }
-        .card-9 .card-icon { background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); }
-        .card-10 .card-icon { background: linear-gradient(135deg, #1a1a4e 0%, #667eea 100%); }
-        .card-11 .card-icon { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        /* Card icon colors */
+        .card-timer .card-icon { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); }
+        .card-progi .card-icon { background: linear-gradient(135deg, var(--color-success) 0%, #20c997 100%); }
+        .card-losowanie .card-icon { background: linear-gradient(135deg, #FF6B6B 0%, #FFD93D 100%); }
+        .card-egzamin .card-icon { background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); }
+        .card-stworek .card-icon { background: linear-gradient(135deg, #7ed56f 0%, #28b485 100%); }
+        .card-emocje .card-icon { background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); }
+
+        .card-kolko .card-icon { background: linear-gradient(135deg, var(--color-danger) 0%, #3498db 100%); }
+        .card-turniej .card-icon { background: linear-gradient(135deg, var(--color-warning) 0%, #e67e22 100%); }
+        .card-mapa .card-icon { background: linear-gradient(135deg, #1a5f2a 0%, #2d8f4e 100%); }
+        .card-milionerzy .card-icon { background: linear-gradient(135deg, #1a1a4e 0%, #667eea 100%); }
+        .card-fiszki .card-icon { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
 
         .card-content h2 {
-            font-size: var(--font-size-lg);
+            font-size: var(--font-size-base);
             color: #333;
-            margin-bottom: var(--spacing-xs);
+            margin-bottom: 2px;
         }
 
         .card-content p {
-            font-size: var(--font-size-sm);
+            font-size: var(--font-size-xs);
             color: #666;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
         .footer {
@@ -113,13 +175,26 @@
 
         @media (max-width: 480px) {
             .card {
-                flex-direction: column;
-                text-align: center;
-                padding: var(--spacing-lg);
+                padding: var(--spacing-md);
+            }
+
+            .card-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 1.3rem;
             }
 
             h1 {
                 font-size: 1.5rem;
+            }
+
+            .tab-btn {
+                padding: var(--spacing-sm) var(--spacing-md);
+                font-size: var(--font-size-sm);
+            }
+
+            .tab-btn .tab-count {
+                display: none;
             }
         }
     </style>
@@ -128,94 +203,109 @@
     <main class="container">
         <h1>Narzędzia dla Nauczycieli</h1>
 
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('organizacja')">
+                <span class="tab-icon">🛠️</span>Organizacja<span class="tab-count">6</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('nauka')">
+                <span class="tab-icon">📖</span>Nauka / Quizy<span class="tab-count">5</span>
+            </button>
+        </div>
+
         <div class="cards">
-            <a href="timer-kartkowka.html" class="card card-1">
-                <div class="card-icon">&#9202;</div>
-                <div class="card-content">
-                    <h2>Timer Kartkówka/Sprawdzian</h2>
-                    <p>Prosty timer z szybkim wyborem czasu (5-90 min). Ostrzeżenie na ostatnią minutę, tryb pełnoekranowy.</p>
-                </div>
-            </a>
+            <!-- Organizacja -->
+            <div id="organizacja" class="cards-group active">
+                <a href="timer-kartkowka.html" class="card card-timer">
+                    <div class="card-icon">⏲️</div>
+                    <div class="card-content">
+                        <h2>Timer Kartkówka/Sprawdzian</h2>
+                        <p>Szybki wybór czasu (5-90 min), ostrzeżenie na ostatnią minutę, pełny ekran</p>
+                    </div>
+                </a>
 
-            <a href="progi-ocen.html" class="card card-2">
-                <div class="card-icon">&#128202;</div>
-                <div class="card-content">
-                    <h2>Progi Ocen</h2>
-                    <p>Szybki generator przedziałów punktowych. Wpisz maksymalną liczbę punktów i zobacz progi dla każdej oceny.</p>
-                </div>
-            </a>
+                <a href="progi-ocen.html" class="card card-progi">
+                    <div class="card-icon">📊</div>
+                    <div class="card-content">
+                        <h2>Progi Ocen</h2>
+                        <p>Generator przedziałów punktowych dla każdej oceny</p>
+                    </div>
+                </a>
 
-            <a href="losowanie-ucznia.html" class="card card-3">
-                <div class="card-icon">&#127922;</div>
-                <div class="card-content">
-                    <h2>Losowanie Ucznia</h2>
-                    <p>Koło fortuny do odpytywania. Wpisz liczbę uczniów lub ich imiona i losuj sprawiedliwie!</p>
-                </div>
-            </a>
+                <a href="losowanie-ucznia.html" class="card card-losowanie">
+                    <div class="card-icon">🎲</div>
+                    <div class="card-content">
+                        <h2>Losowanie Ucznia</h2>
+                        <p>Koło fortuny do sprawiedliwego odpytywania</p>
+                    </div>
+                </a>
 
-            <a href="timer-egzamin.html" class="card card-4">
-                <div class="card-icon">&#9201;</div>
-                <div class="card-content">
-                    <h2>Timer Egzaminacyjny</h2>
-                    <p>Timer na egzamin ósmoklasisty. Polski, matematyka, angielski. Obsługa wydłużonego czasu (SPE).</p>
-                </div>
-            </a>
+                <a href="timer-egzamin.html" class="card card-egzamin">
+                    <div class="card-icon">⏱️</div>
+                    <div class="card-content">
+                        <h2>Timer Egzaminacyjny</h2>
+                        <p>Egzamin ósmoklasisty - polski, matematyka, angielski + SPE</p>
+                    </div>
+                </a>
 
-            <a href="tabliczka-kolko-krzyzyk.html" class="card card-5">
-                <div class="card-icon">&#10060;</div>
-                <div class="card-content">
-                    <h2>Quiz Kółko i Krzyżyk</h2>
-                    <p>Gra dla 2 graczy. Matematyka (mnożenie, dzielenie, potęgi, ułamki, jednostki) i geografia (województwa, stolice Europy). Ranking mistrzów!</p>
-                </div>
-            </a>
+                <a href="stworek.html" class="card card-stworek">
+                    <div class="card-icon">🐾</div>
+                    <div class="card-content">
+                        <h2>Klasowy Stworek</h2>
+                        <p>Wirtualny pupil reagujący na hałas - motywacja do ciszy</p>
+                    </div>
+                </a>
 
-            <a href="turniej-tabliczka.html" class="card card-6">
-                <div class="card-icon">&#127942;</div>
-                <div class="card-content">
-                    <h2>Turniej Tabliczki Mnożenia</h2>
-                    <p>Turniej dla całej klasy! Gry na wielu tabletach jednocześnie z synchronizacją wyników w czasie rzeczywistym.</p>
-                </div>
-            </a>
+                <a href="termometr-emocji.html" class="card card-emocje">
+                    <div class="card-icon">🌡️</div>
+                    <div class="card-content">
+                        <h2>Termometr Emocji</h2>
+                        <p>Dla pedagoga/psychologa - dziecko wybiera emocję i jej siłę</p>
+                    </div>
+                </a>
+            </div>
 
-            <a href="mapa-polski.html" class="card card-7">
-                <div class="card-icon">&#127757;</div>
-                <div class="card-content">
-                    <h2>Mapa Polski - Quiz</h2>
-                    <p>Interaktywna mapa z quizem. Ucz się województw i ich stolic w trybie wyboru odpowiedzi.</p>
-                </div>
-            </a>
+            <!-- Nauka / Quizy -->
+            <div id="nauka" class="cards-group">
+                <a href="tabliczka-kolko-krzyzyk.html" class="card card-kolko">
+                    <div class="card-icon">❌</div>
+                    <div class="card-content">
+                        <h2>Quiz Kółko i Krzyżyk</h2>
+                        <p>Gra dla 2 graczy - matematyka i geografia z rankingiem</p>
+                    </div>
+                </a>
 
-            <a href="stworek.html" class="card card-8">
-                <div class="card-icon">&#128062;</div>
-                <div class="card-content">
-                    <h2>Klasowy Stworek</h2>
-                    <p>Wirtualny pupil reagujący na hałas. Zbiera gwiazdki gdy jest cicho, panikuje gdy za głośno!</p>
-                </div>
-            </a>
+                <a href="turniej-tabliczka.html" class="card card-turniej">
+                    <div class="card-icon">🏆</div>
+                    <div class="card-content">
+                        <h2>Turniej Tabliczki Mnożenia</h2>
+                        <p>Turniej klasowy na wielu urządzeniach jednocześnie</p>
+                    </div>
+                </a>
 
-            <a href="termometr-emocji.html" class="card card-9">
-                <div class="card-icon">🌡️</div>
-                <div class="card-content">
-                    <h2>Termometr Emocji</h2>
-                    <p>Narzędzie dla pedagoga/psychologa. Dziecko wybiera emocję i jej siłę, potem rozmawia o uczuciach.</p>
-                </div>
-            </a>
+                <a href="mapa-polski.html" class="card card-mapa">
+                    <div class="card-icon">🗺️</div>
+                    <div class="card-content">
+                        <h2>Mapa Polski - Quiz</h2>
+                        <p>Interaktywna mapa - województwa i stolice</p>
+                    </div>
+                </a>
 
-            <a href="milionerzy.html" class="card card-10">
-                <div class="card-icon">💰</div>
-                <div class="card-content">
-                    <h2>Quiz Milionerzy</h2>
-                    <p>Klasyczny format "Milionerów" z 12 pytaniami, kołami ratunkowymi i dramatyczną atmosferą. Twórz własne zestawy!</p>
-                </div>
-            </a>
+                <a href="milionerzy.html" class="card card-milionerzy">
+                    <div class="card-icon">💰</div>
+                    <div class="card-content">
+                        <h2>Quiz Milionerzy</h2>
+                        <p>12 pytań, koła ratunkowe, własne zestawy pytań</p>
+                    </div>
+                </a>
 
-            <a href="fiszki.html" class="card card-11">
-                <div class="card-icon">📚</div>
-                <div class="card-content">
-                    <h2>Fiszki</h2>
-                    <p>Nauka słówek, wzorów i dat. Tryb nauki z odwracaniem kart i tryb testu. Twórz własne zestawy!</p>
-                </div>
-            </a>
+                <a href="fiszki.html" class="card card-fiszki">
+                    <div class="card-icon">📚</div>
+                    <div class="card-content">
+                        <h2>Fiszki</h2>
+                        <p>Nauka słówek, wzorów, dat - tryb nauki i test</p>
+                    </div>
+                </a>
+            </div>
         </div>
 
         <footer class="footer">
@@ -227,7 +317,30 @@
     <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
     <script>
-        // Rejestracja Service Worker dla PWA
+        function showTab(tabId) {
+            // Hide all groups
+            document.querySelectorAll('.cards-group').forEach(g => g.classList.remove('active'));
+            // Show selected group
+            document.getElementById(tabId).classList.add('active');
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            // Save preference
+            localStorage.setItem('preferredTab', tabId);
+        }
+
+        // Restore preferred tab on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const preferred = localStorage.getItem('preferredTab');
+            if (preferred) {
+                const btn = document.querySelector(`.tab-btn[onclick*="${preferred}"]`);
+                if (btn) btn.click();
+            }
+        });
+
+        // Service Worker registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./service-worker.js')
