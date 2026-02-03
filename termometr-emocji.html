@@ -57,6 +57,7 @@
             border-radius: 25px;
             padding: 25px;
             box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
         }
 
         /* Current emotion display */
@@ -99,6 +100,8 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             margin-bottom: 25px;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .emotion-btn {
@@ -251,6 +254,7 @@
         @media (max-width: 480px) {
             .emotions-grid {
                 grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
             }
             .emotion-btn .emoji {
                 font-size: 1.5rem;
@@ -266,6 +270,28 @@
             }
             h1 {
                 font-size: var(--font-size-xl);
+            }
+        }
+
+        /* Very small screens: 360px i mniej */
+        @media (max-width: 360px) {
+            .emotions-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            .emotion-btn {
+                padding: 5px;
+                border-radius: 10px;
+            }
+            .emotion-btn .emoji {
+                font-size: 1.3rem;
+            }
+            .emotion-btn .label {
+                font-size: 0.55rem;
+            }
+            .main-card {
+                padding: var(--spacing-sm);
+                border-radius: 15px;
             }
         }
     </style>
