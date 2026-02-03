@@ -10,48 +10,40 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* Milionerzy theme - extends styles-common.css */
+        :root {
+            --milionerzy-gold: #ffd700;
+            --milionerzy-gold-dark: #ffaa00;
+            --milionerzy-bg-dark: #1a1a4e;
+            --milionerzy-bg-darker: #0d0d1a;
+            --milionerzy-card-bg: #1a1a2e;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: radial-gradient(ellipse at center, #1a1a4e 0%, #0d0d1a 100%);
-            min-height: 100vh;
-            color: white;
+            background: radial-gradient(ellipse at center, var(--milionerzy-bg-dark) 0%, var(--milionerzy-bg-darker) 100%);
+            color: var(--color-text-light);
             overflow-x: hidden;
         }
 
         .container {
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 15px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
         .home-btn {
-            display: inline-block;
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #ffd700, #ffaa00);
-            color: #1a1a2e;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
+            background: var(--gradient-gold);
+            color: var(--milionerzy-card-bg);
             align-self: flex-start;
-            margin-bottom: 10px;
         }
 
         h1 {
             text-align: center;
-            color: #ffd700;
-            font-size: 2rem;
+            color: var(--milionerzy-gold);
+            font-size: var(--font-size-3xl);
             text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-            margin-bottom: 20px;
+            margin-bottom: var(--spacing-lg);
         }
 
         /* Start Screen */
@@ -82,28 +74,28 @@
         }
 
         .mode-btn.play {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            background: var(--gradient-primary);
+            color: var(--color-text-light);
         }
 
         .mode-btn.create {
-            background: linear-gradient(135deg, #11998e, #38ef7d);
-            color: white;
+            background: var(--gradient-success);
+            color: var(--color-text-light);
         }
 
         .mode-btn.manage {
             background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
+            color: var(--color-text-light);
         }
 
         .mode-btn.import {
             background: linear-gradient(135deg, #4facfe, #00f2fe);
-            color: white;
+            color: var(--color-text-light);
         }
 
         .mode-btn.community {
-            background: linear-gradient(135deg, #f5af19, #f12711);
-            color: white;
+            background: var(--gradient-warning);
+            color: var(--color-text-light);
         }
 
         .mode-btn:hover {
@@ -145,36 +137,36 @@
 
         .prize-ladder h3 {
             text-align: center;
-            color: #ffd700;
-            margin-bottom: 15px;
-            font-size: 1rem;
+            color: var(--milionerzy-gold);
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-base);
         }
 
         .prize-item {
-            padding: 8px 12px;
+            padding: var(--spacing-sm) var(--spacing-md);
             margin: 4px 0;
-            border-radius: 8px;
+            border-radius: var(--radius-md);
             display: flex;
             justify-content: space-between;
-            font-size: 0.85rem;
-            transition: all 0.3s;
+            font-size: var(--font-size-sm);
+            transition: var(--transition-normal);
         }
 
         .prize-item.current {
-            background: linear-gradient(135deg, #ffd700, #ffaa00);
-            color: #1a1a2e;
-            font-weight: bold;
+            background: var(--gradient-gold);
+            color: var(--milionerzy-card-bg);
+            font-weight: var(--font-weight-bold);
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(255,215,0,0.5);
         }
 
         .prize-item.guaranteed {
-            color: #ffd700;
-            font-weight: 600;
+            color: var(--milionerzy-gold);
+            font-weight: var(--font-weight-semibold);
         }
 
         .prize-item.won {
-            color: #38ef7d;
+            color: var(--color-success);
         }
 
         .prize-item .number {
@@ -191,9 +183,9 @@
         }
 
         .question-number {
-            color: #ffd700;
-            font-size: 1rem;
-            margin-bottom: 10px;
+            color: var(--milionerzy-gold);
+            font-size: var(--font-size-base);
+            margin-bottom: var(--spacing-sm);
         }
 
         .question-text {
@@ -230,7 +222,7 @@
 
         .answer-btn:hover:not(:disabled) {
             background: linear-gradient(135deg, #3d3d7a, #2a2a5e);
-            border-color: #ffd700;
+            border-color: var(--milionerzy-gold);
             transform: scale(1.02);
         }
 
@@ -240,20 +232,20 @@
         }
 
         .answer-btn.selected {
-            background: linear-gradient(135deg, #ffd700, #ffaa00);
-            color: #1a1a2e;
-            border-color: #ffd700;
+            background: var(--gradient-gold);
+            color: var(--milionerzy-card-bg);
+            border-color: var(--milionerzy-gold);
         }
 
         .answer-btn.correct {
-            background: linear-gradient(135deg, #11998e, #38ef7d);
-            border-color: #38ef7d;
+            background: var(--gradient-success);
+            border-color: var(--color-success);
             animation: pulse-correct 0.5s ease-in-out;
         }
 
         .answer-btn.wrong {
-            background: linear-gradient(135deg, #cb2d3e, #ef473a);
-            border-color: #ef473a;
+            background: var(--gradient-danger);
+            border-color: var(--color-danger);
             animation: shake 0.5s ease-in-out;
         }
 
@@ -296,20 +288,20 @@
             width: 70px;
             height: 70px;
             border-radius: 50%;
-            border: 3px solid #ffd700;
+            border: 3px solid var(--milionerzy-gold);
             background: linear-gradient(135deg, #2d2d5a, #1a1a3e);
-            color: white;
-            font-size: 1.5rem;
+            color: var(--color-text-light);
+            font-size: var(--font-size-2xl);
             cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .lifeline-btn:hover:not(:disabled) {
-            background: linear-gradient(135deg, #ffd700, #ffaa00);
-            color: #1a1a2e;
+            background: var(--gradient-gold);
+            color: var(--milionerzy-card-bg);
             transform: scale(1.1);
         }
 
@@ -360,21 +352,21 @@
 
         .poll-bar .letter {
             width: 30px;
-            font-weight: bold;
-            color: #ffd700;
+            font-weight: var(--font-weight-bold);
+            color: var(--milionerzy-gold);
         }
 
         .poll-bar .bar-container {
             flex: 1;
             height: 25px;
             background: rgba(255,255,255,0.1);
-            border-radius: 5px;
+            border-radius: var(--radius-sm);
             overflow: hidden;
         }
 
         .poll-bar .bar {
             height: 100%;
-            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            background: var(--gradient-gold);
             transition: width 1s ease-out;
         }
 
@@ -398,37 +390,37 @@
         }
 
         .phone-friend .friend-message {
-            font-size: 1.1rem;
+            font-size: var(--font-size-lg);
             font-style: italic;
-            color: #ffd700;
-            margin-top: 15px;
+            color: var(--milionerzy-gold);
+            margin-top: var(--spacing-md);
         }
 
         /* Game Controls */
         .game-controls {
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
         }
 
         .control-btn {
-            padding: 12px 25px;
+            padding: var(--spacing-sm) var(--spacing-lg);
             border: none;
-            border-radius: 10px;
-            font-size: 1rem;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
             cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition-normal);
         }
 
         .control-btn.walk-away {
             background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
+            color: var(--color-text-light);
         }
 
         .control-btn.confirm {
-            background: linear-gradient(135deg, #11998e, #38ef7d);
-            color: white;
+            background: var(--gradient-success);
+            color: var(--color-text-light);
         }
 
         .control-btn:hover {
@@ -460,20 +452,20 @@
         }
 
         .result-title {
-            font-size: 2rem;
-            color: #ffd700;
+            font-size: var(--font-size-3xl);
+            color: var(--milionerzy-gold);
         }
 
         .result-prize {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #38ef7d;
+            font-size: var(--font-size-4xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-success);
         }
 
         .result-buttons {
             display: flex;
-            gap: 15px;
-            margin-top: 20px;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
         }
 
         /* Question Set Selector */
@@ -481,8 +473,8 @@
             display: none;
             flex: 1;
             flex-direction: column;
-            gap: 20px;
-            padding: 20px;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
         }
 
         .set-selector.active {
@@ -490,44 +482,44 @@
         }
 
         .set-selector h2 {
-            color: #ffd700;
+            color: var(--milionerzy-gold);
             text-align: center;
         }
 
         .sets-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            gap: var(--spacing-lg);
         }
 
         .set-card {
             background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
             border: 2px solid rgba(255,215,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
             cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition-normal);
         }
 
         .set-card:hover {
-            border-color: #ffd700;
+            border-color: var(--milionerzy-gold);
             transform: translateY(-5px);
         }
 
         .set-card h3 {
-            color: #ffd700;
-            margin-bottom: 10px;
+            color: var(--milionerzy-gold);
+            margin-bottom: var(--spacing-sm);
         }
 
         .set-card p {
-            color: rgba(255,255,255,0.7);
-            font-size: 0.9rem;
+            color: var(--color-text-light-muted);
+            font-size: var(--font-size-sm);
         }
 
         .set-card .set-meta {
-            margin-top: 10px;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.5);
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-xs);
+            color: var(--color-text-muted);
         }
 
         /* Editor */
@@ -535,8 +527,8 @@
             display: none;
             flex: 1;
             flex-direction: column;
-            gap: 20px;
-            padding: 20px;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
         }
 
         .editor.active {
@@ -544,42 +536,37 @@
         }
 
         .editor h2 {
-            color: #ffd700;
+            color: var(--milionerzy-gold);
             text-align: center;
         }
 
         .editor-form {
             background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: var(--spacing-md);
         }
 
         .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #ffd700;
+            color: var(--milionerzy-gold);
         }
 
         .form-group input,
         .form-group textarea,
         .form-group select {
-            width: 100%;
-            padding: 12px;
             border: 2px solid rgba(255,215,0,0.3);
-            border-radius: 8px;
+            border-radius: var(--radius-md);
             background: rgba(255,255,255,0.1);
-            color: white;
-            font-size: 1rem;
+            color: var(--color-text-light);
         }
 
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #ffd700;
+            border-color: var(--milionerzy-gold);
         }
 
         .questions-list {
@@ -589,26 +576,26 @@
 
         .question-edit-item {
             background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
         }
 
         .question-edit-item h4 {
-            color: #ffd700;
-            margin-bottom: 10px;
+            color: var(--milionerzy-gold);
+            margin-bottom: var(--spacing-sm);
         }
 
         .answers-edit {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: var(--spacing-sm);
         }
 
         .answer-edit-group {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: var(--spacing-sm);
         }
 
         .answer-edit-group input[type="radio"] {
@@ -619,33 +606,31 @@
             flex: 1;
         }
 
+        /* Override btn styles for Milionerzy theme */
         .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-md);
+            transition: var(--transition-normal);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            background: var(--gradient-primary);
+            color: var(--color-text-light);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #11998e, #38ef7d);
-            color: white;
+            background: var(--gradient-success);
+            color: var(--color-text-light);
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #cb2d3e, #ef473a);
-            color: white;
+            background: var(--gradient-danger);
+            color: var(--color-text-light);
         }
 
         .btn-secondary {
             background: rgba(255,255,255,0.2);
-            color: white;
+            color: var(--color-text-light);
         }
 
         .btn:hover {
@@ -654,13 +639,8 @@
 
         .btn-group {
             display: flex;
-            gap: 10px;
+            gap: var(--spacing-sm);
             flex-wrap: wrap;
-        }
-
-        /* Hidden */
-        .hidden {
-            display: none !important;
         }
 
         /* Responsive */
@@ -731,15 +711,15 @@
         }
 
         .footer-link a {
-            color: #ffd700;
+            color: var(--milionerzy-gold);
         }
 
         .secret-admin {
             opacity: 0.15;
             cursor: pointer;
-            margin-left: 15px;
-            font-size: 0.9rem;
-            transition: opacity 0.3s;
+            margin-left: var(--spacing-md);
+            font-size: var(--font-size-sm);
+            transition: opacity var(--transition-normal);
             user-select: none;
         }
 
@@ -752,8 +732,8 @@
             display: none;
             flex: 1;
             flex-direction: column;
-            gap: 20px;
-            padding: 20px;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
             max-width: 800px;
             margin: 0 auto;
         }
@@ -763,19 +743,19 @@
         }
 
         .import-panel h2 {
-            color: #ffd700;
+            color: var(--milionerzy-gold);
             text-align: center;
         }
 
         .import-instructions {
             background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
         }
 
         .import-instructions h3 {
-            color: #ffd700;
-            margin-bottom: 15px;
+            color: var(--milionerzy-gold);
+            margin-bottom: var(--spacing-md);
         }
 
         .import-instructions pre {
@@ -800,37 +780,37 @@
 
         .import-area {
             background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
         }
 
         .import-area h3 {
-            color: #ffd700;
-            margin-bottom: 15px;
+            color: var(--milionerzy-gold);
+            margin-bottom: var(--spacing-md);
         }
 
         .import-area textarea {
             width: 100%;
             height: 300px;
-            padding: 15px;
+            padding: var(--spacing-md);
             border: 2px solid rgba(255,215,0,0.3);
-            border-radius: 8px;
+            border-radius: var(--radius-md);
             background: rgba(255,255,255,0.1);
-            color: white;
+            color: var(--color-text-light);
             font-family: monospace;
-            font-size: 0.9rem;
+            font-size: var(--font-size-sm);
             resize: vertical;
         }
 
         .import-area textarea:focus {
             outline: none;
-            border-color: #ffd700;
+            border-color: var(--milionerzy-gold);
         }
 
         .file-input-wrapper {
-            margin-top: 15px;
+            margin-top: var(--spacing-md);
             display: flex;
-            gap: 10px;
+            gap: var(--spacing-sm);
             align-items: center;
             flex-wrap: wrap;
         }
@@ -840,12 +820,12 @@
         }
 
         .file-input-label {
-            padding: 12px 25px;
+            padding: var(--spacing-sm) var(--spacing-lg);
             background: linear-gradient(135deg, #4facfe, #00f2fe);
-            color: white;
-            border-radius: 10px;
+            color: var(--color-text-light);
+            border-radius: var(--radius-md);
             cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition-normal);
         }
 
         .file-input-label:hover {
@@ -855,8 +835,8 @@
         .import-meta {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
         }
 
         @media (max-width: 500px) {
@@ -870,8 +850,8 @@
             display: none;
             flex: 1;
             flex-direction: column;
-            gap: 20px;
-            padding: 20px;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
         }
 
         .community-panel.active {
@@ -879,25 +859,25 @@
         }
 
         .community-panel h2 {
-            color: #ffd700;
+            color: var(--milionerzy-gold);
             text-align: center;
         }
 
         .community-info {
             text-align: center;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.9rem;
+            color: var(--color-text-light-muted);
+            font-size: var(--font-size-sm);
         }
 
         .set-card .author {
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.5);
-            margin-top: 5px;
+            font-size: var(--font-size-xs);
+            color: var(--color-text-muted);
+            margin-top: var(--spacing-xs);
         }
 
         .set-card .plays {
-            font-size: 0.75rem;
-            color: #ffd700;
+            font-size: var(--font-size-xs);
+            color: var(--milionerzy-gold);
         }
 
         .set-card.pending {
@@ -907,15 +887,15 @@
 
         .pending-badge {
             display: inline-block;
-            background: #f5af19;
-            color: #000;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: bold;
+            background: var(--color-warning);
+            color: var(--color-text-primary);
+            padding: 2px var(--spacing-sm);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-bold);
         }
 
-        /* Modal */
+        /* Modal - override for Milionerzy theme */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -924,10 +904,10 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.8);
-            z-index: 1000;
+            z-index: var(--z-modal);
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: var(--spacing-lg);
         }
 
         .modal-overlay.active {
@@ -935,25 +915,25 @@
         }
 
         .modal-content {
-            background: linear-gradient(135deg, #1a1a4e, #0d0d2a);
+            background: linear-gradient(135deg, var(--milionerzy-bg-dark), var(--milionerzy-bg-darker));
             border: 2px solid rgba(255,215,0,0.5);
-            border-radius: 20px;
-            padding: 30px;
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
             max-width: 500px;
             width: 100%;
         }
 
         .modal-content h3 {
-            color: #ffd700;
+            color: var(--milionerzy-gold);
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: var(--spacing-lg);
         }
 
         .modal-buttons {
             display: flex;
-            gap: 10px;
+            gap: var(--spacing-sm);
             justify-content: center;
-            margin-top: 20px;
+            margin-top: var(--spacing-lg);
         }
 
         /* Admin panel */
@@ -961,8 +941,8 @@
             display: none;
             flex: 1;
             flex-direction: column;
-            gap: 20px;
-            padding: 20px;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
         }
 
         .admin-panel.active {
@@ -970,40 +950,40 @@
         }
 
         .admin-panel h2 {
-            color: #f5af19;
+            color: var(--color-warning);
             text-align: center;
         }
 
         .admin-set-card {
             background: rgba(255,255,255,0.05);
             border: 2px solid rgba(255,165,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
         }
 
         .admin-set-card h4 {
-            color: #ffd700;
-            margin-bottom: 10px;
+            color: var(--milionerzy-gold);
+            margin-bottom: var(--spacing-sm);
         }
 
         .admin-set-card .preview-questions {
             background: rgba(0,0,0,0.3);
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-md);
+            margin: var(--spacing-sm) 0;
             max-height: 200px;
             overflow-y: auto;
-            font-size: 0.85rem;
+            font-size: var(--font-size-sm);
         }
 
         .admin-set-card .preview-questions p {
-            margin: 5px 0;
-            color: rgba(255,255,255,0.8);
+            margin: var(--spacing-xs) 0;
+            color: var(--color-text-light-muted);
         }
 
         .admin-set-card .preview-questions .correct {
-            color: #38ef7d;
+            color: var(--color-success);
         }
     </style>
 </head>
