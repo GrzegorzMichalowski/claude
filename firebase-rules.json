@@ -26,13 +26,13 @@
           && newData.child('name').val().length <= 50
 
           // Tryb: tylko dozwolone wartości
-          && newData.child('mode').val().matches(/^(groups|knockout)$/)
+          && newData.child('mode').val().matches(/^(groups|knockout|league)$/)
 
           // Poziom: tylko dozwolone wartości
           && newData.child('level').val().matches(/^(easy|medium|hard|master)$/)
 
           // Status: tylko dozwolone wartości
-          && newData.child('status').val().matches(/^(lobby|groups|knockout|finished)$/)
+          && newData.child('status').val().matches(/^(lobby|groups|knockout|league|leagueFinal|finished)$/)
 
           // Host musi być stringiem
           && newData.child('host').isString()
@@ -104,7 +104,7 @@
           && newData.child('name').isString()
           && newData.child('name').val().length <= 50
           && newData.child('level').val().matches(/^(easy|medium|hard|master)$/)
-          && newData.child('mode').val().matches(/^(groups|knockout)$/)
+          && newData.child('mode').val().matches(/^(groups|knockout|league)$/)
           && newData.child('participantCount').isNumber()
           && newData.child('participantCount').val() >= 2
           && newData.child('participantCount').val() <= 64
@@ -112,6 +112,45 @@
 
         // Historia nie może być edytowana ani usuwana
         ".write": "!data.exists()"
+      }
+    },
+
+    // ==========================================
+    // ZESTAWY PYTAŃ SPOŁECZNOŚCI (Milionerzy)
+    // ==========================================
+    "communityQuizSets": {
+      // Każdy może czytać zestawy
+      ".read": true,
+
+      // Zapis dozwolony (nowe zestawy)
+      ".write": true,
+
+      "$setId": {
+        ".validate": "
+          newData.hasChildren(['name', 'author', 'category', 'level', 'questions', 'status', 'createdAt'])
+
+          // Nazwa: max 100 znaków
+          && newData.child('name').isString()
+          && newData.child('name').val().length >= 1
+          && newData.child('name').val().length <= 100
+
+          // Autor: max 50 znaków
+          && newData.child('author').isString()
+          && newData.child('author').val().length >= 1
+          && newData.child('author').val().length <= 50
+
+          // Kategoria
+          && newData.child('category').isString()
+
+          // Poziom
+          && newData.child('level').isString()
+
+          // Status: pending, approved, rejected
+          && newData.child('status').val().matches(/^(pending|approved|rejected)$/)
+
+          // Pytania muszą istnieć
+          && newData.hasChild('questions')
+        "
       }
     },
 

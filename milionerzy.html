@@ -1,0 +1,2344 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Milionerzy - Narzędzia dla Nauczycieli</title>
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(ellipse at center, #1a1a4e 0%, #0d0d1a 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .home-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            align-self: flex-start;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            font-size: 2rem;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        /* Start Screen */
+        .start-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: 25px 40px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 200px;
+        }
+
+        .mode-btn.play {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .mode-btn.create {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+        }
+
+        .mode-btn.manage {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .mode-btn.import {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .mode-btn.community {
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            color: white;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .mode-btn .icon {
+            display: block;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        /* Game Layout */
+        .game-container {
+            display: none;
+            flex: 1;
+            gap: 20px;
+        }
+
+        .game-container.active {
+            display: flex;
+        }
+
+        .game-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .prize-ladder {
+            width: 200px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid rgba(255,215,0,0.3);
+        }
+
+        .prize-ladder h3 {
+            text-align: center;
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .prize-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .prize-item.current {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #1a1a2e;
+            font-weight: bold;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+
+        .prize-item.guaranteed {
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .prize-item.won {
+            color: #38ef7d;
+        }
+
+        .prize-item .number {
+            opacity: 0.7;
+        }
+
+        /* Question Area */
+        .question-area {
+            background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
+            border: 3px solid rgba(255,215,0,0.5);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .question-number {
+            color: #ffd700;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 1.5rem;
+            line-height: 1.5;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Answers */
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .answer-btn {
+            background: linear-gradient(135deg, #2d2d5a, #1a1a3e);
+            border: 2px solid rgba(255,215,0,0.4);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .answer-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #3d3d7a, #2a2a5e);
+            border-color: #ffd700;
+            transform: scale(1.02);
+        }
+
+        .answer-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .answer-btn.selected {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #1a1a2e;
+            border-color: #ffd700;
+        }
+
+        .answer-btn.correct {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            border-color: #38ef7d;
+            animation: pulse-correct 0.5s ease-in-out;
+        }
+
+        .answer-btn.wrong {
+            background: linear-gradient(135deg, #cb2d3e, #ef473a);
+            border-color: #ef473a;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .answer-btn.fifty-hidden {
+            visibility: hidden;
+        }
+
+        .answer-letter {
+            background: rgba(255,215,0,0.3);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse-correct {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* Lifelines */
+        .lifelines {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .lifeline-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #ffd700;
+            background: linear-gradient(135deg, #2d2d5a, #1a1a3e);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lifeline-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #1a1a2e;
+            transform: scale(1.1);
+        }
+
+        .lifeline-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #666;
+        }
+
+        .lifeline-btn .tooltip {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .lifeline-btn:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Audience Poll */
+        .audience-poll {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+        }
+
+        .audience-poll.active {
+            display: block;
+        }
+
+        .poll-bar {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            gap: 10px;
+        }
+
+        .poll-bar .letter {
+            width: 30px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .poll-bar .bar-container {
+            flex: 1;
+            height: 25px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .poll-bar .bar {
+            height: 100%;
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            transition: width 1s ease-out;
+        }
+
+        .poll-bar .percentage {
+            width: 50px;
+            text-align: right;
+        }
+
+        /* Phone Friend */
+        .phone-friend {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .phone-friend.active {
+            display: block;
+        }
+
+        .phone-friend .friend-message {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: #ffd700;
+            margin-top: 15px;
+        }
+
+        /* Game Controls */
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .control-btn.walk-away {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .control-btn.confirm {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Result Screen */
+        .result-screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 20px;
+        }
+
+        .result-screen.active {
+            display: flex;
+        }
+
+        .result-icon {
+            font-size: 5rem;
+        }
+
+        .result-title {
+            font-size: 2rem;
+            color: #ffd700;
+        }
+
+        .result-prize {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #38ef7d;
+        }
+
+        .result-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Question Set Selector */
+        .set-selector {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .set-selector.active {
+            display: flex;
+        }
+
+        .set-selector h2 {
+            color: #ffd700;
+            text-align: center;
+        }
+
+        .sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .set-card {
+            background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .set-card:hover {
+            border-color: #ffd700;
+            transform: translateY(-5px);
+        }
+
+        .set-card h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .set-card p {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+        }
+
+        .set-card .set-meta {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Editor */
+        .editor {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .editor.active {
+            display: flex;
+        }
+
+        .editor h2 {
+            color: #ffd700;
+            text-align: center;
+        }
+
+        .editor-form {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ffd700;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        .questions-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .question-edit-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .question-edit-item h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .answers-edit {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .answer-edit-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .answer-edit-group input[type="radio"] {
+            width: auto;
+        }
+
+        .answer-edit-group input[type="text"] {
+            flex: 1;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #cb2d3e, #ef473a);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .game-container {
+                flex-direction: column;
+            }
+
+            .prize-ladder {
+                width: 100%;
+                order: -1;
+            }
+
+            .prize-ladder .prize-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+
+            .prize-item {
+                flex: 1;
+                min-width: 100px;
+                justify-content: center;
+                font-size: 0.75rem;
+            }
+
+            .prize-item .number {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .answers-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .question-text {
+                font-size: 1.2rem;
+            }
+
+            .answer-btn {
+                padding: 15px;
+                font-size: 1rem;
+            }
+
+            .lifeline-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 1.2rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .mode-btn {
+                padding: 20px 30px;
+                font-size: 1rem;
+                min-width: 150px;
+            }
+        }
+
+        /* Footer */
+        .footer-link {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.85rem;
+        }
+
+        .footer-link a {
+            color: #ffd700;
+        }
+
+        .secret-admin {
+            opacity: 0.15;
+            cursor: pointer;
+            margin-left: 15px;
+            font-size: 0.9rem;
+            transition: opacity 0.3s;
+            user-select: none;
+        }
+
+        .secret-admin:hover {
+            opacity: 0.6;
+        }
+
+        /* Import panel */
+        .import-panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .import-panel.active {
+            display: flex;
+        }
+
+        .import-panel h2 {
+            color: #ffd700;
+            text-align: center;
+        }
+
+        .import-instructions {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .import-instructions h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .import-instructions pre {
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .import-instructions ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+
+        .import-instructions li {
+            margin: 8px 0;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .import-area {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .import-area h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .import-area textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-family: monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+
+        .import-area textarea:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        .file-input-wrapper {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            transform: scale(1.05);
+        }
+
+        .import-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 500px) {
+            .import-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Community panel */
+        .community-panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .community-panel.active {
+            display: flex;
+        }
+
+        .community-panel h2 {
+            color: #ffd700;
+            text-align: center;
+        }
+
+        .community-info {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+        }
+
+        .set-card .author {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 5px;
+        }
+
+        .set-card .plays {
+            font-size: 0.75rem;
+            color: #ffd700;
+        }
+
+        .set-card.pending {
+            border-color: rgba(255,165,0,0.5);
+            opacity: 0.8;
+        }
+
+        .pending-badge {
+            display: inline-block;
+            background: #f5af19;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a4e, #0d0d2a);
+            border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .modal-content h3 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* Admin panel */
+        .admin-panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .admin-panel.active {
+            display: flex;
+        }
+
+        .admin-panel h2 {
+            color: #f5af19;
+            text-align: center;
+        }
+
+        .admin-set-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,165,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .admin-set-card h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .admin-set-card .preview-questions {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+        }
+
+        .admin-set-card .preview-questions p {
+            margin: 5px 0;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .admin-set-card .preview-questions .correct {
+            color: #38ef7d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+        <h1>Quiz Milionerzy</h1>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <div class="mode-buttons">
+                <button class="mode-btn play" onclick="showSetSelector()">
+                    <span class="icon">🎮</span>
+                    Graj
+                </button>
+                <button class="mode-btn create" onclick="showEditor()">
+                    <span class="icon">✏️</span>
+                    Stwórz zestaw
+                </button>
+                <button class="mode-btn manage" onclick="showManager()">
+                    <span class="icon">📚</span>
+                    Zarządzaj zestawami
+                </button>
+                <button class="mode-btn import" onclick="showImport()">
+                    <span class="icon">📥</span>
+                    Importuj z pliku
+                </button>
+                <button class="mode-btn community" onclick="showCommunity()">
+                    <span class="icon">🌍</span>
+                    Zestawy społeczności
+                </button>
+            </div>
+        </div>
+
+        <!-- Set Selector -->
+        <div id="setSelector" class="set-selector">
+            <h2>Wybierz zestaw pytań</h2>
+            <div class="sets-grid" id="setsGrid"></div>
+            <div class="btn-group" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Game Container -->
+        <div id="gameContainer" class="game-container">
+            <div class="game-main">
+                <div class="question-area">
+                    <div class="question-number" id="questionNumber">Pytanie 1 z 15</div>
+                    <div class="question-text" id="questionText">Tutaj pojawi się pytanie...</div>
+                </div>
+
+                <div class="answers-grid" id="answersGrid">
+                    <button class="answer-btn" data-index="0">
+                        <span class="answer-letter">A</span>
+                        <span class="answer-text">Odpowiedź A</span>
+                    </button>
+                    <button class="answer-btn" data-index="1">
+                        <span class="answer-letter">B</span>
+                        <span class="answer-text">Odpowiedź B</span>
+                    </button>
+                    <button class="answer-btn" data-index="2">
+                        <span class="answer-letter">C</span>
+                        <span class="answer-text">Odpowiedź C</span>
+                    </button>
+                    <button class="answer-btn" data-index="3">
+                        <span class="answer-letter">D</span>
+                        <span class="answer-text">Odpowiedź D</span>
+                    </button>
+                </div>
+
+                <div class="lifelines">
+                    <button class="lifeline-btn" id="lifeline5050" onclick="useFiftyFifty()" title="50:50">
+                        50:50
+                    </button>
+                    <button class="lifeline-btn" id="lifelinePhone" onclick="usePhoneFriend()" title="Telefon do przyjaciela">
+                        📞
+                    </button>
+                    <button class="lifeline-btn" id="lifelineAudience" onclick="useAskAudience()" title="Pytanie do publiczności">
+                        👥
+                    </button>
+                </div>
+
+                <div class="audience-poll" id="audiencePoll">
+                    <h4>Głosowanie publiczności:</h4>
+                    <div class="poll-bar"><span class="letter">A:</span><div class="bar-container"><div class="bar" id="barA"></div></div><span class="percentage" id="percA">0%</span></div>
+                    <div class="poll-bar"><span class="letter">B:</span><div class="bar-container"><div class="bar" id="barB"></div></div><span class="percentage" id="percB">0%</span></div>
+                    <div class="poll-bar"><span class="letter">C:</span><div class="bar-container"><div class="bar" id="barC"></div></div><span class="percentage" id="percC">0%</span></div>
+                    <div class="poll-bar"><span class="letter">D:</span><div class="bar-container"><div class="bar" id="barD"></div></div><span class="percentage" id="percD">0%</span></div>
+                </div>
+
+                <div class="phone-friend" id="phoneFriend">
+                    <h4>📞 Telefon do przyjaciela...</h4>
+                    <div class="friend-message" id="friendMessage">"Hmm, myślę że to może być..."</div>
+                </div>
+
+                <div class="game-controls">
+                    <button class="control-btn walk-away" onclick="walkAway()">💰 Rezygnuję</button>
+                    <button class="control-btn confirm" id="confirmBtn" onclick="confirmAnswer()" disabled>✓ Zatwierdź</button>
+                </div>
+            </div>
+
+            <div class="prize-ladder">
+                <h3>💰 Nagrody</h3>
+                <div class="prize-list" id="prizeList"></div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="resultScreen" class="result-screen">
+            <div class="result-icon" id="resultIcon">🏆</div>
+            <div class="result-title" id="resultTitle">Gratulacje!</div>
+            <div class="result-prize" id="resultPrize">1 000 000 zł</div>
+            <div class="result-buttons">
+                <button class="btn btn-primary" onclick="showSetSelector()">Zagraj ponownie</button>
+                <button class="btn btn-secondary" onclick="showStartScreen()">Menu główne</button>
+            </div>
+        </div>
+
+        <!-- Editor -->
+        <div id="editor" class="editor">
+            <h2 id="editorTitle">Tworzenie nowego zestawu</h2>
+            <div class="editor-form">
+                <div class="form-group">
+                    <label>Nazwa zestawu:</label>
+                    <input type="text" id="setName" placeholder="np. Historia Polski">
+                </div>
+                <div class="form-group">
+                    <label>Kategoria:</label>
+                    <select id="setCategory">
+                        <option value="matematyka">Matematyka</option>
+                        <option value="polski">Język polski</option>
+                        <option value="historia">Historia</option>
+                        <option value="geografia">Geografia</option>
+                        <option value="przyroda">Przyroda/Biologia</option>
+                        <option value="angielski">Język angielski</option>
+                        <option value="inne">Inne</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Poziom (klasa):</label>
+                    <select id="setLevel">
+                        <option value="1-3">Klasy 1-3</option>
+                        <option value="4-6">Klasy 4-6</option>
+                        <option value="7-8">Klasy 7-8</option>
+                        <option value="wszystkie">Wszystkie poziomy</option>
+                    </select>
+                </div>
+
+                <h3 style="color: #ffd700; margin: 20px 0 10px;">Pytania (15):</h3>
+                <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 15px;">
+                    Pytania 1-5: Łatwe | 6-10: Średnie | 11-15: Trudne
+                </p>
+                <div class="questions-list" id="questionsList"></div>
+
+                <div class="btn-group" style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="saveSet()">💾 Zapisz zestaw</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manager -->
+        <div id="manager" class="set-selector">
+            <h2>Zarządzanie zestawami</h2>
+            <div class="sets-grid" id="managerGrid"></div>
+            <div class="btn-group" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Import Panel -->
+        <div id="importPanel" class="import-panel">
+            <h2>📥 Importuj zestaw pytań</h2>
+
+            <div class="import-instructions">
+                <h3>Format pliku tekstowego:</h3>
+                <pre>Nazwa zestawu: Historia Polski
+Kategoria: historia
+Poziom: 7-8
+
+1: Ile nóg ma pająk?
+*8
+6
+10
+4
+
+2: Stolica Polski to:
+Kraków
+*Warszawa
+Gdańsk
+Wrocław
+
+3: W którym roku Polska odzyskała niepodległość?
+*1918
+1945
+1989
+1410</pre>
+                <ul>
+                    <li><strong>Gwiazdka (*)</strong> na początku = poprawna odpowiedź</li>
+                    <li>Każde pytanie zaczyna się od numeru i dwukropka</li>
+                    <li>4 odpowiedzi pod pytaniem (dokładnie jedna z gwiazdką)</li>
+                    <li>Pusta linia między pytaniami</li>
+                    <li>Minimum 12 pytań, maksimum 15</li>
+                </ul>
+            </div>
+
+            <div class="import-area">
+                <h3>Wklej tekst lub wczytaj plik:</h3>
+                <textarea id="importText" placeholder="Wklej tutaj zawartość pliku z pytaniami..."></textarea>
+
+                <div class="file-input-wrapper">
+                    <label class="file-input-label">
+                        📁 Wybierz plik .txt
+                        <input type="file" id="importFile" accept=".txt" onchange="loadFile(event)">
+                    </label>
+                    <span id="fileName" style="color: rgba(255,255,255,0.6);"></span>
+                </div>
+
+                <div class="import-meta">
+                    <div class="form-group">
+                        <label>Kategoria (opcjonalnie):</label>
+                        <select id="importCategory">
+                            <option value="">-- Z pliku --</option>
+                            <option value="matematyka">Matematyka</option>
+                            <option value="polski">Język polski</option>
+                            <option value="historia">Historia</option>
+                            <option value="geografia">Geografia</option>
+                            <option value="przyroda">Przyroda/Biologia</option>
+                            <option value="angielski">Język angielski</option>
+                            <option value="inne">Inne</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Poziom (opcjonalnie):</label>
+                        <select id="importLevel">
+                            <option value="">-- Z pliku --</option>
+                            <option value="1-3">Klasy 1-3</option>
+                            <option value="4-6">Klasy 4-6</option>
+                            <option value="7-8">Klasy 7-8</option>
+                            <option value="wszystkie">Wszystkie poziomy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="importSet()">✓ Importuj zestaw</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Community Panel -->
+        <div id="communityPanel" class="community-panel">
+            <h2>🌍 Zestawy społeczności</h2>
+            <p class="community-info">Zestawy pytań udostępnione przez innych nauczycieli</p>
+            <div class="sets-grid" id="communityGrid">
+                <p style="text-align: center; color: rgba(255,255,255,0.5); grid-column: 1/-1;">Ładowanie...</p>
+            </div>
+            <div class="btn-group" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanel" class="admin-panel">
+            <h2>🔐 Panel moderatora</h2>
+            <p class="community-info">Zestawy oczekujące na zatwierdzenie</p>
+            <div id="pendingList">
+                <p style="text-align: center; color: rgba(255,255,255,0.5);">Ładowanie...</p>
+            </div>
+            <div class="btn-group" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Share Modal -->
+        <div id="shareModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3>📤 Udostępnij społeczności</h3>
+                <p style="color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 20px;">
+                    Twój zestaw zostanie przesłany do moderacji. Po zatwierdzeniu będzie widoczny dla wszystkich!
+                </p>
+                <div class="form-group">
+                    <label>Twój pseudonim (widoczny publicznie):</label>
+                    <input type="text" id="authorName" placeholder="np. Nauczyciel z Warszawy" maxlength="50">
+                </div>
+                <input type="hidden" id="shareSetId">
+                <div class="modal-buttons">
+                    <button class="btn btn-success" onclick="confirmShare()">📤 Wyślij do moderacji</button>
+                    <button class="btn btn-secondary" onclick="closeShareModal()">Anuluj</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-link">
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki odwiedzin</a>
+            <span class="secret-admin" onclick="showAdmin()" title="🤫">⚙️</span>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase Configuration (same as turniej-tabliczka)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAygGONZCA15Z8L_7RZoFksVf7J_DKQLxw",
+            authDomain: "turniej-tabliczka.firebaseapp.com",
+            databaseURL: "https://turniej-tabliczka-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "turniej-tabliczka",
+            storageBucket: "turniej-tabliczka.firebasestorage.app",
+            messagingSenderId: "311789887392",
+            appId: "1:311789887392:web:7b9005f32ba6e80e280ec5"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Admin password (simple protection)
+        const ADMIN_CODE = 'Ins0mia1981ADM';
+    </script>
+
+    <script>
+        // Prize ladder
+        const PRIZES = [
+            { amount: 500, guaranteed: false },
+            { amount: 1000, guaranteed: false },
+            { amount: 2000, guaranteed: false },
+            { amount: 5000, guaranteed: false },
+            { amount: 10000, guaranteed: true },
+            { amount: 20000, guaranteed: false },
+            { amount: 40000, guaranteed: false },
+            { amount: 75000, guaranteed: false },
+            { amount: 125000, guaranteed: false },
+            { amount: 250000, guaranteed: true },
+            { amount: 500000, guaranteed: false },
+            { amount: 1000000, guaranteed: false }
+        ];
+
+        // Built-in question sets
+        const BUILTIN_SETS = [
+            {
+                id: 'demo-ogolny',
+                name: 'Quiz Ogólny (Demo)',
+                category: 'inne',
+                level: 'wszystkie',
+                builtin: true,
+                questions: [
+                    { q: "Ile nóg ma pająk?", answers: ["6", "8", "10", "4"], correct: 1 },
+                    { q: "Stolica Polski to:", answers: ["Kraków", "Warszawa", "Gdańsk", "Wrocław"], correct: 1 },
+                    { q: "2 + 2 = ?", answers: ["3", "4", "5", "22"], correct: 1 },
+                    { q: "Który kolor NIE występuje na fladze Polski?", answers: ["Biały", "Czerwony", "Niebieski", "Oba występują"], correct: 2 },
+                    { q: "Ile dni ma tydzień?", answers: ["5", "6", "7", "8"], correct: 2 },
+                    { q: "Który ocean jest największy?", answers: ["Atlantycki", "Indyjski", "Spokojny", "Arktyczny"], correct: 2 },
+                    { q: "W którym roku Polska odzyskała niepodległość?", answers: ["1918", "1945", "1989", "1410"], correct: 0 },
+                    { q: "Ile to: 7 × 8?", answers: ["54", "56", "58", "64"], correct: 1 },
+                    { q: "Kto napisał 'Pana Tadeusza'?", answers: ["Słowacki", "Mickiewicz", "Sienkiewicz", "Prus"], correct: 1 },
+                    { q: "Najwyższy szczyt Polski to:", answers: ["Rysy", "Giewont", "Śnieżka", "Babia Góra"], correct: 0 },
+                    { q: "Pierwiastek chemiczny o symbolu 'Au' to:", answers: ["Srebro", "Złoto", "Miedź", "Aluminium"], correct: 1 },
+                    { q: "Który rok był przestępny?", answers: ["2019", "2020", "2021", "2022"], correct: 1 },
+                    { q: "Ile województw ma Polska?", answers: ["14", "15", "16", "17"], correct: 2 },
+                    { q: "Które państwo NIE graniczy z Polską?", answers: ["Czechy", "Ukraina", "Węgry", "Rosja"], correct: 2 },
+                    { q: "Która planeta jest najbliżej Słońca?", answers: ["Wenus", "Mars", "Merkury", "Ziemia"], correct: 2 }
+                ]
+            },
+            {
+                id: 'tabliczka-mnozenia',
+                name: 'Tabliczka Mnożenia',
+                category: 'matematyka',
+                level: '4-6',
+                builtin: true,
+                questions: [
+                    { q: "3 × 4 = ?", answers: ["10", "12", "14", "11"], correct: 1 },
+                    { q: "5 × 5 = ?", answers: ["20", "25", "30", "15"], correct: 1 },
+                    { q: "6 × 3 = ?", answers: ["18", "15", "21", "16"], correct: 0 },
+                    { q: "2 × 9 = ?", answers: ["16", "19", "18", "17"], correct: 2 },
+                    { q: "4 × 7 = ?", answers: ["24", "28", "32", "21"], correct: 1 },
+                    { q: "8 × 6 = ?", answers: ["42", "46", "48", "54"], correct: 2 },
+                    { q: "7 × 7 = ?", answers: ["47", "49", "56", "42"], correct: 1 },
+                    { q: "9 × 4 = ?", answers: ["32", "36", "38", "34"], correct: 1 },
+                    { q: "6 × 8 = ?", answers: ["46", "48", "54", "56"], correct: 1 },
+                    { q: "7 × 9 = ?", answers: ["56", "63", "72", "64"], correct: 1 },
+                    { q: "8 × 8 = ?", answers: ["62", "64", "66", "68"], correct: 1 },
+                    { q: "9 × 9 = ?", answers: ["72", "81", "79", "89"], correct: 1 },
+                    { q: "12 × 7 = ?", answers: ["84", "77", "91", "72"], correct: 0 },
+                    { q: "11 × 11 = ?", answers: ["111", "121", "110", "122"], correct: 1 },
+                    { q: "12 × 12 = ?", answers: ["124", "132", "144", "156"], correct: 2 }
+                ]
+            },
+            {
+                id: 'wojewodztwa',
+                name: 'Województwa Polski',
+                category: 'geografia',
+                level: '4-6',
+                builtin: true,
+                questions: [
+                    { q: "Stolica województwa mazowieckiego to:", answers: ["Łódź", "Warszawa", "Radom", "Płock"], correct: 1 },
+                    { q: "Które województwo jest największe?", answers: ["Wielkopolskie", "Mazowieckie", "Małopolskie", "Śląskie"], correct: 1 },
+                    { q: "Kraków jest stolicą województwa:", answers: ["Śląskiego", "Podkarpackiego", "Małopolskiego", "Świętokrzyskiego"], correct: 2 },
+                    { q: "Gdańsk leży w województwie:", answers: ["Zachodniopomorskim", "Pomorskim", "Warmińsko-mazurskim", "Kujawsko-pomorskim"], correct: 1 },
+                    { q: "Stolica woj. wielkopolskiego to:", answers: ["Gniezno", "Kalisz", "Poznań", "Konin"], correct: 2 },
+                    { q: "Wrocław jest stolicą województwa:", answers: ["Opolskiego", "Dolnośląskiego", "Lubuskiego", "Śląskiego"], correct: 1 },
+                    { q: "Które województwo ma stolicę w Lublinie?", answers: ["Podlaskie", "Lubelskie", "Świętokrzyskie", "Podkarpackie"], correct: 1 },
+                    { q: "Białystok to stolica województwa:", answers: ["Mazowieckiego", "Warmińsko-mazurskiego", "Podlaskiego", "Lubelskiego"], correct: 2 },
+                    { q: "Stolica woj. zachodniopomorskiego to:", answers: ["Koszalin", "Szczecin", "Gdańsk", "Słupsk"], correct: 1 },
+                    { q: "Olsztyn jest stolicą województwa:", answers: ["Podlaskiego", "Warmińsko-mazurskiego", "Pomorskiego", "Mazowieckiego"], correct: 1 },
+                    { q: "Które województwo leży najdalej na zachód?", answers: ["Dolnośląskie", "Wielkopolskie", "Zachodniopomorskie", "Lubuskie"], correct: 3 },
+                    { q: "Rzeszów to stolica województwa:", answers: ["Lubelskiego", "Małopolskiego", "Podkarpackiego", "Świętokrzyskiego"], correct: 2 },
+                    { q: "Stolica woj. kujawsko-pomorskiego to:", answers: ["Toruń", "Bydgoszcz", "Włocławek", "Toruń i Bydgoszcz"], correct: 3 },
+                    { q: "Katowice są stolicą województwa:", answers: ["Małopolskiego", "Opolskiego", "Śląskiego", "Dolnośląskiego"], correct: 2 },
+                    { q: "Ile województw ma Polska?", answers: ["14", "15", "16", "17"], correct: 2 }
+                ]
+            }
+        ];
+
+        // Game state
+        let currentSet = null;
+        let currentQuestionIndex = 0;
+        let selectedAnswer = null;
+        let lifelines = { fifty: true, phone: true, audience: true };
+        let gameOver = false;
+        let editingSetId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPrizeLadder();
+            initAnswerButtons();
+        });
+
+        // Prize ladder
+        function renderPrizeLadder() {
+            const container = document.getElementById('prizeList');
+            container.innerHTML = PRIZES.slice().reverse().map((prize, index) => {
+                const realIndex = PRIZES.length - 1 - index;
+                return `
+                    <div class="prize-item ${prize.guaranteed ? 'guaranteed' : ''}" data-index="${realIndex}">
+                        <span class="number">${realIndex + 1}.</span>
+                        <span class="amount">${formatMoney(prize.amount)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatMoney(amount) {
+            return amount.toLocaleString('pl-PL') + ' zł';
+        }
+
+        function updatePrizeLadder() {
+            document.querySelectorAll('.prize-item').forEach(item => {
+                const index = parseInt(item.dataset.index);
+                item.classList.remove('current', 'won');
+                if (index === currentQuestionIndex) {
+                    item.classList.add('current');
+                } else if (index < currentQuestionIndex) {
+                    item.classList.add('won');
+                }
+            });
+        }
+
+        // Answer buttons
+        function initAnswerButtons() {
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.addEventListener('click', () => selectAnswer(parseInt(btn.dataset.index)));
+            });
+        }
+
+        function selectAnswer(index) {
+            if (gameOver) return;
+
+            const btn = document.querySelector(`.answer-btn[data-index="${index}"]`);
+            if (btn.classList.contains('fifty-hidden')) return;
+
+            document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedAnswer = index;
+            document.getElementById('confirmBtn').disabled = false;
+        }
+
+        // Navigation
+        function showStartScreen() {
+            hideAll();
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+
+        function showSetSelector() {
+            hideAll();
+            renderSetSelector();
+            document.getElementById('setSelector').classList.add('active');
+        }
+
+        function showManager() {
+            hideAll();
+            renderManager();
+            document.getElementById('manager').classList.add('active');
+        }
+
+        function showEditor(setId = null) {
+            hideAll();
+            editingSetId = setId;
+
+            if (setId) {
+                const sets = getCustomSets();
+                const set = sets.find(s => s.id === setId);
+                if (set) {
+                    document.getElementById('editorTitle').textContent = 'Edycja zestawu';
+                    document.getElementById('setName').value = set.name;
+                    document.getElementById('setCategory').value = set.category;
+                    document.getElementById('setLevel').value = set.level;
+                    renderQuestionsEditor(set.questions);
+                }
+            } else {
+                document.getElementById('editorTitle').textContent = 'Tworzenie nowego zestawu';
+                document.getElementById('setName').value = '';
+                document.getElementById('setCategory').value = 'inne';
+                document.getElementById('setLevel').value = 'wszystkie';
+                renderQuestionsEditor([]);
+            }
+
+            document.getElementById('editor').classList.add('active');
+        }
+
+        function hideAll() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('setSelector').classList.remove('active');
+            document.getElementById('gameContainer').classList.remove('active');
+            document.getElementById('resultScreen').classList.remove('active');
+            document.getElementById('editor').classList.remove('active');
+            document.getElementById('manager').classList.remove('active');
+            document.getElementById('importPanel').classList.remove('active');
+            document.getElementById('communityPanel').classList.remove('active');
+            document.getElementById('adminPanel').classList.remove('active');
+        }
+
+        // Import/Export functions
+        function showImport() {
+            hideAll();
+            document.getElementById('importText').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('importCategory').value = '';
+            document.getElementById('importLevel').value = '';
+            document.getElementById('importPanel').classList.add('active');
+        }
+
+        function loadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('importText').value = e.target.result;
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function importSet() {
+            const text = document.getElementById('importText').value.trim();
+            if (!text) {
+                alert('Wklej tekst z pytaniami lub wybierz plik!');
+                return;
+            }
+
+            try {
+                const parsed = parseImportText(text);
+
+                // Override category/level if selected
+                const overrideCategory = document.getElementById('importCategory').value;
+                const overrideLevel = document.getElementById('importLevel').value;
+                if (overrideCategory) parsed.category = overrideCategory;
+                if (overrideLevel) parsed.level = overrideLevel;
+
+                if (parsed.questions.length < 12) {
+                    alert(`Za mało pytań! Znaleziono ${parsed.questions.length}, wymagane minimum 12.`);
+                    return;
+                }
+
+                // Save the set
+                const sets = getCustomSets();
+                const setData = {
+                    id: 'import_' + Date.now(),
+                    name: parsed.name || 'Importowany zestaw',
+                    category: parsed.category || 'inne',
+                    level: parsed.level || 'wszystkie',
+                    questions: parsed.questions.slice(0, 15) // max 15
+                };
+
+                sets.push(setData);
+                localStorage.setItem('milionerzy_sets', JSON.stringify(sets));
+
+                alert(`Zaimportowano zestaw "${setData.name}" z ${setData.questions.length} pytaniami!`);
+                showStartScreen();
+
+            } catch (error) {
+                alert('Błąd parsowania: ' + error.message);
+            }
+        }
+
+        function parseImportText(text) {
+            const lines = text.split('\n').map(l => l.trim());
+            const result = {
+                name: null,
+                category: null,
+                level: null,
+                questions: []
+            };
+
+            // Parse header
+            for (const line of lines) {
+                if (line.toLowerCase().startsWith('nazwa zestawu:')) {
+                    result.name = line.substring(14).trim();
+                } else if (line.toLowerCase().startsWith('kategoria:')) {
+                    result.category = line.substring(10).trim().toLowerCase();
+                } else if (line.toLowerCase().startsWith('poziom:')) {
+                    result.level = line.substring(7).trim();
+                }
+            }
+
+            // Parse questions
+            let currentQuestion = null;
+            let currentAnswers = [];
+
+            for (const line of lines) {
+                // Check if it's a question line (starts with number:)
+                const questionMatch = line.match(/^(\d+)\s*[:\.]\s*(.+)/);
+
+                if (questionMatch) {
+                    // Save previous question if exists
+                    if (currentQuestion && currentAnswers.length === 4) {
+                        const correctIndex = currentAnswers.findIndex(a => a.startsWith('*'));
+                        if (correctIndex >= 0) {
+                            result.questions.push({
+                                q: currentQuestion,
+                                answers: currentAnswers.map(a => a.replace(/^\*/, '').trim()),
+                                correct: correctIndex
+                            });
+                        }
+                    }
+
+                    currentQuestion = questionMatch[2].trim();
+                    currentAnswers = [];
+                } else if (line && currentQuestion && currentAnswers.length < 4) {
+                    // It's an answer line
+                    if (!line.toLowerCase().startsWith('nazwa zestawu:') &&
+                        !line.toLowerCase().startsWith('kategoria:') &&
+                        !line.toLowerCase().startsWith('poziom:')) {
+                        currentAnswers.push(line);
+                    }
+                }
+            }
+
+            // Don't forget the last question
+            if (currentQuestion && currentAnswers.length === 4) {
+                const correctIndex = currentAnswers.findIndex(a => a.startsWith('*'));
+                if (correctIndex >= 0) {
+                    result.questions.push({
+                        q: currentQuestion,
+                        answers: currentAnswers.map(a => a.replace(/^\*/, '').trim()),
+                        correct: correctIndex
+                    });
+                }
+            }
+
+            return result;
+        }
+
+        function exportSet(setId) {
+            const sets = getCustomSets();
+            const set = sets.find(s => s.id === setId);
+            if (!set) return;
+
+            let text = `Nazwa zestawu: ${set.name}\n`;
+            text += `Kategoria: ${set.category}\n`;
+            text += `Poziom: ${set.level}\n\n`;
+
+            set.questions.forEach((q, i) => {
+                text += `${i + 1}: ${q.q}\n`;
+                q.answers.forEach((a, j) => {
+                    text += (j === q.correct ? '*' : '') + a + '\n';
+                });
+                text += '\n';
+            });
+
+            // Download as file
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${set.name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ ]/g, '')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // =====================
+        // COMMUNITY FUNCTIONS
+        // =====================
+
+        function showCommunity() {
+            hideAll();
+            document.getElementById('communityPanel').classList.add('active');
+            loadCommunitySets();
+        }
+
+        async function loadCommunitySets() {
+            const container = document.getElementById('communityGrid');
+            container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5); grid-column: 1/-1;">Ładowanie...</p>';
+
+            try {
+                const snapshot = await db.ref('communityQuizSets').orderByChild('status').equalTo('approved').once('value');
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5); grid-column: 1/-1;">Brak zestawów społeczności. Bądź pierwszy - udostępnij swój zestaw!</p>';
+                    return;
+                }
+
+                const sets = [];
+                snapshot.forEach(child => {
+                    sets.push({ id: child.key, ...child.val() });
+                });
+
+                // Sort by plays (most popular first)
+                sets.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+
+                container.innerHTML = sets.map(set => `
+                    <div class="set-card" onclick="playCommunitySet('${set.id}')">
+                        <h3>${escapeHtml(set.name)}</h3>
+                        <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)}</p>
+                        <div class="author">👤 ${escapeHtml(set.author)}</div>
+                        <div class="set-meta">
+                            Poziom: ${set.level} | ${set.questions.length} pytań
+                        </div>
+                        <div class="plays">▶️ Zagrano: ${set.plays || 0} razy</div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Błąd ładowania zestawów:', error);
+                container.innerHTML = '<p style="text-align: center; color: #e74c3c; grid-column: 1/-1;">Błąd ładowania. Sprawdź połączenie z internetem.</p>';
+            }
+        }
+
+        async function playCommunitySet(setId) {
+            try {
+                const snapshot = await db.ref('communityQuizSets/' + setId).once('value');
+                if (!snapshot.exists()) {
+                    alert('Zestaw nie istnieje!');
+                    return;
+                }
+
+                const originalSet = { id: setId, ...snapshot.val() };
+
+                // Increment play count
+                db.ref('communityQuizSets/' + setId + '/plays').transaction(plays => (plays || 0) + 1);
+
+                // Shuffle answers for each question
+                currentSet = shuffleAnswersForSet(originalSet);
+                currentQuestionIndex = 0;
+                selectedAnswer = null;
+                lifelines = { fifty: true, phone: true, audience: true };
+                gameOver = false;
+
+                document.getElementById('lifeline5050').disabled = false;
+                document.getElementById('lifelinePhone').disabled = false;
+                document.getElementById('lifelineAudience').disabled = false;
+                document.getElementById('audiencePoll').classList.remove('active');
+                document.getElementById('phoneFriend').classList.remove('active');
+
+                hideAll();
+                document.getElementById('gameContainer').classList.add('active');
+                loadQuestion();
+
+            } catch (error) {
+                console.error('Błąd:', error);
+                alert('Błąd ładowania zestawu.');
+            }
+        }
+
+        // Share to community
+        function openShareModal(setId) {
+            document.getElementById('shareSetId').value = setId;
+            document.getElementById('authorName').value = localStorage.getItem('milionerzy_author') || '';
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        async function confirmShare() {
+            const setId = document.getElementById('shareSetId').value;
+            const author = document.getElementById('authorName').value.trim();
+
+            if (!author) {
+                alert('Podaj swój pseudonim!');
+                return;
+            }
+
+            // Save author for next time
+            localStorage.setItem('milionerzy_author', author);
+
+            const sets = getCustomSets();
+            const set = sets.find(s => s.id === setId);
+            if (!set) {
+                alert('Nie znaleziono zestawu!');
+                return;
+            }
+
+            try {
+                const communitySet = {
+                    name: set.name,
+                    author: author,
+                    category: set.category,
+                    level: set.level,
+                    questions: set.questions,
+                    status: 'pending',
+                    plays: 0,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                await db.ref('communityQuizSets').push(communitySet);
+
+                closeShareModal();
+                alert('Dziękujemy! Twój zestaw został przesłany do moderacji. Po zatwierdzeniu będzie widoczny dla wszystkich.');
+
+            } catch (error) {
+                console.error('Błąd udostępniania:', error);
+                alert('Błąd wysyłania. Spróbuj ponownie.');
+            }
+        }
+
+        // =====================
+        // ADMIN FUNCTIONS
+        // =====================
+
+        function showAdmin() {
+            const code = prompt('Podaj kod moderatora:');
+            if (code !== ADMIN_CODE) {
+                alert('Nieprawidłowy kod!');
+                return;
+            }
+
+            hideAll();
+            document.getElementById('adminPanel').classList.add('active');
+            loadPendingSets();
+        }
+
+        async function loadPendingSets() {
+            const container = document.getElementById('pendingList');
+            container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5);">Ładowanie...</p>';
+
+            try {
+                const snapshot = await db.ref('communityQuizSets').orderByChild('status').equalTo('pending').once('value');
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5);">Brak zestawów do zatwierdzenia.</p>';
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(child => {
+                    const set = child.val();
+                    const setId = child.key;
+
+                    html += `
+                        <div class="admin-set-card">
+                            <h4>${escapeHtml(set.name)}</h4>
+                            <p>👤 Autor: ${escapeHtml(set.author)}</p>
+                            <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)} | Poziom: ${set.level}</p>
+                            <div class="preview-questions">
+                                <strong>Przykładowe pytania:</strong>
+                                ${set.questions.slice(0, 3).map((q, i) => `
+                                    <p><strong>${i+1}.</strong> ${escapeHtml(q.q)}</p>
+                                    <p class="correct">✓ ${escapeHtml(q.answers[q.correct])}</p>
+                                `).join('')}
+                                ${set.questions.length > 3 ? `<p>... i ${set.questions.length - 3} więcej pytań</p>` : ''}
+                            </div>
+                            <div class="btn-group" style="margin-top: 15px;">
+                                <button class="btn btn-success" onclick="approveSet('${setId}')" style="padding: 10px 20px;">✓ Zatwierdź</button>
+                                <button class="btn btn-danger" onclick="rejectSet('${setId}')" style="padding: 10px 20px;">✗ Odrzuć</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Błąd:', error);
+                container.innerHTML = '<p style="text-align: center; color: #e74c3c;">Błąd ładowania.</p>';
+            }
+        }
+
+        async function approveSet(setId) {
+            if (!confirm('Zatwierdzić ten zestaw?')) return;
+
+            try {
+                await db.ref('communityQuizSets/' + setId + '/status').set('approved');
+                alert('Zestaw zatwierdzony!');
+                loadPendingSets();
+            } catch (error) {
+                alert('Błąd: ' + error.message);
+            }
+        }
+
+        async function rejectSet(setId) {
+            if (!confirm('Odrzucić ten zestaw? Zostanie usunięty.')) return;
+
+            try {
+                await db.ref('communityQuizSets/' + setId).remove();
+                alert('Zestaw odrzucony i usunięty.');
+                loadPendingSets();
+            } catch (error) {
+                alert('Błąd: ' + error.message);
+            }
+        }
+
+        // Check URL for admin access
+        if (window.location.hash === '#admin') {
+            setTimeout(showAdmin, 500);
+        }
+
+        // =====================
+        // END COMMUNITY
+        // =====================
+
+        // Set selector
+        function renderSetSelector() {
+            const container = document.getElementById('setsGrid');
+            const customSets = getCustomSets();
+            const allSets = [...BUILTIN_SETS, ...customSets];
+
+            container.innerHTML = allSets.map(set => `
+                <div class="set-card" onclick="startGame('${set.id}')">
+                    <h3>${set.name}</h3>
+                    <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)}</p>
+                    <div class="set-meta">
+                        Poziom: ${set.level} | ${set.questions.length} pytań
+                        ${set.builtin ? ' | 📦 Wbudowany' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Manager
+        function renderManager() {
+            const container = document.getElementById('managerGrid');
+            const customSets = getCustomSets();
+
+            if (customSets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5); grid-column: 1/-1;">Nie masz jeszcze własnych zestawów. Stwórz pierwszy!</p>';
+                return;
+            }
+
+            container.innerHTML = customSets.map(set => `
+                <div class="set-card">
+                    <h3>${set.name}</h3>
+                    <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)}</p>
+                    <div class="set-meta">Poziom: ${set.level} | ${set.questions.length} pytań</div>
+                    <div class="btn-group" style="margin-top: 15px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="showEditor('${set.id}')" style="padding: 8px 12px; font-size: 0.8rem;">✏️ Edytuj</button>
+                        <button class="btn" onclick="exportSet('${set.id}')" style="padding: 8px 12px; font-size: 0.8rem; background: linear-gradient(135deg, #4facfe, #00f2fe);">📤 Plik</button>
+                        <button class="btn" onclick="openShareModal('${set.id}')" style="padding: 8px 12px; font-size: 0.8rem; background: linear-gradient(135deg, #f5af19, #f12711);">🌍 Udostępnij</button>
+                        <button class="btn btn-danger" onclick="deleteSet('${set.id}')" style="padding: 8px 12px; font-size: 0.8rem;">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getCategoryEmoji(category) {
+            const emojis = {
+                matematyka: '🔢',
+                polski: '📖',
+                historia: '🏛️',
+                geografia: '🌍',
+                przyroda: '🌿',
+                angielski: '🇬🇧',
+                inne: '📚'
+            };
+            return emojis[category] || '📚';
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                matematyka: 'Matematyka',
+                polski: 'Język polski',
+                historia: 'Historia',
+                geografia: 'Geografia',
+                przyroda: 'Przyroda/Biologia',
+                angielski: 'Język angielski',
+                inne: 'Inne'
+            };
+            return names[category] || category;
+        }
+
+        // Shuffle answers for all questions
+        function shuffleAnswersForSet(set) {
+            // Create a deep copy to avoid modifying original
+            const shuffledSet = JSON.parse(JSON.stringify(set));
+
+            shuffledSet.questions = shuffledSet.questions.map(q => {
+                // Create array of answer objects with original index
+                const answersWithIndex = q.answers.map((answer, index) => ({
+                    text: answer,
+                    wasCorrect: index === q.correct
+                }));
+
+                // Shuffle using Fisher-Yates
+                for (let i = answersWithIndex.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [answersWithIndex[i], answersWithIndex[j]] = [answersWithIndex[j], answersWithIndex[i]];
+                }
+
+                // Find new correct index and extract answers
+                return {
+                    q: q.q,
+                    answers: answersWithIndex.map(a => a.text),
+                    correct: answersWithIndex.findIndex(a => a.wasCorrect)
+                };
+            });
+
+            return shuffledSet;
+        }
+
+        // Game logic
+        function startGame(setId) {
+            const customSets = getCustomSets();
+            const allSets = [...BUILTIN_SETS, ...customSets];
+            const originalSet = allSets.find(s => s.id === setId);
+
+            if (!originalSet || originalSet.questions.length < 12) {
+                alert('Zestaw musi mieć minimum 12 pytań!');
+                return;
+            }
+
+            // Shuffle answers for each question
+            currentSet = shuffleAnswersForSet(originalSet);
+
+            // Reset game state
+            currentQuestionIndex = 0;
+            selectedAnswer = null;
+            lifelines = { fifty: true, phone: true, audience: true };
+            gameOver = false;
+
+            // Reset UI
+            document.getElementById('lifeline5050').disabled = false;
+            document.getElementById('lifelinePhone').disabled = false;
+            document.getElementById('lifelineAudience').disabled = false;
+            document.getElementById('audiencePoll').classList.remove('active');
+            document.getElementById('phoneFriend').classList.remove('active');
+
+            hideAll();
+            document.getElementById('gameContainer').classList.add('active');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= Math.min(currentSet.questions.length, 12)) {
+                endGame(true);
+                return;
+            }
+
+            const question = currentSet.questions[currentQuestionIndex];
+            selectedAnswer = null;
+
+            document.getElementById('questionNumber').textContent = `Pytanie ${currentQuestionIndex + 1} z ${Math.min(currentSet.questions.length, 12)}`;
+            document.getElementById('questionText').textContent = question.q;
+            document.getElementById('confirmBtn').disabled = true;
+
+            // Reset answers
+            document.querySelectorAll('.answer-btn').forEach((btn, index) => {
+                btn.classList.remove('selected', 'correct', 'wrong', 'fifty-hidden');
+                btn.disabled = false;
+                btn.querySelector('.answer-text').textContent = question.answers[index];
+            });
+
+            // Reset lifeline displays
+            document.getElementById('audiencePoll').classList.remove('active');
+            document.getElementById('phoneFriend').classList.remove('active');
+
+            updatePrizeLadder();
+        }
+
+        function confirmAnswer() {
+            if (selectedAnswer === null || gameOver) return;
+
+            const question = currentSet.questions[currentQuestionIndex];
+            const isCorrect = selectedAnswer === question.correct;
+
+            // Disable all buttons
+            document.querySelectorAll('.answer-btn').forEach(btn => btn.disabled = true);
+            document.getElementById('confirmBtn').disabled = true;
+
+            // Show result
+            const selectedBtn = document.querySelector(`.answer-btn[data-index="${selectedAnswer}"]`);
+            const correctBtn = document.querySelector(`.answer-btn[data-index="${question.correct}"]`);
+
+            if (isCorrect) {
+                selectedBtn.classList.add('correct');
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex >= Math.min(currentSet.questions.length, 12)) {
+                        endGame(true);
+                    } else {
+                        loadQuestion();
+                    }
+                }, 1500);
+            } else {
+                selectedBtn.classList.add('wrong');
+                correctBtn.classList.add('correct');
+                setTimeout(() => endGame(false), 2000);
+            }
+        }
+
+        function walkAway() {
+            if (confirm('Czy na pewno chcesz zrezygnować i zabrać wygraną?')) {
+                endGame(true, true);
+            }
+        }
+
+        function endGame(won, walkedAway = false) {
+            gameOver = true;
+
+            let prize = 0;
+            let icon = '';
+            let title = '';
+
+            if (won) {
+                if (walkedAway) {
+                    prize = currentQuestionIndex > 0 ? PRIZES[currentQuestionIndex - 1].amount : 0;
+                    icon = '💰';
+                    title = 'Mądra decyzja!';
+                } else {
+                    prize = PRIZES[currentQuestionIndex - 1]?.amount || PRIZES[PRIZES.length - 1].amount;
+                    icon = '🏆';
+                    title = 'Gratulacje! Wygrałeś!';
+                }
+            } else {
+                // Find last guaranteed prize
+                for (let i = currentQuestionIndex - 1; i >= 0; i--) {
+                    if (PRIZES[i].guaranteed) {
+                        prize = PRIZES[i].amount;
+                        break;
+                    }
+                }
+                icon = '😔';
+                title = 'Niestety, błędna odpowiedź!';
+            }
+
+            document.getElementById('resultIcon').textContent = icon;
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultPrize').textContent = formatMoney(prize);
+
+            hideAll();
+            document.getElementById('resultScreen').classList.add('active');
+        }
+
+        // Lifelines
+        function useFiftyFifty() {
+            if (!lifelines.fifty || gameOver) return;
+            lifelines.fifty = false;
+            document.getElementById('lifeline5050').disabled = true;
+
+            const question = currentSet.questions[currentQuestionIndex];
+            const wrongAnswers = [0, 1, 2, 3].filter(i => i !== question.correct);
+
+            // Shuffle and pick 2 to hide
+            wrongAnswers.sort(() => Math.random() - 0.5);
+            const toHide = wrongAnswers.slice(0, 2);
+
+            toHide.forEach(index => {
+                document.querySelector(`.answer-btn[data-index="${index}"]`).classList.add('fifty-hidden');
+            });
+        }
+
+        function usePhoneFriend() {
+            if (!lifelines.phone || gameOver) return;
+            lifelines.phone = false;
+            document.getElementById('lifelinePhone').disabled = true;
+
+            const question = currentSet.questions[currentQuestionIndex];
+            const letters = ['A', 'B', 'C', 'D'];
+            const correctLetter = letters[question.correct];
+
+            // 80% chance friend knows the answer
+            const friendKnows = Math.random() < 0.8;
+            let message;
+
+            if (friendKnows) {
+                const confidence = ['jestem pewien', 'myślę', 'wydaje mi się'][Math.floor(Math.random() * 3)];
+                message = `"Hmm... ${confidence}, że to odpowiedź ${correctLetter}."`;
+            } else {
+                const wrongLetter = letters[[0,1,2,3].filter(i => i !== question.correct)[Math.floor(Math.random() * 3)]];
+                message = `"Nie jestem pewien, ale może ${wrongLetter}? Przepraszam, nie wiem na pewno."`;
+            }
+
+            document.getElementById('friendMessage').textContent = message;
+            document.getElementById('phoneFriend').classList.add('active');
+        }
+
+        function useAskAudience() {
+            if (!lifelines.audience || gameOver) return;
+            lifelines.audience = false;
+            document.getElementById('lifelineAudience').disabled = true;
+
+            const question = currentSet.questions[currentQuestionIndex];
+            const percentages = [0, 0, 0, 0];
+
+            // Correct answer gets 40-70%
+            const correctPerc = 40 + Math.floor(Math.random() * 31);
+            percentages[question.correct] = correctPerc;
+
+            // Distribute rest
+            let remaining = 100 - correctPerc;
+            [0, 1, 2, 3].filter(i => i !== question.correct).forEach((i, idx, arr) => {
+                if (idx === arr.length - 1) {
+                    percentages[i] = remaining;
+                } else {
+                    const perc = Math.floor(Math.random() * remaining);
+                    percentages[i] = perc;
+                    remaining -= perc;
+                }
+            });
+
+            // Animate bars
+            setTimeout(() => {
+                ['A', 'B', 'C', 'D'].forEach((letter, i) => {
+                    document.getElementById(`bar${letter}`).style.width = percentages[i] + '%';
+                    document.getElementById(`perc${letter}`).textContent = percentages[i] + '%';
+                });
+            }, 100);
+
+            document.getElementById('audiencePoll').classList.add('active');
+        }
+
+        // Editor
+        function renderQuestionsEditor(existingQuestions = []) {
+            const container = document.getElementById('questionsList');
+            const questions = [];
+
+            // Fill with existing or empty
+            for (let i = 0; i < 15; i++) {
+                questions.push(existingQuestions[i] || { q: '', answers: ['', '', '', ''], correct: 0 });
+            }
+
+            container.innerHTML = questions.map((q, i) => `
+                <div class="question-edit-item">
+                    <h4>Pytanie ${i + 1} ${i < 5 ? '(łatwe)' : i < 10 ? '(średnie)' : '(trudne)'}</h4>
+                    <div class="form-group">
+                        <input type="text" id="q${i}" placeholder="Treść pytania..." value="${escapeHtml(q.q)}">
+                    </div>
+                    <div class="answers-edit">
+                        ${['A', 'B', 'C', 'D'].map((letter, j) => `
+                            <div class="answer-edit-group">
+                                <input type="radio" name="correct${i}" value="${j}" ${q.correct === j ? 'checked' : ''}>
+                                <span>${letter}:</span>
+                                <input type="text" id="a${i}_${j}" placeholder="Odpowiedź ${letter}" value="${escapeHtml(q.answers[j])}">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function saveSet() {
+            const name = document.getElementById('setName').value.trim();
+            const category = document.getElementById('setCategory').value;
+            const level = document.getElementById('setLevel').value;
+
+            if (!name) {
+                alert('Podaj nazwę zestawu!');
+                return;
+            }
+
+            const questions = [];
+            for (let i = 0; i < 15; i++) {
+                const q = document.getElementById(`q${i}`).value.trim();
+                const answers = [0, 1, 2, 3].map(j => document.getElementById(`a${i}_${j}`).value.trim());
+                const correctRadio = document.querySelector(`input[name="correct${i}"]:checked`);
+                const correct = correctRadio ? parseInt(correctRadio.value) : 0;
+
+                if (q && answers.every(a => a)) {
+                    questions.push({ q, answers, correct });
+                }
+            }
+
+            if (questions.length < 12) {
+                alert(`Wypełnij minimum 12 pytań! (masz ${questions.length})`);
+                return;
+            }
+
+            const sets = getCustomSets();
+            const setData = {
+                id: editingSetId || 'custom_' + Date.now(),
+                name,
+                category,
+                level,
+                questions
+            };
+
+            if (editingSetId) {
+                const index = sets.findIndex(s => s.id === editingSetId);
+                if (index >= 0) sets[index] = setData;
+            } else {
+                sets.push(setData);
+            }
+
+            localStorage.setItem('milionerzy_sets', JSON.stringify(sets));
+            alert('Zestaw zapisany!');
+            showStartScreen();
+        }
+
+        function deleteSet(setId) {
+            if (!confirm('Czy na pewno chcesz usunąć ten zestaw?')) return;
+
+            const sets = getCustomSets().filter(s => s.id !== setId);
+            localStorage.setItem('milionerzy_sets', JSON.stringify(sets));
+            renderManager();
+        }
+
+        function getCustomSets() {
+            const saved = localStorage.getItem('milionerzy_sets');
+            return saved ? JSON.parse(saved) : [];
+        }
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
