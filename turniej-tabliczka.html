@@ -712,6 +712,121 @@
             color: #ffd700;
         }
 
+        /* League styles */
+        .league-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .league-table th,
+        .league-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .league-table th {
+            background: rgba(255,215,0,0.2);
+            color: #ffd700;
+            font-size: 0.85rem;
+        }
+
+        .league-table td:first-child,
+        .league-table th:first-child {
+            text-align: left;
+            padding-left: 15px;
+        }
+
+        .league-table .top-two {
+            background: linear-gradient(135deg, rgba(255,249,196,0.15), rgba(255,236,179,0.1));
+        }
+
+        .league-table .top-two td {
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .final-preview {
+            margin-top: 20px;
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .final-preview h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .final-preview .finalist {
+            font-size: 1.1rem;
+            margin: 8px 0;
+        }
+
+        .btn-final {
+            margin-top: 20px;
+            padding: 15px 35px;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #ffc107, #ffca28);
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .btn-final:hover {
+            transform: scale(1.05);
+        }
+
+        .final-matchup {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+        }
+
+        .final-player {
+            text-align: center;
+            padding: 20px 30px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.1));
+            border-radius: 12px;
+            min-width: 150px;
+        }
+
+        .final-player .rank {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .final-player .name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .final-player .stats {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 5px;
+        }
+
+        .final-vs {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
         @media (max-width: 600px) {
             .game-cell {
                 font-size: 2rem;
@@ -764,6 +879,7 @@
                 <select id="tournamentMode">
                     <option value="knockout">🏆 Pucharowy (drabinka)</option>
                     <option value="groups">⚽ Grupowy (jak MŚ) - dla 8-24 graczy</option>
+                    <option value="league">🏅 Liga (każdy z każdym) - dla 3-8 graczy</option>
                 </select>
             </div>
             <div class="form-group" id="groupCountSelect" style="display: none;">
@@ -856,6 +972,30 @@
 
             <h3 style="color: #ffd700; margin: 20px 0 10px;">Mecze do rozegrania:</h3>
             <div class="match-list" id="groupMatchList"></div>
+        </div>
+
+        <!-- League Stage Panel -->
+        <div id="leagueStagePanel" class="panel hidden">
+            <h2 id="leagueStageTitle">Liga</h2>
+            <div class="phase-indicator" id="leaguePhaseIndicator">Liga - każdy z każdym</div>
+
+            <h3 style="color: #ffd700; margin: 15px 0 10px;">📊 Tabela ligowa</h3>
+            <div id="leagueStandings"></div>
+
+            <h3 style="color: #ffd700; margin: 20px 0 10px;">⚔️ Mecze do rozegrania</h3>
+            <div id="leagueMatchList" class="match-list"></div>
+
+            <div id="leagueProgress" style="margin-top: 20px; text-align: center;"></div>
+        </div>
+
+        <!-- League Final Panel -->
+        <div id="leagueFinalPanel" class="panel hidden">
+            <h2 style="text-align: center; color: #ffd700;">🏆 WIELKI FINAŁ</h2>
+            <div class="phase-indicator">Finał ligi - TOP 2</div>
+
+            <div id="finalMatchup" style="margin: 20px 0;"></div>
+
+            <div id="finalControls" style="text-align: center;"></div>
         </div>
 
         <!-- Knockout Stage Panel -->
@@ -1066,6 +1206,7 @@
 
         // Mode selection handler
         document.getElementById('tournamentMode').addEventListener('change', function() {
+            // Ukryj selector grup dla knockout i league
             document.getElementById('groupCountSelect').style.display =
                 this.value === 'groups' ? 'block' : 'none';
         });
@@ -1082,7 +1223,7 @@
         }
 
         function hideAllPanels() {
-            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'groupStagePanel', 'tournamentPanel', 'championPanel', 'historyPanel'].forEach(id => {
+            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'groupStagePanel', 'leagueStagePanel', 'leagueFinalPanel', 'tournamentPanel', 'championPanel', 'historyPanel'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
         }
@@ -1135,6 +1276,8 @@
                 groups: null,
                 groupMatches: null,
                 bracket: null,
+                leagueMatches: null,
+                leagueFinal: null,
                 createdAt: firebase.database.ServerValue.TIMESTAMP
             };
 
@@ -1302,6 +1445,10 @@
                     showGroupStage();
                 } else if (tournament.status === 'knockout') {
                     showKnockoutStage();
+                } else if (tournament.status === 'league') {
+                    showLeagueStage();
+                } else if (tournament.status === 'leagueFinal') {
+                    showLeagueFinal();
                 } else if (tournament.status === 'finished' && tournament.champion) {
                     showChampion(tournament.champion);
                 }
@@ -1330,12 +1477,23 @@
                 </div>
             `).join('');
 
-            const minPlayers = currentTournament.mode === 'groups' ? 4 : 2;
-            document.getElementById('startTournamentBtn').disabled = entries.length < minPlayers;
-            document.getElementById('startTournamentBtn').textContent =
-                entries.length < minPlayers
-                    ? `Rozpocznij turniej (min. ${minPlayers} graczy)`
-                    : `Rozpocznij turniej (${entries.length} graczy)`;
+            const minPlayers = currentTournament.mode === 'groups' ? 4 :
+                               currentTournament.mode === 'league' ? 3 : 2;
+            const maxLeaguePlayers = 8;
+            const tooManyForLeague = currentTournament.mode === 'league' && entries.length > maxLeaguePlayers;
+
+            document.getElementById('startTournamentBtn').disabled = entries.length < minPlayers || tooManyForLeague;
+
+            if (tooManyForLeague) {
+                document.getElementById('startTournamentBtn').textContent =
+                    `Za dużo graczy dla ligi (max. ${maxLeaguePlayers})`;
+            } else if (entries.length < minPlayers) {
+                document.getElementById('startTournamentBtn').textContent =
+                    `Rozpocznij turniej (min. ${minPlayers} graczy)`;
+            } else {
+                document.getElementById('startTournamentBtn').textContent =
+                    `Rozpocznij turniej (${entries.length} graczy)`;
+            }
         }
 
         // Start Tournament
@@ -1354,9 +1512,44 @@
 
             if (currentTournament.mode === 'groups') {
                 await startGroupStage(participants);
+            } else if (currentTournament.mode === 'league') {
+                await startLeague(participants);
             } else {
                 await startKnockoutStage(participants);
             }
+        }
+
+        // Start League Stage
+        async function startLeague(participants) {
+            const players = participants.map(p => ({
+                id: p.id,
+                name: p.name,
+                points: 0,
+                wins: 0,
+                played: 0
+            }));
+
+            // Generuj mecze: każdy z każdym
+            const leagueMatches = [];
+            let matchId = 0;
+            for (let i = 0; i < players.length; i++) {
+                for (let j = i + 1; j < players.length; j++) {
+                    leagueMatches.push({
+                        id: `lm${matchId++}`,
+                        player1: players[i],
+                        player2: players[j],
+                        score1: 0,
+                        score2: 0,
+                        winner: null,
+                        status: 'pending'
+                    });
+                }
+            }
+
+            await db.ref('tournaments/' + currentTournament.code).update({
+                status: 'league',
+                leagueMatches: leagueMatches
+            });
         }
 
         // Start Group Stage
@@ -1638,6 +1831,252 @@
             await startKnockoutStage(shuffled);
         }
 
+        // =====================
+        // LEAGUE MODE FUNCTIONS
+        // =====================
+
+        // Show League Stage
+        function showLeagueStage() {
+            hideAllPanels();
+            document.getElementById('leagueStagePanel').classList.remove('hidden');
+            document.getElementById('leagueStageTitle').textContent = currentTournament.name;
+
+            renderLeagueStandings();
+            renderLeagueMatches();
+        }
+
+        // Render league standings table
+        function renderLeagueStandings() {
+            const matches = currentTournament.leagueMatches || [];
+            const players = {};
+
+            // Zbierz wszystkich graczy
+            matches.forEach(m => {
+                if (m.player1 && !players[m.player1.id]) {
+                    players[m.player1.id] = {...m.player1, points: 0, wins: 0, played: 0};
+                }
+                if (m.player2 && !players[m.player2.id]) {
+                    players[m.player2.id] = {...m.player2, points: 0, wins: 0, played: 0};
+                }
+            });
+
+            // Oblicz punkty
+            matches.filter(m => m.status === 'completed').forEach(m => {
+                if (players[m.player1.id]) {
+                    players[m.player1.id].played++;
+                }
+                if (players[m.player2.id]) {
+                    players[m.player2.id].played++;
+                }
+                if (m.winner === m.player1.id && players[m.player1.id]) {
+                    players[m.player1.id].points += 3;
+                    players[m.player1.id].wins++;
+                } else if (m.winner === m.player2.id && players[m.player2.id]) {
+                    players[m.player2.id].points += 3;
+                    players[m.player2.id].wins++;
+                }
+            });
+
+            // Sortuj
+            const standings = Object.values(players).sort((a, b) =>
+                b.points - a.points || b.wins - a.wins
+            );
+
+            // Renderuj tabelę
+            document.getElementById('leagueStandings').innerHTML = `
+                <table class="league-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th style="text-align: left;">Gracz</th>
+                            <th>M</th>
+                            <th>W</th>
+                            <th>Pkt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${standings.map((p, i) => `
+                            <tr class="${i < 2 ? 'top-two' : ''}">
+                                <td>${i + 1}</td>
+                                <td style="text-align: left;">${i < 2 ? '⭐ ' : ''}${p.name}</td>
+                                <td>${p.played}</td>
+                                <td>${p.wins}</td>
+                                <td><strong>${p.points}</strong></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            return standings;
+        }
+
+        // Render league matches
+        function renderLeagueMatches() {
+            const matches = currentTournament.leagueMatches || [];
+            const pending = matches.filter(m => m.status !== 'completed');
+            const completed = matches.filter(m => m.status === 'completed');
+
+            let html = '';
+
+            if (pending.length === 0 && completed.length > 0) {
+                html = '<p style="text-align: center; color: rgba(255,255,255,0.7);">Wszystkie mecze rozegrane!</p>';
+            } else {
+                html = pending.map(m => `
+                    <div class="match-item">
+                        <div class="match-players">
+                            <strong>${m.player1.name}</strong>
+                            <span class="vs">vs</span>
+                            <strong>${m.player2.name}</strong>
+                        </div>
+                        <button class="match-btn" onclick="startLeagueMatch('${m.id}')">Graj!</button>
+                    </div>
+                `).join('');
+            }
+
+            // Zakończone mecze
+            if (completed.length > 0) {
+                html += `
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                        <h4 style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 10px;">Zakończone (${completed.length}):</h4>
+                        ${completed.slice(-5).reverse().map(m => `
+                            <div class="match-item completed">
+                                <div class="match-players">
+                                    ${m.player1.name} <span class="match-score">${m.score1}</span>
+                                    <span class="vs">:</span>
+                                    <span class="match-score">${m.score2}</span> ${m.player2.name}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            document.getElementById('leagueMatchList').innerHTML = html;
+
+            // Postęp
+            document.getElementById('leagueProgress').innerHTML = `
+                <p style="color: rgba(255,255,255,0.7);">Rozegrano: ${completed.length} / ${matches.length} meczów</p>
+            `;
+
+            // Sprawdź czy wszystkie mecze rozegrane - pokaż przycisk finału
+            if (pending.length === 0 && completed.length > 0 && isHost) {
+                showStartFinalButton();
+            }
+        }
+
+        // Show button to start the final
+        function showStartFinalButton() {
+            const standings = renderLeagueStandings();
+            const top2 = standings.slice(0, 2);
+
+            if (top2.length < 2) return;
+
+            document.getElementById('leagueProgress').innerHTML = `
+                <div class="final-preview">
+                    <h3>🏆 Finaliści wyłonieni!</h3>
+                    <p class="finalist">🥇 ${top2[0].name} (${top2[0].points} pkt)</p>
+                    <p class="finalist">🥈 ${top2[1].name} (${top2[1].points} pkt)</p>
+                    <button class="btn-final" onclick="startLeagueFinal()">
+                        Rozpocznij Wielki Finał!
+                    </button>
+                </div>
+            `;
+        }
+
+        // Start league match
+        function startLeagueMatch(matchId) {
+            if (isModalOpen || isProcessing) return;
+            if (!currentTournament?.leagueMatches) return;
+
+            const match = currentTournament.leagueMatches.find(m => m.id === matchId);
+            if (!match || !match.player1 || !match.player2) return;
+
+            currentMatch = { ...match, isLeagueMatch: true };
+            initializeGame();
+        }
+
+        // Start the league final
+        async function startLeagueFinal() {
+            const standings = renderLeagueStandings();
+            if (standings.length < 2) return;
+
+            const [first, second] = standings.slice(0, 2);
+
+            const finalMatch = {
+                id: 'final',
+                player1: first,
+                player2: second,
+                score1: 0,
+                score2: 0,
+                winner: null,
+                status: 'pending'
+            };
+
+            await db.ref('tournaments/' + currentTournament.code).update({
+                status: 'leagueFinal',
+                leagueFinal: finalMatch
+            });
+        }
+
+        // Show League Final
+        function showLeagueFinal() {
+            hideAllPanels();
+            document.getElementById('leagueFinalPanel').classList.remove('hidden');
+
+            const finalMatch = currentTournament.leagueFinal;
+            if (!finalMatch) return;
+
+            const matchup = document.getElementById('finalMatchup');
+            const controls = document.getElementById('finalControls');
+
+            matchup.innerHTML = `
+                <div class="final-matchup">
+                    <div class="final-player">
+                        <div class="rank">🥇</div>
+                        <div class="name">${finalMatch.player1.name}</div>
+                        <div class="stats">${finalMatch.player1.points} pkt</div>
+                    </div>
+                    <div class="final-vs">VS</div>
+                    <div class="final-player">
+                        <div class="rank">🥈</div>
+                        <div class="name">${finalMatch.player2.name}</div>
+                        <div class="stats">${finalMatch.player2.points} pkt</div>
+                    </div>
+                </div>
+            `;
+
+            if (finalMatch.status === 'completed') {
+                controls.innerHTML = `
+                    <p style="color: #ffd700; font-size: 1.2rem; margin-bottom: 15px;">
+                        Mecz zakończony!
+                    </p>
+                `;
+            } else {
+                controls.innerHTML = `
+                    <button class="btn-final" onclick="playFinalMatch()">
+                        🎮 Rozpocznij mecz finałowy
+                    </button>
+                `;
+            }
+        }
+
+        // Play the final match
+        function playFinalMatch() {
+            if (isModalOpen || isProcessing) return;
+            if (!currentTournament?.leagueFinal) return;
+
+            const finalMatch = currentTournament.leagueFinal;
+            if (!finalMatch.player1 || !finalMatch.player2) return;
+
+            currentMatch = { ...finalMatch, isFinal: true, isLeagueMatch: false };
+            initializeGame();
+        }
+
+        // =====================
+        // END LEAGUE MODE
+        // =====================
+
         // Show Knockout Stage
         function showKnockoutStage() {
             hideAllPanels();
@@ -1897,13 +2336,20 @@
         function getTimeLimit() {
             if (!currentTournament.timePressure) return 0;
 
-            if (currentMatch.isGroupMatch) return 5;
+            // Group matches and league matches - standard time
+            if (currentMatch.isGroupMatch || currentMatch.isLeagueMatch) return 5;
 
-            const totalRounds = currentTournament.bracket.length;
-            const currentRound = currentMatch.roundIndex;
+            // League final - shortest time
+            if (currentMatch.isFinal) return 3;
 
-            if (currentRound === totalRounds - 1) return 3; // Final
-            if (currentRound === totalRounds - 2) return 4; // Semi
+            // Bracket matches
+            if (currentTournament.bracket) {
+                const totalRounds = currentTournament.bracket.length;
+                const currentRound = currentMatch.roundIndex;
+
+                if (currentRound === totalRounds - 1) return 3; // Final
+                if (currentRound === totalRounds - 2) return 4; // Semi
+            }
             return 5;
         }
 
@@ -2216,6 +2662,46 @@
                     };
 
                     await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
+                } else if (currentMatch.isLeagueMatch) {
+                    // Update league match
+                    if (!currentTournament.leagueMatches) return;
+
+                    const matches = [...currentTournament.leagueMatches];
+                    const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
+                    if (matchIndex === -1) return;
+
+                    matches[matchIndex] = {
+                        ...matches[matchIndex],
+                        score1: gameState.score1,
+                        score2: gameState.score2,
+                        winner: winner.id,
+                        status: 'completed'
+                    };
+
+                    await db.ref('tournaments/' + currentTournament.code + '/leagueMatches').set(matches);
+                } else if (currentMatch.isFinal) {
+                    // Update league final
+                    await db.ref('tournaments/' + currentTournament.code).update({
+                        status: 'finished',
+                        champion: winner.name,
+                        leagueFinal: {
+                            ...currentTournament.leagueFinal,
+                            score1: gameState.score1,
+                            score2: gameState.score2,
+                            winner: winner.id,
+                            status: 'completed'
+                        }
+                    });
+
+                    // Save to history
+                    await db.ref('tournamentHistory').push({
+                        name: currentTournament.name,
+                        champion: winner.name,
+                        level: currentTournament.level,
+                        mode: 'league',
+                        participantCount: Object.keys(currentTournament.participants || {}).length,
+                        finishedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
                 } else {
                     // Update bracket match
                     if (!currentTournament.bracket) return;
@@ -2347,7 +2833,7 @@
                                 </div>
                             </div>
                             <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 8px;">
-                                ${t.mode === 'groups' ? 'Grupowy' : 'Pucharowy'} | ${LEVELS[t.level]?.name || t.level} | ${t.participantCount} graczy
+                                ${t.mode === 'groups' ? 'Grupowy' : t.mode === 'league' ? 'Liga' : 'Pucharowy'} | ${LEVELS[t.level]?.name || t.level} | ${t.participantCount} graczy
                             </div>
                         </div>
                     `;
