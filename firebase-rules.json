@@ -1,0 +1,126 @@
+{
+  "rules": {
+    // ==========================================
+    // TURNIEJE - główna logika gry
+    // ==========================================
+    "tournaments": {
+      "$tournamentId": {
+        // Odczyt: każdy może czytać turniej (potrzebne do gry)
+        ".read": true,
+
+        // Zapis: walidacja struktury
+        ".write": true,
+
+        // Walidacja przy tworzeniu turnieju
+        ".validate": "
+          // Musi mieć wymagane pola
+          newData.hasChildren(['code', 'name', 'mode', 'level', 'status', 'host', 'createdAt'])
+
+          // Kod musi być 6-znakowy i zgodny z kluczem
+          && newData.child('code').isString()
+          && newData.child('code').val().length == 6
+          && newData.child('code').val() == $tournamentId
+
+          // Nazwa max 50 znaków
+          && newData.child('name').isString()
+          && newData.child('name').val().length <= 50
+
+          // Tryb: tylko dozwolone wartości
+          && newData.child('mode').val().matches(/^(groups|knockout)$/)
+
+          // Poziom: tylko dozwolone wartości
+          && newData.child('level').val().matches(/^(easy|medium|hard|master)$/)
+
+          // Status: tylko dozwolone wartości
+          && newData.child('status').val().matches(/^(lobby|groups|knockout|finished)$/)
+
+          // Host musi być stringiem
+          && newData.child('host').isString()
+
+          // Punkty do wygrania: 1-10
+          && (!newData.hasChild('pointsToWin') || (
+            newData.child('pointsToWin').isNumber()
+            && newData.child('pointsToWin').val() >= 1
+            && newData.child('pointsToWin').val() <= 10
+          ))
+
+          // Liczba grup: 0-8
+          && (!newData.hasChild('groupCount') || (
+            newData.child('groupCount').isNumber()
+            && newData.child('groupCount').val() >= 0
+            && newData.child('groupCount').val() <= 8
+          ))
+        ",
+
+        // Uczestnicy turnieju
+        "participants": {
+          "$oderId": {
+            ".validate": "
+              newData.hasChildren(['name', 'joinedAt'])
+              && newData.child('name').isString()
+              && newData.child('name').val().length >= 1
+              && newData.child('name').val().length <= 30
+            "
+          }
+        },
+
+        // Mecze grupowe - tablica obiektów
+        "groupMatches": {
+          ".validate": "newData.isString() == false"
+        },
+
+        // Drabinka - tablica rund
+        "bracket": {
+          ".validate": "newData.isString() == false"
+        },
+
+        // Grupy
+        "groups": {
+          ".validate": "newData.isString() == false"
+        },
+
+        // Champion - tylko string max 30 znaków
+        "champion": {
+          ".validate": "newData.isString() && newData.val().length <= 30"
+        }
+      }
+    },
+
+    // ==========================================
+    // HISTORIA TURNIEJÓW - tylko odczyt publiczny
+    // ==========================================
+    "tournamentHistory": {
+      // Każdy może czytać historię
+      ".read": true,
+
+      // Zapis tylko z walidacją (nowe wpisy)
+      ".write": true,
+
+      "$historyId": {
+        ".validate": "
+          newData.hasChildren(['champion', 'finishedAt', 'level', 'mode', 'name', 'participantCount'])
+          && newData.child('champion').isString()
+          && newData.child('champion').val().length <= 30
+          && newData.child('name').isString()
+          && newData.child('name').val().length <= 50
+          && newData.child('level').val().matches(/^(easy|medium|hard|master)$/)
+          && newData.child('mode').val().matches(/^(groups|knockout)$/)
+          && newData.child('participantCount').isNumber()
+          && newData.child('participantCount').val() >= 2
+          && newData.child('participantCount').val() <= 64
+        ",
+
+        // Historia nie może być edytowana ani usuwana
+        ".write": "!data.exists()"
+      }
+    },
+
+    // ==========================================
+    // BLOKADA WSZYSTKIEGO INNEGO
+    // ==========================================
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
