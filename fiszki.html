@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiszki - Narzędzia dla Nauczycieli</title>
+    <meta name="theme-color" content="#11998e">
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <style>
+        /* Fiszki theme */
+        :root {
+            --fiszki-primary: #11998e;
+            --fiszki-primary-dark: #0d7377;
+            --fiszki-accent: #38ef7d;
+            --fiszki-bg: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --fiszki-card-front: #ffffff;
+            --fiszki-card-back: #1a1a2e;
+        }
+
+        body {
+            background: var(--fiszki-bg);
+            color: var(--color-text-light);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .home-btn {
+            background: rgba(255,255,255,0.2);
+            color: var(--color-text-light);
+            align-self: flex-start;
+        }
+
+        .home-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--color-text-light);
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--spacing-lg);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Start Screen */
+        .start-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-lg);
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: var(--spacing-lg) var(--spacing-xl);
+            font-size: var(--font-size-lg);
+            border: none;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-width: 180px;
+            background: rgba(255,255,255,0.95);
+            color: var(--fiszki-primary-dark);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .mode-btn .icon {
+            display: block;
+            font-size: 2.5rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        /* Panel base */
+        .panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .panel.active {
+            display: flex;
+        }
+
+        .panel h2 {
+            color: var(--color-text-light);
+            text-align: center;
+        }
+
+        /* Set selector */
+        .sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .set-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            color: var(--color-text-primary);
+        }
+
+        .set-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .set-card h3 {
+            color: var(--fiszki-primary-dark);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .set-card p {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .set-card .set-meta {
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-xs);
+            color: var(--color-text-muted);
+        }
+
+        /* Flashcard */
+        .flashcard-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .flashcard {
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl);
+            text-align: center;
+            font-size: var(--font-size-2xl);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .flashcard-front {
+            background: var(--fiszki-card-front);
+            color: var(--color-text-primary);
+        }
+
+        .flashcard-back {
+            background: var(--fiszki-card-back);
+            color: var(--color-text-light);
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-hint {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: var(--font-size-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .flashcard-progress {
+            text-align: center;
+            color: var(--color-text-light);
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .flashcard-controls {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+        }
+
+        .control-btn {
+            padding: var(--spacing-md) var(--spacing-xl);
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: var(--font-size-lg);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-width: 120px;
+        }
+
+        .control-btn.know {
+            background: var(--color-success);
+            color: var(--color-text-light);
+        }
+
+        .control-btn.dont-know {
+            background: var(--color-danger);
+            color: var(--color-text-light);
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Study complete */
+        .study-complete {
+            text-align: center;
+            padding: var(--spacing-xl);
+        }
+
+        .study-complete .icon {
+            font-size: 5rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .study-complete h2 {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .study-stats {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-xl);
+            margin: var(--spacing-xl) 0;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            min-width: 100px;
+        }
+
+        .stat-box .number {
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .stat-box .label {
+            font-size: var(--font-size-sm);
+            opacity: 0.8;
+        }
+
+        /* Test mode */
+        .test-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-lg);
+        }
+
+        .test-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            width: 100%;
+            max-width: 500px;
+            color: var(--color-text-primary);
+            text-align: center;
+        }
+
+        .test-card .question {
+            font-size: var(--font-size-2xl);
+            margin-bottom: var(--spacing-xl);
+            color: var(--fiszki-primary-dark);
+        }
+
+        .test-input {
+            width: 100%;
+            padding: var(--spacing-md);
+            font-size: var(--font-size-lg);
+            border: 2px solid #ddd;
+            border-radius: var(--radius-md);
+            text-align: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .test-input:focus {
+            outline: none;
+            border-color: var(--fiszki-primary);
+        }
+
+        .test-input.correct {
+            border-color: var(--color-success);
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .test-input.wrong {
+            border-color: var(--color-danger);
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        .test-feedback {
+            min-height: 30px;
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .test-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .test-option {
+            padding: var(--spacing-md);
+            border: 2px solid #ddd;
+            border-radius: var(--radius-md);
+            background: white;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            font-size: var(--font-size-base);
+        }
+
+        .test-option:hover {
+            border-color: var(--fiszki-primary);
+            background: rgba(17, 153, 142, 0.1);
+        }
+
+        .test-option.correct {
+            border-color: var(--color-success);
+            background: rgba(40, 167, 69, 0.2);
+        }
+
+        .test-option.wrong {
+            border-color: var(--color-danger);
+            background: rgba(220, 53, 69, 0.2);
+        }
+
+        /* Editor */
+        .editor-form {
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            color: var(--color-text-primary);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: var(--font-weight-medium);
+            color: var(--fiszki-primary-dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 2px solid #ddd;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--fiszki-primary);
+        }
+
+        .cards-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .card-edit-item {
+            background: #f8f9fa;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+
+        .card-edit-item input {
+            flex: 1;
+        }
+
+        .card-edit-item .card-number {
+            font-weight: var(--font-weight-bold);
+            color: var(--fiszki-primary-dark);
+            min-width: 30px;
+        }
+
+        .card-edit-item .delete-card {
+            background: var(--color-danger);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-primary {
+            background: var(--fiszki-primary);
+            color: var(--color-text-light);
+        }
+
+        .btn-success {
+            background: var(--color-success);
+            color: var(--color-text-light);
+        }
+
+        .btn-danger {
+            background: var(--color-danger);
+            color: var(--color-text-light);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.3);
+            color: var(--color-text-light);
+        }
+
+        .btn-white {
+            background: white;
+            color: var(--fiszki-primary-dark);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Mode selector */
+        .mode-selector {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .mode-selector button {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--color-text-light);
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .mode-selector button.active {
+            background: white;
+            color: var(--fiszki-primary-dark);
+            border-color: white;
+        }
+
+        .mode-selector button:hover:not(.active) {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .mode-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .mode-btn {
+                width: 100%;
+                max-width: 250px;
+            }
+
+            .flashcard {
+                height: 200px;
+            }
+
+            .flashcard-face {
+                font-size: var(--font-size-xl);
+                padding: var(--spacing-lg);
+            }
+
+            .flashcard-controls {
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .control-btn {
+                width: 100%;
+            }
+
+            .test-options {
+                grid-template-columns: 1fr;
+            }
+
+            .card-edit-item {
+                flex-direction: column;
+            }
+
+            .card-edit-item input {
+                width: 100%;
+            }
+        }
+
+        /* Footer */
+        .footer-link {
+            text-align: center;
+            padding: var(--spacing-md);
+            font-size: var(--font-size-sm);
+        }
+
+        .footer-link a {
+            color: rgba(255,255,255,0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+        <h1>Fiszki</h1>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="showSetSelector('study')">
+                    <span class="icon">📚</span>
+                    Nauka
+                </button>
+                <button class="mode-btn" onclick="showSetSelector('test')">
+                    <span class="icon">✍️</span>
+                    Test
+                </button>
+                <button class="mode-btn" onclick="showEditor()">
+                    <span class="icon">✏️</span>
+                    Stwórz zestaw
+                </button>
+                <button class="mode-btn" onclick="showManager()">
+                    <span class="icon">📁</span>
+                    Zarządzaj
+                </button>
+            </div>
+        </div>
+
+        <!-- Set Selector -->
+        <div id="setSelector" class="panel">
+            <h2 id="selectorTitle">Wybierz zestaw</h2>
+            <div class="sets-grid" id="setsGrid"></div>
+            <div class="btn-group" style="margin-top: var(--spacing-lg);">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Study Mode -->
+        <div id="studyPanel" class="panel">
+            <div class="flashcard-progress" id="studyProgress">Karta 1 / 10</div>
+            <div class="flashcard-container">
+                <div class="flashcard" id="flashcard" onclick="flipCard()">
+                    <div class="flashcard-face flashcard-front" id="cardFront">
+                        Przód karty
+                    </div>
+                    <div class="flashcard-face flashcard-back" id="cardBack">
+                        Tył karty
+                    </div>
+                </div>
+                <p class="flashcard-hint">Kliknij kartę aby obrócić</p>
+            </div>
+            <div class="flashcard-controls">
+                <button class="control-btn dont-know" onclick="markCard(false)">❌ Nie umiem</button>
+                <button class="control-btn know" onclick="markCard(true)">✓ Umiem</button>
+            </div>
+            <div class="btn-group" style="margin-top: var(--spacing-lg);">
+                <button class="btn btn-secondary" onclick="endStudy()">Zakończ</button>
+            </div>
+        </div>
+
+        <!-- Study Complete -->
+        <div id="studyComplete" class="panel">
+            <div class="study-complete">
+                <div class="icon">🎉</div>
+                <h2>Nauka zakończona!</h2>
+                <div class="study-stats">
+                    <div class="stat-box">
+                        <div class="number" id="statKnown">0</div>
+                        <div class="label">Umiem</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="statUnknown">0</div>
+                        <div class="label">Do powtórki</div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-white" onclick="restartStudy(false)">Powtórz wszystkie</button>
+                    <button class="btn btn-primary" onclick="restartStudy(true)" id="repeatUnknownBtn">Powtórz nieznane</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Menu główne</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Mode -->
+        <div id="testPanel" class="panel">
+            <div class="flashcard-progress" id="testProgress">Pytanie 1 / 10</div>
+            <div class="mode-selector">
+                <button id="modeWrite" class="active" onclick="setTestMode('write')">Wpisz odpowiedź</button>
+                <button id="modeChoice" onclick="setTestMode('choice')">Wybierz odpowiedź</button>
+            </div>
+            <div class="test-container">
+                <div class="test-card">
+                    <div class="question" id="testQuestion">Pytanie</div>
+
+                    <!-- Write mode -->
+                    <div id="writeMode">
+                        <input type="text" class="test-input" id="testInput" placeholder="Wpisz odpowiedź..." onkeypress="handleTestInput(event)">
+                        <div class="test-feedback" id="testFeedback"></div>
+                        <button class="btn btn-primary" id="checkBtn" onclick="checkAnswer()">Sprawdź</button>
+                        <button class="btn btn-success" id="nextBtn" onclick="nextTestCard()" style="display: none;">Następne</button>
+                    </div>
+
+                    <!-- Choice mode -->
+                    <div id="choiceMode" style="display: none;">
+                        <div class="test-options" id="testOptions"></div>
+                        <div class="test-feedback" id="testFeedbackChoice"></div>
+                        <button class="btn btn-success" id="nextBtnChoice" onclick="nextTestCard()" style="display: none;">Następne</button>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group" style="margin-top: var(--spacing-lg);">
+                <button class="btn btn-secondary" onclick="endTest()">Zakończ test</button>
+            </div>
+        </div>
+
+        <!-- Test Complete -->
+        <div id="testComplete" class="panel">
+            <div class="study-complete">
+                <div class="icon" id="testResultIcon">🏆</div>
+                <h2 id="testResultTitle">Świetny wynik!</h2>
+                <div class="study-stats">
+                    <div class="stat-box">
+                        <div class="number" id="testCorrect">0</div>
+                        <div class="label">Poprawne</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="testWrong">0</div>
+                        <div class="label">Błędne</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="testPercent">0%</div>
+                        <div class="label">Wynik</div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-white" onclick="startTest()">Powtórz test</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Menu główne</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor -->
+        <div id="editor" class="panel">
+            <h2 id="editorTitle">Tworzenie zestawu</h2>
+            <div class="editor-form">
+                <div class="form-group">
+                    <label>Nazwa zestawu:</label>
+                    <input type="text" id="setName" placeholder="np. Angielski - Zwierzęta">
+                </div>
+                <div class="form-group">
+                    <label>Kategoria:</label>
+                    <select id="setCategory">
+                        <option value="angielski">Język angielski</option>
+                        <option value="niemiecki">Język niemiecki</option>
+                        <option value="matematyka">Matematyka</option>
+                        <option value="historia">Historia</option>
+                        <option value="geografia">Geografia</option>
+                        <option value="biologia">Biologia</option>
+                        <option value="inne">Inne</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Poziom:</label>
+                    <select id="setLevel">
+                        <option value="1-3">Klasy 1-3</option>
+                        <option value="4-6">Klasy 4-6</option>
+                        <option value="7-8">Klasy 7-8</option>
+                        <option value="wszystkie">Wszystkie poziomy</option>
+                    </select>
+                </div>
+
+                <h3 style="color: var(--fiszki-primary-dark); margin: var(--spacing-lg) 0 var(--spacing-md);">
+                    Fiszki: <span id="cardCount">0</span>
+                </h3>
+                <div class="cards-list" id="cardsList"></div>
+                <button class="btn btn-primary" onclick="addCard()" style="margin-top: var(--spacing-md);">+ Dodaj fiszkę</button>
+
+                <div class="btn-group" style="margin-top: var(--spacing-lg);">
+                    <button class="btn btn-success" onclick="saveSet()">💾 Zapisz</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manager -->
+        <div id="manager" class="panel">
+            <h2>Zarządzanie zestawami</h2>
+            <div class="sets-grid" id="managerGrid"></div>
+            <div class="btn-group" style="margin-top: var(--spacing-lg);">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <div class="footer-link">
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
+        </div>
+    </div>
+
+    <script>
+        // Built-in sets
+        const BUILTIN_SETS = [
+            {
+                id: 'ang-zwierzeta',
+                name: 'Angielski - Zwierzęta',
+                category: 'angielski',
+                level: '4-6',
+                builtin: true,
+                cards: [
+                    { front: 'dog', back: 'pies' },
+                    { front: 'cat', back: 'kot' },
+                    { front: 'bird', back: 'ptak' },
+                    { front: 'fish', back: 'ryba' },
+                    { front: 'horse', back: 'koń' },
+                    { front: 'cow', back: 'krowa' },
+                    { front: 'pig', back: 'świnia' },
+                    { front: 'sheep', back: 'owca' },
+                    { front: 'rabbit', back: 'królik' },
+                    { front: 'mouse', back: 'mysz' },
+                    { front: 'elephant', back: 'słoń' },
+                    { front: 'lion', back: 'lew' },
+                    { front: 'tiger', back: 'tygrys' },
+                    { front: 'bear', back: 'niedźwiedź' },
+                    { front: 'wolf', back: 'wilk' }
+                ]
+            },
+            {
+                id: 'ang-kolory',
+                name: 'Angielski - Kolory',
+                category: 'angielski',
+                level: '1-3',
+                builtin: true,
+                cards: [
+                    { front: 'red', back: 'czerwony' },
+                    { front: 'blue', back: 'niebieski' },
+                    { front: 'green', back: 'zielony' },
+                    { front: 'yellow', back: 'żółty' },
+                    { front: 'orange', back: 'pomarańczowy' },
+                    { front: 'purple', back: 'fioletowy' },
+                    { front: 'pink', back: 'różowy' },
+                    { front: 'brown', back: 'brązowy' },
+                    { front: 'black', back: 'czarny' },
+                    { front: 'white', back: 'biały' },
+                    { front: 'grey', back: 'szary' }
+                ]
+            },
+            {
+                id: 'mat-wzory',
+                name: 'Matematyka - Wzory',
+                category: 'matematyka',
+                level: '7-8',
+                builtin: true,
+                cards: [
+                    { front: 'Pole kwadratu', back: 'a²' },
+                    { front: 'Pole prostokąta', back: 'a × b' },
+                    { front: 'Pole trójkąta', back: '½ × a × h' },
+                    { front: 'Pole koła', back: 'π × r²' },
+                    { front: 'Obwód koła', back: '2 × π × r' },
+                    { front: 'Tw. Pitagorasa', back: 'a² + b² = c²' },
+                    { front: 'Objętość sześcianu', back: 'a³' },
+                    { front: 'Objętość prostopadłościanu', back: 'a × b × c' },
+                    { front: 'Procent z liczby', back: 'liczba × procent / 100' },
+                    { front: 'Średnia arytmetyczna', back: 'suma / ilość' }
+                ]
+            },
+            {
+                id: 'hist-daty',
+                name: 'Historia - Ważne daty',
+                category: 'historia',
+                level: '7-8',
+                builtin: true,
+                cards: [
+                    { front: 'Chrzest Polski', back: '966 r.' },
+                    { front: 'Bitwa pod Grunwaldem', back: '1410 r.' },
+                    { front: 'Unia Lubelska', back: '1569 r.' },
+                    { front: 'I rozbiór Polski', back: '1772 r.' },
+                    { front: 'Konstytucja 3 Maja', back: '1791 r.' },
+                    { front: 'III rozbiór Polski', back: '1795 r.' },
+                    { front: 'Odzyskanie niepodległości', back: '1918 r.' },
+                    { front: 'Początek II wojny światowej', back: '1939 r.' },
+                    { front: 'Koniec II wojny światowej', back: '1945 r.' },
+                    { front: 'Wstąpienie Polski do UE', back: '2004 r.' }
+                ]
+            }
+        ];
+
+        // State
+        let currentSet = null;
+        let currentMode = 'study'; // 'study' or 'test'
+        let currentCardIndex = 0;
+        let studyResults = { known: [], unknown: [] };
+        let testResults = { correct: 0, wrong: 0 };
+        let testMode = 'write'; // 'write' or 'choice'
+        let editingSetId = null;
+        let editorCards = [];
+
+        // Navigation
+        function showStartScreen() {
+            hideAll();
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+
+        function showSetSelector(mode) {
+            currentMode = mode;
+            hideAll();
+            document.getElementById('selectorTitle').textContent =
+                mode === 'study' ? 'Wybierz zestaw do nauki' : 'Wybierz zestaw do testu';
+            renderSetSelector();
+            document.getElementById('setSelector').classList.add('active');
+        }
+
+        function showEditor(setId = null) {
+            hideAll();
+            editingSetId = setId;
+
+            if (setId) {
+                const sets = getCustomSets();
+                const set = sets.find(s => s.id === setId);
+                if (set) {
+                    document.getElementById('editorTitle').textContent = 'Edycja zestawu';
+                    document.getElementById('setName').value = set.name;
+                    document.getElementById('setCategory').value = set.category;
+                    document.getElementById('setLevel').value = set.level;
+                    editorCards = [...set.cards];
+                }
+            } else {
+                document.getElementById('editorTitle').textContent = 'Tworzenie zestawu';
+                document.getElementById('setName').value = '';
+                document.getElementById('setCategory').value = 'angielski';
+                document.getElementById('setLevel').value = 'wszystkie';
+                editorCards = [];
+            }
+
+            renderEditorCards();
+            document.getElementById('editor').classList.add('active');
+        }
+
+        function showManager() {
+            hideAll();
+            renderManager();
+            document.getElementById('manager').classList.add('active');
+        }
+
+        function hideAll() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        }
+
+        // Local storage
+        function getCustomSets() {
+            const data = localStorage.getItem('fiszki_sets');
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveCustomSets(sets) {
+            localStorage.setItem('fiszki_sets', JSON.stringify(sets));
+        }
+
+        // Set selector
+        function renderSetSelector() {
+            const container = document.getElementById('setsGrid');
+            const customSets = getCustomSets();
+            const allSets = [...BUILTIN_SETS, ...customSets];
+
+            container.innerHTML = allSets.map(set => `
+                <div class="set-card" onclick="selectSet('${set.id}')">
+                    <h3>${escapeHtml(set.name)}</h3>
+                    <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)}</p>
+                    <div class="set-meta">
+                        ${set.cards.length} fiszek | Poziom: ${set.level}
+                        ${set.builtin ? ' | 📦 Wbudowany' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectSet(setId) {
+            const customSets = getCustomSets();
+            const allSets = [...BUILTIN_SETS, ...customSets];
+            currentSet = allSets.find(s => s.id === setId);
+
+            if (!currentSet) return;
+
+            if (currentMode === 'study') {
+                startStudy();
+            } else {
+                startTest();
+            }
+        }
+
+        // Study mode
+        function startStudy() {
+            currentCardIndex = 0;
+            studyResults = { known: [], unknown: [] };
+
+            // Shuffle cards
+            currentSet.cards = shuffleArray([...currentSet.cards]);
+
+            hideAll();
+            document.getElementById('studyPanel').classList.add('active');
+            showStudyCard();
+        }
+
+        function showStudyCard() {
+            if (currentCardIndex >= currentSet.cards.length) {
+                showStudyComplete();
+                return;
+            }
+
+            const card = currentSet.cards[currentCardIndex];
+            document.getElementById('studyProgress').textContent =
+                `Karta ${currentCardIndex + 1} / ${currentSet.cards.length}`;
+            document.getElementById('cardFront').textContent = card.front;
+            document.getElementById('cardBack').textContent = card.back;
+
+            // Reset flip
+            document.getElementById('flashcard').classList.remove('flipped');
+        }
+
+        function flipCard() {
+            document.getElementById('flashcard').classList.toggle('flipped');
+        }
+
+        function markCard(known) {
+            const card = currentSet.cards[currentCardIndex];
+            if (known) {
+                studyResults.known.push(card);
+            } else {
+                studyResults.unknown.push(card);
+            }
+            currentCardIndex++;
+            showStudyCard();
+        }
+
+        function showStudyComplete() {
+            hideAll();
+            document.getElementById('statKnown').textContent = studyResults.known.length;
+            document.getElementById('statUnknown').textContent = studyResults.unknown.length;
+
+            // Hide "repeat unknown" button if all known
+            document.getElementById('repeatUnknownBtn').style.display =
+                studyResults.unknown.length > 0 ? 'inline-block' : 'none';
+
+            document.getElementById('studyComplete').classList.add('active');
+        }
+
+        function restartStudy(onlyUnknown) {
+            if (onlyUnknown && studyResults.unknown.length > 0) {
+                currentSet.cards = shuffleArray([...studyResults.unknown]);
+            } else {
+                currentSet.cards = shuffleArray([...currentSet.cards]);
+            }
+            startStudy();
+        }
+
+        function endStudy() {
+            showStudyComplete();
+        }
+
+        // Test mode
+        function startTest() {
+            currentCardIndex = 0;
+            testResults = { correct: 0, wrong: 0 };
+
+            // Shuffle cards
+            currentSet.cards = shuffleArray([...currentSet.cards]);
+
+            hideAll();
+            document.getElementById('testPanel').classList.add('active');
+            showTestCard();
+        }
+
+        function setTestMode(mode) {
+            testMode = mode;
+            document.getElementById('modeWrite').classList.toggle('active', mode === 'write');
+            document.getElementById('modeChoice').classList.toggle('active', mode === 'choice');
+            document.getElementById('writeMode').style.display = mode === 'write' ? 'block' : 'none';
+            document.getElementById('choiceMode').style.display = mode === 'choice' ? 'block' : 'none';
+            showTestCard();
+        }
+
+        function showTestCard() {
+            if (currentCardIndex >= currentSet.cards.length) {
+                showTestComplete();
+                return;
+            }
+
+            const card = currentSet.cards[currentCardIndex];
+            document.getElementById('testProgress').textContent =
+                `Pytanie ${currentCardIndex + 1} / ${currentSet.cards.length}`;
+            document.getElementById('testQuestion').textContent = card.front;
+
+            // Reset
+            document.getElementById('testInput').value = '';
+            document.getElementById('testInput').className = 'test-input';
+            document.getElementById('testInput').disabled = false;
+            document.getElementById('testFeedback').textContent = '';
+            document.getElementById('testFeedbackChoice').textContent = '';
+            document.getElementById('checkBtn').style.display = 'inline-block';
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('nextBtnChoice').style.display = 'none';
+
+            // Choice mode - generate options
+            if (testMode === 'choice') {
+                generateOptions(card);
+            }
+
+            // Focus input
+            if (testMode === 'write') {
+                document.getElementById('testInput').focus();
+            }
+        }
+
+        function generateOptions(correctCard) {
+            const container = document.getElementById('testOptions');
+
+            // Get 3 random wrong answers
+            const otherCards = currentSet.cards.filter(c => c !== correctCard);
+            const wrongOptions = shuffleArray(otherCards).slice(0, 3).map(c => c.back);
+
+            // Combine and shuffle
+            const options = shuffleArray([correctCard.back, ...wrongOptions]);
+
+            container.innerHTML = options.map(opt => `
+                <button class="test-option" onclick="selectOption(this, '${escapeHtml(opt)}')">${escapeHtml(opt)}</button>
+            `).join('');
+        }
+
+        function selectOption(btn, answer) {
+            const card = currentSet.cards[currentCardIndex];
+            const isCorrect = answer === card.back;
+
+            // Disable all options
+            document.querySelectorAll('.test-option').forEach(opt => {
+                opt.disabled = true;
+                if (opt.textContent === card.back) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                btn.classList.add('correct');
+                testResults.correct++;
+                document.getElementById('testFeedbackChoice').innerHTML = '<span style="color: var(--color-success);">✓ Dobrze!</span>';
+            } else {
+                btn.classList.add('wrong');
+                testResults.wrong++;
+                document.getElementById('testFeedbackChoice').innerHTML =
+                    `<span style="color: var(--color-danger);">✗ Poprawna odpowiedź: ${escapeHtml(card.back)}</span>`;
+            }
+
+            document.getElementById('nextBtnChoice').style.display = 'inline-block';
+        }
+
+        function handleTestInput(event) {
+            if (event.key === 'Enter') {
+                checkAnswer();
+            }
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById('testInput');
+            const card = currentSet.cards[currentCardIndex];
+            const userAnswer = input.value.trim().toLowerCase();
+            const correctAnswer = card.back.toLowerCase();
+
+            const isCorrect = userAnswer === correctAnswer;
+
+            input.disabled = true;
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'inline-block';
+
+            if (isCorrect) {
+                input.classList.add('correct');
+                testResults.correct++;
+                document.getElementById('testFeedback').innerHTML = '<span style="color: var(--color-success);">✓ Dobrze!</span>';
+            } else {
+                input.classList.add('wrong');
+                testResults.wrong++;
+                document.getElementById('testFeedback').innerHTML =
+                    `<span style="color: var(--color-danger);">✗ Poprawna odpowiedź: ${escapeHtml(card.back)}</span>`;
+            }
+        }
+
+        function nextTestCard() {
+            currentCardIndex++;
+            showTestCard();
+        }
+
+        function showTestComplete() {
+            hideAll();
+
+            const total = testResults.correct + testResults.wrong;
+            const percent = Math.round((testResults.correct / total) * 100);
+
+            document.getElementById('testCorrect').textContent = testResults.correct;
+            document.getElementById('testWrong').textContent = testResults.wrong;
+            document.getElementById('testPercent').textContent = percent + '%';
+
+            // Icon and title based on result
+            if (percent >= 90) {
+                document.getElementById('testResultIcon').textContent = '🏆';
+                document.getElementById('testResultTitle').textContent = 'Doskonale!';
+            } else if (percent >= 70) {
+                document.getElementById('testResultIcon').textContent = '👍';
+                document.getElementById('testResultTitle').textContent = 'Dobra robota!';
+            } else if (percent >= 50) {
+                document.getElementById('testResultIcon').textContent = '📚';
+                document.getElementById('testResultTitle').textContent = 'Jeszcze trochę nauki!';
+            } else {
+                document.getElementById('testResultIcon').textContent = '💪';
+                document.getElementById('testResultTitle').textContent = 'Nie poddawaj się!';
+            }
+
+            document.getElementById('testComplete').classList.add('active');
+        }
+
+        function endTest() {
+            showTestComplete();
+        }
+
+        // Editor
+        function renderEditorCards() {
+            const container = document.getElementById('cardsList');
+            document.getElementById('cardCount').textContent = editorCards.length;
+
+            container.innerHTML = editorCards.map((card, index) => `
+                <div class="card-edit-item">
+                    <span class="card-number">${index + 1}.</span>
+                    <input type="text" value="${escapeHtml(card.front)}"
+                           placeholder="Przód (pytanie)"
+                           onchange="updateCard(${index}, 'front', this.value)">
+                    <input type="text" value="${escapeHtml(card.back)}"
+                           placeholder="Tył (odpowiedź)"
+                           onchange="updateCard(${index}, 'back', this.value)">
+                    <button class="delete-card" onclick="deleteCard(${index})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function addCard() {
+            editorCards.push({ front: '', back: '' });
+            renderEditorCards();
+
+            // Focus the new front input
+            const inputs = document.querySelectorAll('.card-edit-item input');
+            if (inputs.length >= 2) {
+                inputs[inputs.length - 2].focus();
+            }
+        }
+
+        function updateCard(index, field, value) {
+            editorCards[index][field] = value;
+        }
+
+        function deleteCard(index) {
+            editorCards.splice(index, 1);
+            renderEditorCards();
+        }
+
+        function saveSet() {
+            const name = document.getElementById('setName').value.trim();
+            const category = document.getElementById('setCategory').value;
+            const level = document.getElementById('setLevel').value;
+
+            // Validation
+            if (!name) {
+                alert('Podaj nazwę zestawu!');
+                return;
+            }
+
+            // Filter out empty cards
+            const validCards = editorCards.filter(c => c.front.trim() && c.back.trim());
+
+            if (validCards.length < 3) {
+                alert('Dodaj minimum 3 fiszki!');
+                return;
+            }
+
+            const sets = getCustomSets();
+
+            if (editingSetId) {
+                // Update existing
+                const index = sets.findIndex(s => s.id === editingSetId);
+                if (index !== -1) {
+                    sets[index] = {
+                        ...sets[index],
+                        name,
+                        category,
+                        level,
+                        cards: validCards
+                    };
+                }
+            } else {
+                // Create new
+                sets.push({
+                    id: 'custom_' + Date.now(),
+                    name,
+                    category,
+                    level,
+                    cards: validCards
+                });
+            }
+
+            saveCustomSets(sets);
+            alert('Zestaw zapisany!');
+            showStartScreen();
+        }
+
+        // Manager
+        function renderManager() {
+            const container = document.getElementById('managerGrid');
+            const customSets = getCustomSets();
+
+            if (customSets.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7); grid-column: 1/-1;">Nie masz jeszcze własnych zestawów.</p>';
+                return;
+            }
+
+            container.innerHTML = customSets.map(set => `
+                <div class="set-card">
+                    <h3>${escapeHtml(set.name)}</h3>
+                    <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)}</p>
+                    <div class="set-meta">${set.cards.length} fiszek | Poziom: ${set.level}</div>
+                    <div class="btn-group" style="margin-top: var(--spacing-md);">
+                        <button class="btn btn-primary" onclick="showEditor('${set.id}')">✏️ Edytuj</button>
+                        <button class="btn btn-danger" onclick="deleteSet('${set.id}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteSet(setId) {
+            if (!confirm('Usunąć ten zestaw?')) return;
+
+            let sets = getCustomSets();
+            sets = sets.filter(s => s.id !== setId);
+            saveCustomSets(sets);
+            renderManager();
+        }
+
+        // Utilities
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getCategoryEmoji(category) {
+            const emojis = {
+                angielski: '🇬🇧',
+                niemiecki: '🇩🇪',
+                matematyka: '🔢',
+                historia: '🏛️',
+                geografia: '🌍',
+                biologia: '🌿',
+                inne: '📚'
+            };
+            return emojis[category] || '📚';
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                angielski: 'Angielski',
+                niemiecki: 'Niemiecki',
+                matematyka: 'Matematyka',
+                historia: 'Historia',
+                geografia: 'Geografia',
+                biologia: 'Biologia',
+                inne: 'Inne'
+            };
+            return names[category] || category;
+        }
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
