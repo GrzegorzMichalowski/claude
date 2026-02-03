@@ -1,26 +1,27 @@
 // Service Worker dla Narzędzi dla Nauczycieli
-const CACHE_NAME = 'nauczyciel-tools-v1';
+const CACHE_NAME = 'nauczyciel-tools-v2';
 
-// Pliki do cache'owania przy instalacji
+// Pliki do cache'owania przy instalacji (ścieżki względne dla GitHub Pages)
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/styles-common.css',
-  '/scripts-common.js',
-  '/timer-kartkowka.html',
-  '/timer-egzamin.html',
-  '/progi-ocen.html',
-  '/losowanie-ucznia.html',
-  '/tabliczka-kolko-krzyzyk.html',
-  '/mapa-polski.html',
-  '/stworek.html',
-  '/termometr-emocji.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './styles-common.css',
+  './scripts-common.js',
+  './timer-kartkowka.html',
+  './timer-egzamin.html',
+  './progi-ocen.html',
+  './losowanie-ucznia.html',
+  './tabliczka-kolko-krzyzyk.html',
+  './mapa-polski.html',
+  './stworek.html',
+  './termometr-emocji.html',
+  './manifest.json',
+  './icons/icon-192.png'
 ];
 
 // Pliki które wymagają sieci (Firebase)
 const NETWORK_ONLY = [
-  '/turniej-tabliczka.html'
+  'turniej-tabliczka.html'
 ];
 
 // Instalacja - cache'uj statyczne zasoby
@@ -79,7 +80,7 @@ self.addEventListener('fetch', (event) => {
       fetch(event.request)
         .catch(() => {
           return new Response(
-            '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:sans-serif;text-align:center;padding:50px;"><h1>Brak połączenia</h1><p>Turniej wymaga połączenia z internetem.</p><a href="/index.html">Wróć do strony głównej</a></body></html>',
+            '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:sans-serif;text-align:center;padding:50px;"><h1>Brak połączenia</h1><p>Turniej wymaga połączenia z internetem.</p><a href="./index.html">Wróć do strony głównej</a></body></html>',
             { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
           );
         })
@@ -119,7 +120,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Offline fallback dla HTML
             if (event.request.headers.get('accept').includes('text/html')) {
-              return caches.match('/index.html');
+              return caches.match('./index.html');
             }
           });
       })

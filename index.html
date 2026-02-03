@@ -123,7 +123,7 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <main class="container">
         <h1>Narzędzia dla Nauczycieli</h1>
 
         <div class="cards">
@@ -200,11 +200,11 @@
             </a>
         </div>
 
-        <div class="footer">
+        <footer class="footer">
             <a href="https://github.com/GrzegorzMichalowski/claude" target="_blank">GitHub</a> |
             <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
-        </div>
-    </div>
+        </footer>
+    </main>
 
     <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
@@ -212,7 +212,7 @@
         // Rejestracja Service Worker dla PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
+                navigator.serviceWorker.register('./service-worker.js')
                     .then((registration) => {
                         console.log('SW zarejestrowany:', registration.scope);
                     })

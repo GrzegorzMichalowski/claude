@@ -235,13 +235,17 @@
   - Uproszczenie ścieżek
 
 ### Zadanie 3.2: Lighthouse audit
-- [ ] **Status:** Do zrobienia
+- [x] **Status:** Zakończone (2026-02-03)
 - **Cel:** 90+ we wszystkich kategoriach
-- **Metryki:**
-  - Performance
-  - Accessibility
-  - Best Practices
-  - SEO
+- **Wyniki:**
+  - Performance: 98
+  - Accessibility: 96 → 100 (dodano `<main>` landmark)
+  - Best Practices: 96 → 100 (naprawiono ścieżki SW)
+  - SEO: 100
+- **Naprawione problemy:**
+  - Błąd 404 Service Worker (ścieżki względne zamiast absolutnych)
+  - Brak `<main>` landmark (dodano semantyczny HTML)
+  - Zmieniono `<div class="footer">` na `<footer>`
 
 ### Zadanie 3.3: PWA support
 - [x] **Status:** Zakończone (2026-02-02)
