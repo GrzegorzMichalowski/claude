@@ -1172,14 +1172,20 @@ KATEGORIA: Nazwa kategorii 2
         ];
 
         // ==================== POWER-UPS ====================
-        const POWERUPS = [
-            { id: 'bonus', icon: '🎁', name: 'Bonus!', desc: 'Drużyna otrzymuje +200 punktów!', effect: 'bonus', value: 200 },
-            { id: 'trap', icon: '💀', name: 'Pułapka!', desc: 'Drużyna traci 100 punktów!', effect: 'penalty', value: -100 },
-            { id: 'double', icon: '✨', name: 'Podwójne punkty!', desc: 'Następne pytanie za podwójne punkty!', effect: 'double' },
-            { id: 'swap', icon: '🔄', name: 'Zamiana!', desc: 'Zamień punkty z wybraną drużyną!', effect: 'swap' },
-            { id: 'shield', icon: '🛡️', name: 'Tarcza!', desc: 'Przy błędnej odpowiedzi nie tracisz punktów!', effect: 'shield' },
-            { id: 'steal', icon: '🦹', name: 'Kradzież!', desc: 'Zabierz 150 punktów od przeciwnika!', effect: 'steal', value: 150 }
+        // Power-upy Z PYTANIEM (musisz odpowiedzieć dobrze żeby dostać bonus)
+        const POWERUPS_WITH_QUESTION = [
+            { id: 'double', icon: '✨', name: 'Podwójne punkty!', desc: 'Odpowiedz poprawnie i zdobądź 2× punkty za to pytanie!', effect: 'double' },
+            { id: 'bonus', icon: '🎁', name: 'Bonus!', desc: 'Odpowiedz poprawnie i zdobądź punkty + 200 extra!', effect: 'bonus', value: 200 },
+            { id: 'steal', icon: '🦹', name: 'Kradzież!', desc: 'Odpowiedz poprawnie i ukradnij 150 pkt przeciwnikowi!', effect: 'steal', value: 150 }
         ];
+
+        // Power-upy BEZ PYTANIA (natychmiastowe pułapki)
+        const POWERUPS_INSTANT = [
+            { id: 'trap', icon: '💀', name: 'Pułapka!', desc: 'Tracisz 100 punktów!', effect: 'penalty', value: -100 },
+            { id: 'swap', icon: '🔄', name: 'Zamiana!', desc: 'Zamieniasz punkty z przeciwnikiem!', effect: 'swap' }
+        ];
+
+        const ALL_POWERUPS = [...POWERUPS_WITH_QUESTION, ...POWERUPS_INSTANT];
 
         // ==================== STATE ====================
         let currentSet = null;
@@ -1191,8 +1197,6 @@ KATEGORIA: Nazwa kategorii 2
         let usedQuestions = new Set();
         let boardState = []; // tracks powerups on board
         let activePowerup = null;
-        let doublePointsActive = false;
-        let shieldActive = false;
         let customSets = [];
 
         // ==================== INITIALIZATION ====================
@@ -1297,8 +1301,7 @@ KATEGORIA: Nazwa kategorii 2
             // Reset game state
             currentTeamIndex = 0;
             usedQuestions = new Set();
-            doublePointsActive = false;
-            shieldActive = false;
+            activePowerup = null;
 
             // Setup board with powerups if needed
             setupBoard();
@@ -1317,9 +1320,9 @@ KATEGORIA: Nazwa kategorii 2
             boardState = [];
             const totalCells = currentSet.categories.length * 5;
 
-            // In powerups mode, randomly assign powerups to ~20% of cells
+            // In powerups mode, randomly assign powerups to ~25% of cells
             if (gameMode === 'powerups') {
-                const powerupCount = Math.floor(totalCells * 0.2);
+                const powerupCount = Math.floor(totalCells * 0.25);
                 const powerupPositions = new Set();
 
                 while (powerupPositions.size < powerupCount) {
@@ -1328,8 +1331,15 @@ KATEGORIA: Nazwa kategorii 2
 
                 for (let i = 0; i < totalCells; i++) {
                     if (powerupPositions.has(i)) {
-                        const randomPowerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
-                        boardState.push({ type: 'powerup', powerup: randomPowerup });
+                        // 60% chance for powerup with question, 40% for instant trap
+                        const hasQuestion = Math.random() < 0.6;
+                        const powerupPool = hasQuestion ? POWERUPS_WITH_QUESTION : POWERUPS_INSTANT;
+                        const randomPowerup = powerupPool[Math.floor(Math.random() * powerupPool.length)];
+                        boardState.push({
+                            type: 'powerup',
+                            powerup: randomPowerup,
+                            hasQuestion: hasQuestion
+                        });
                     } else {
                         boardState.push({ type: 'question' });
                     }
@@ -1387,30 +1397,50 @@ KATEGORIA: Nazwa kategorii 2
 
             const cellIndex = catIndex * 5 + row;
             const cellState = boardState[cellIndex];
+            const question = currentSet.categories[catIndex].questions[row];
 
             usedQuestions.add(cellId);
 
             if (cellState.type === 'powerup' && gameMode === 'powerups') {
-                showPowerup(cellState.powerup, cellId);
+                if (cellState.hasQuestion) {
+                    // Power-up z pytaniem - pokaż pytanie z efektem power-upa
+                    showQuestionWithPowerup(question, cellId, cellState.powerup);
+                } else {
+                    // Power-up natychmiastowy (pułapka) - bez pytania
+                    showInstantPowerup(cellState.powerup, cellId);
+                }
             } else {
-                const question = currentSet.categories[catIndex].questions[row];
-                showQuestion(question, cellId);
+                showQuestion(question, cellId, null);
             }
         }
 
         // ==================== QUESTION MODAL ====================
-        function showQuestion(question, cellId) {
-            const points = doublePointsActive ? question.points * 2 : question.points;
-            doublePointsActive = false;
+        function showQuestion(question, cellId, powerup = null) {
+            let points = question.points;
+            let pointsLabel = points + ' punktów';
 
-            document.getElementById('modalPoints').textContent = points + ' punktów';
+            // Jeśli jest power-up, dostosuj punkty i etykietę
+            if (powerup) {
+                if (powerup.effect === 'double') {
+                    points = question.points * 2;
+                    pointsLabel = `✨ ${points} punktów (2×!)`;
+                } else if (powerup.effect === 'bonus') {
+                    pointsLabel = `🎁 ${points} + 200 bonus`;
+                } else if (powerup.effect === 'steal') {
+                    pointsLabel = `🦹 ${points} + kradzież 150`;
+                }
+            }
+
+            document.getElementById('modalPoints').textContent = pointsLabel;
             document.getElementById('modalQuestion').textContent = question.question;
             document.getElementById('modalAnswer').textContent = question.answer;
             document.getElementById('modalAnswer').classList.remove('visible');
             document.getElementById('showAnswerBtn').style.display = 'inline-block';
             document.getElementById('teamButtons').style.display = 'none';
             document.getElementById('teamButtons').dataset.points = points;
+            document.getElementById('teamButtons').dataset.basePoints = question.points;
             document.getElementById('teamButtons').dataset.cellId = cellId;
+            document.getElementById('teamButtons').dataset.powerup = powerup ? JSON.stringify(powerup) : '';
 
             // Timer
             if (timerSeconds > 0) {
@@ -1420,6 +1450,78 @@ KATEGORIA: Nazwa kategorii 2
             }
 
             document.getElementById('questionModal').classList.add('active');
+        }
+
+        function showQuestionWithPowerup(question, cellId, powerup) {
+            // Pokaż power-up na planszy
+            document.getElementById(cellId).textContent = powerup.icon;
+            document.getElementById(cellId).classList.add('powerup-revealed');
+
+            // Pokaż pytanie z power-upem
+            showQuestion(question, cellId, powerup);
+        }
+
+        function showInstantPowerup(powerup, cellId) {
+            document.getElementById('powerupIcon').textContent = powerup.icon;
+            document.getElementById('powerupName').textContent = powerup.name;
+            document.getElementById('powerupDesc').textContent = powerup.desc;
+
+            activePowerup = { ...powerup, cellId };
+
+            // Update cell to show powerup icon
+            document.getElementById(cellId).textContent = powerup.icon;
+            document.getElementById(cellId).classList.add('powerup-revealed');
+
+            let buttonsHtml = '';
+
+            if (powerup.effect === 'penalty') {
+                // Pułapka - wybierz drużynę która traci punkty
+                buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Która drużyna trafia na pułapkę?</p>` +
+                    teams.map((team, i) => `
+                        <button class="team-btn" style="background: ${team.color}; color: white;"
+                                onclick="applyInstantPowerup(${i})">
+                            ${team.name}
+                        </button>
+                    `).join('');
+            } else if (powerup.effect === 'swap') {
+                // Zamiana - wybierz drużynę która musi zamienić punkty
+                buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Która drużyna zamienia punkty?</p>` +
+                    teams.map((team, i) => `
+                        <button class="team-btn" style="background: ${team.color}; color: white;"
+                                onclick="selectSwapTeam(${i})">
+                            ${team.name}
+                        </button>
+                    `).join('');
+            }
+
+            document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
+            document.getElementById('powerupModal').classList.add('active');
+        }
+
+        function applyInstantPowerup(teamIndex) {
+            const powerup = activePowerup;
+
+            if (powerup.effect === 'penalty') {
+                teams[teamIndex].score += powerup.value; // value is negative
+            }
+
+            closePowerupModal();
+        }
+
+        function selectSwapTeam(teamIndex) {
+            // Pokaż wybór z kim zamienić
+            const buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">${teams[teamIndex].name} zamienia punkty z:</p>` +
+                teams.filter((_, i) => i !== teamIndex).map((team, i) => {
+                    const actualIndex = i >= teamIndex ? i + 1 : i;
+                    return `
+                        <button class="team-btn" style="background: ${team.color}; color: white;"
+                                onclick="executeSwap(${teamIndex}, ${actualIndex})">
+                            ${team.name} (${teams[actualIndex].score} pkt)
+                        </button>
+                    `;
+                }).join('');
+
+            document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
         }
 
         function startTimer() {
@@ -1468,19 +1570,56 @@ KATEGORIA: Nazwa kategorii 2
         }
 
         function awardPoints(teamIndex, points) {
+            const powerupData = document.getElementById('teamButtons').dataset.powerup;
+            const powerup = powerupData ? JSON.parse(powerupData) : null;
+
+            // Przyznaj podstawowe punkty
             teams[teamIndex].score += points;
+
+            // Zastosuj efekt power-upa
+            if (powerup) {
+                if (powerup.effect === 'bonus') {
+                    teams[teamIndex].score += powerup.value;
+                } else if (powerup.effect === 'steal') {
+                    // Pokaż wybór od kogo ukraść
+                    showStealSelection(teamIndex, powerup.value);
+                    return; // Nie zamykaj jeszcze modala
+                }
+                // double już jest wliczone w points
+            }
+
+            closeQuestionModal();
+            advanceTurn();
+            checkGameEnd();
+        }
+
+        function showStealSelection(thiefIndex, stealAmount) {
+            const buttonsHtml = `<p style="margin-top: var(--spacing-lg); margin-bottom: var(--spacing-md); color: var(--vb-gold);">Ukradnij ${stealAmount} punktów od:</p>` +
+                teams.filter((_, i) => i !== thiefIndex).map((team, i) => {
+                    const actualIndex = i >= thiefIndex ? i + 1 : i;
+                    return `
+                        <button class="team-btn" style="background: ${team.color}; color: white;"
+                                onclick="executeStealFromQuestion(${thiefIndex}, ${actualIndex}, ${stealAmount})">
+                            ${team.name} (${teams[actualIndex].score} pkt)
+                        </button>
+                    `;
+                }).join('');
+
+            document.getElementById('teamButtons').innerHTML = buttonsHtml;
+        }
+
+        function executeStealFromQuestion(thiefIndex, victimIndex, stealAmount) {
+            const actualSteal = Math.min(stealAmount, teams[victimIndex].score);
+            teams[victimIndex].score -= actualSteal;
+            teams[thiefIndex].score += actualSteal;
+
             closeQuestionModal();
             advanceTurn();
             checkGameEnd();
         }
 
         function noCorrectAnswer() {
-            // If shield is active, don't penalize
-            if (!shieldActive) {
-                // Optional: penalize current team for wrong answer
-                // teams[currentTeamIndex].score -= points / 2;
-            }
-            shieldActive = false;
+            // Nikt nie odpowiedział poprawnie - brak punktów
             closeQuestionModal();
             advanceTurn();
             checkGameEnd();
@@ -1495,106 +1634,7 @@ KATEGORIA: Nazwa kategorii 2
             renderScoreboard();
         }
 
-        // ==================== POWERUP MODAL ====================
-        function showPowerup(powerup, cellId) {
-            document.getElementById('powerupIcon').textContent = powerup.icon;
-            document.getElementById('powerupName').textContent = powerup.name;
-            document.getElementById('powerupDesc').textContent = powerup.desc;
-
-            activePowerup = { ...powerup, cellId };
-
-            // Update cell to show powerup icon
-            document.getElementById(cellId).textContent = powerup.icon;
-            document.getElementById(cellId).classList.add('powerup-revealed');
-
-            // Generate appropriate buttons based on powerup effect
-            let buttonsHtml = '';
-
-            if (powerup.effect === 'bonus' || powerup.effect === 'penalty') {
-                buttonsHtml = teams.map((team, i) => `
-                    <button class="team-btn" style="background: ${team.color}; color: white;"
-                            onclick="applyPowerup(${i})">
-                        ${team.name}
-                    </button>
-                `).join('');
-            } else if (powerup.effect === 'swap' || powerup.effect === 'steal') {
-                buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Wybierz drużynę, która to dostaje:</p>` +
-                    teams.map((team, i) => `
-                        <button class="team-btn" style="background: ${team.color}; color: white;"
-                                onclick="selectPowerupTeam(${i})">
-                            ${team.name}
-                        </button>
-                    `).join('');
-            } else if (powerup.effect === 'double' || powerup.effect === 'shield') {
-                buttonsHtml = teams.map((team, i) => `
-                    <button class="team-btn" style="background: ${team.color}; color: white;"
-                            onclick="applyPowerup(${i})">
-                        ${team.name}
-                    </button>
-                `).join('');
-            }
-
-            document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
-            document.getElementById('powerupModal').classList.add('active');
-        }
-
-        function applyPowerup(teamIndex) {
-            const powerup = activePowerup;
-
-            switch (powerup.effect) {
-                case 'bonus':
-                    teams[teamIndex].score += powerup.value;
-                    break;
-                case 'penalty':
-                    teams[teamIndex].score += powerup.value; // value is negative
-                    break;
-                case 'double':
-                    doublePointsActive = true;
-                    currentTeamIndex = teamIndex;
-                    break;
-                case 'shield':
-                    shieldActive = true;
-                    currentTeamIndex = teamIndex;
-                    break;
-            }
-
-            closePowerupModal();
-        }
-
-        let powerupRecipient = null;
-
-        function selectPowerupTeam(teamIndex) {
-            powerupRecipient = teamIndex;
-            const powerup = activePowerup;
-
-            if (powerup.effect === 'swap') {
-                // Show second selection for swap target
-                const buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Zamień punkty z:</p>` +
-                    teams.filter((_, i) => i !== teamIndex).map((team, i) => {
-                        const actualIndex = i >= teamIndex ? i + 1 : i;
-                        return `
-                            <button class="team-btn" style="background: ${team.color}; color: white;"
-                                    onclick="executeSwap(${teamIndex}, ${actualIndex})">
-                                ${team.name}
-                            </button>
-                        `;
-                    }).join('');
-                document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
-            } else if (powerup.effect === 'steal') {
-                const buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Ukradnij punkty od:</p>` +
-                    teams.filter((_, i) => i !== teamIndex).map((team, i) => {
-                        const actualIndex = i >= teamIndex ? i + 1 : i;
-                        return `
-                            <button class="team-btn" style="background: ${team.color}; color: white;"
-                                    onclick="executeSteal(${teamIndex}, ${actualIndex})">
-                                ${team.name}
-                            </button>
-                        `;
-                    }).join('');
-                document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
-            }
-        }
-
+        // ==================== POWERUP FUNCTIONS ====================
         function executeSwap(team1, team2) {
             const temp = teams[team1].score;
             teams[team1].score = teams[team2].score;
@@ -1602,18 +1642,12 @@ KATEGORIA: Nazwa kategorii 2
             closePowerupModal();
         }
 
-        function executeSteal(thief, victim) {
-            const stealAmount = Math.min(activePowerup.value, teams[victim].score);
-            teams[victim].score -= stealAmount;
-            teams[thief].score += stealAmount;
-            closePowerupModal();
-        }
-
         function closePowerupModal() {
             document.getElementById('powerupModal').classList.remove('active');
-            document.getElementById(activePowerup.cellId).classList.add('used');
+            if (activePowerup && activePowerup.cellId) {
+                document.getElementById(activePowerup.cellId).classList.add('used');
+            }
             activePowerup = null;
-            powerupRecipient = null;
             renderScoreboard();
             advanceTurn();
             checkGameEnd();
