@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Va Banque - Narzędzia dla Nauczycieli</title>
+    <meta name="theme-color" content="#1a1a4e">
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <style>
+        :root {
+            --vb-primary: #1a1a4e;
+            --vb-secondary: #667eea;
+            --vb-gold: #ffd700;
+            --vb-accent: #00d4ff;
+            --vb-danger: #ff4757;
+            --vb-success: #2ed573;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--vb-primary) 0%, #2d2d7a 100%);
+            color: var(--color-text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .home-btn {
+            background: rgba(255,255,255,0.15);
+            color: var(--color-text-light);
+            align-self: flex-start;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--vb-gold);
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--spacing-lg);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Panels */
+        .panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            padding: var(--spacing-lg);
+        }
+
+        .panel.active {
+            display: flex;
+        }
+
+        /* Start Screen */
+        .start-screen {
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-xl);
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: var(--spacing-xl);
+            font-size: var(--font-size-lg);
+            border: 3px solid var(--vb-gold);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-width: 200px;
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--vb-gold);
+        }
+
+        .mode-btn:hover {
+            background: var(--vb-gold);
+            color: var(--vb-primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .mode-btn .icon {
+            display: block;
+            font-size: 3rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        /* Set Selector */
+        .sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--spacing-lg);
+            width: 100%;
+        }
+
+        .set-card {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .set-card:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: var(--vb-gold);
+            transform: translateY(-3px);
+        }
+
+        .set-card h3 {
+            color: var(--vb-gold);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .set-card p {
+            opacity: 0.8;
+            font-size: var(--font-size-sm);
+        }
+
+        .set-card .set-meta {
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-xs);
+            opacity: 0.6;
+        }
+
+        /* Setup Panel */
+        .setup-form {
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--vb-gold);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: var(--font-size-base);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--vb-gold);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .team-inputs {
+            display: grid;
+            gap: var(--spacing-sm);
+        }
+
+        .team-input-row {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .team-color {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .mode-option {
+            flex: 1;
+            min-width: 200px;
+            padding: var(--spacing-lg);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            text-align: left;
+        }
+
+        .mode-option:hover {
+            border-color: var(--vb-gold);
+        }
+
+        .mode-option.selected {
+            border-color: var(--vb-gold);
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .mode-option h4 {
+            color: var(--vb-gold);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .mode-option p {
+            font-size: var(--font-size-sm);
+            opacity: 0.8;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-height: 44px;
+        }
+
+        .btn-primary {
+            background: var(--vb-gold);
+            color: var(--vb-primary);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .btn-primary:hover {
+            background: #ffed4a;
+            transform: scale(1.02);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: var(--spacing-lg);
+        }
+
+        /* Game Board */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+
+        .game-title {
+            color: var(--vb-gold);
+            font-size: var(--font-size-xl);
+        }
+
+        .game-mode-badge {
+            background: rgba(255,255,255,0.2);
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .category-header {
+            background: var(--vb-secondary);
+            padding: var(--spacing-md);
+            text-align: center;
+            font-weight: var(--font-weight-bold);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question-cell {
+            background: linear-gradient(135deg, #2a2a6e 0%, #3d3d9e 100%);
+            border: 2px solid var(--vb-secondary);
+            padding: var(--spacing-lg);
+            text-align: center;
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--vb-gold);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question-cell:hover:not(.used):not(.powerup-revealed) {
+            background: linear-gradient(135deg, #3a3a8e 0%, #4d4dae 100%);
+            transform: scale(1.05);
+            border-color: var(--vb-gold);
+        }
+
+        .question-cell.used {
+            background: rgba(0,0,0,0.3);
+            border-color: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.2);
+            cursor: default;
+        }
+
+        .question-cell.powerup-revealed {
+            font-size: 2rem;
+        }
+
+        /* Scoreboard */
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-xl);
+            flex-wrap: wrap;
+        }
+
+        .team-score {
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            min-width: 150px;
+            text-align: center;
+            border: 3px solid transparent;
+            transition: var(--transition-normal);
+        }
+
+        .team-score.active {
+            border-color: var(--vb-gold);
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .team-score .name {
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+        }
+
+        .team-score .points {
+            font-size: var(--font-size-3xl);
+            color: var(--vb-gold);
+            font-weight: var(--font-weight-bold);
+        }
+
+        /* Question Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-lg);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, var(--vb-primary) 0%, #2d2d7a 100%);
+            border: 3px solid var(--vb-gold);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-points {
+            font-size: var(--font-size-3xl);
+            color: var(--vb-gold);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .modal-question {
+            font-size: var(--font-size-2xl);
+            line-height: 1.6;
+            margin-bottom: var(--spacing-xl);
+            min-height: 100px;
+        }
+
+        .modal-answer {
+            display: none;
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid var(--vb-gold);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            font-size: var(--font-size-xl);
+            color: var(--vb-gold);
+        }
+
+        .modal-answer.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-timer {
+            font-size: var(--font-size-4xl);
+            color: var(--vb-accent);
+            margin-bottom: var(--spacing-lg);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .modal-timer.warning {
+            color: var(--vb-danger);
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .team-buttons {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: var(--spacing-lg);
+        }
+
+        .team-btn {
+            padding: var(--spacing-md) var(--spacing-xl);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-lg);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-width: 120px;
+        }
+
+        .team-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .team-btn.wrong {
+            background: var(--vb-danger);
+            color: white;
+        }
+
+        /* Power-up Modal */
+        .powerup-modal {
+            text-align: center;
+        }
+
+        .powerup-icon {
+            font-size: 5rem;
+            margin-bottom: var(--spacing-lg);
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .powerup-name {
+            font-size: var(--font-size-2xl);
+            color: var(--vb-gold);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .powerup-desc {
+            font-size: var(--font-size-lg);
+            opacity: 0.9;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        /* Import Panel */
+        .import-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .import-section h2 {
+            color: var(--vb-gold);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .import-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .import-tab {
+            flex: 1;
+            padding: var(--spacing-md);
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: var(--transition-normal);
+        }
+
+        .import-tab.active {
+            background: var(--vb-gold);
+            color: var(--vb-primary);
+            border-color: var(--vb-gold);
+        }
+
+        .import-content {
+            display: none;
+        }
+
+        .import-content.active {
+            display: block;
+        }
+
+        .import-textarea {
+            width: 100%;
+            height: 300px;
+            padding: var(--spacing-md);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: var(--radius-md);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-family: monospace;
+            font-size: var(--font-size-sm);
+            resize: vertical;
+        }
+
+        .import-textarea:focus {
+            outline: none;
+            border-color: var(--vb-gold);
+        }
+
+        .format-help {
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            font-size: var(--font-size-sm);
+            font-family: monospace;
+            white-space: pre-wrap;
+            opacity: 0.8;
+        }
+
+        .import-file-input {
+            display: none;
+        }
+
+        .import-file-label {
+            display: block;
+            padding: var(--spacing-xl);
+            border: 3px dashed rgba(255,255,255,0.3);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .import-file-label:hover {
+            border-color: var(--vb-gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        /* Results */
+        .results-container {
+            text-align: center;
+            padding: var(--spacing-xl);
+        }
+
+        .winner-announcement {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .winner-icon {
+            font-size: 6rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .winner-name {
+            font-size: var(--font-size-4xl);
+            color: var(--vb-gold);
+            margin-bottom: var(--spacing-md);
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        .winner-points {
+            font-size: var(--font-size-2xl);
+            opacity: 0.9;
+        }
+
+        .final-scores {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-xl);
+            flex-wrap: wrap;
+            margin: var(--spacing-xl) 0;
+        }
+
+        .final-score-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            min-width: 150px;
+        }
+
+        .final-score-card.winner {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid var(--vb-gold);
+        }
+
+        /* Footer */
+        .footer-link {
+            text-align: center;
+            padding: var(--spacing-md);
+            font-size: var(--font-size-sm);
+        }
+
+        .footer-link a {
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 4px;
+            }
+
+            .category-header {
+                font-size: var(--font-size-xs);
+                padding: var(--spacing-sm);
+                min-height: 50px;
+            }
+
+            .question-cell {
+                font-size: var(--font-size-lg);
+                padding: var(--spacing-sm);
+                min-height: 60px;
+            }
+
+            .modal-question {
+                font-size: var(--font-size-lg);
+            }
+
+            .scoreboard {
+                gap: var(--spacing-md);
+            }
+
+            .team-score {
+                min-width: 100px;
+                padding: var(--spacing-md);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-board {
+                gap: 2px;
+            }
+
+            .category-header {
+                font-size: 10px;
+                padding: 4px;
+            }
+
+            .question-cell {
+                font-size: var(--font-size-base);
+                padding: 4px;
+                min-height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+        <h1>Va Banque</h1>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="panel start-screen active">
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="showSetSelector()">
+                    <span class="icon">🎮</span>
+                    Graj
+                </button>
+                <button class="mode-btn" onclick="showImportPanel()">
+                    <span class="icon">📝</span>
+                    Stwórz zestaw
+                </button>
+            </div>
+        </div>
+
+        <!-- Set Selector -->
+        <div id="setSelector" class="panel">
+            <h2 style="text-align: center; color: var(--vb-gold); margin-bottom: var(--spacing-xl);">Wybierz zestaw pytań</h2>
+            <div class="sets-grid" id="setsGrid"></div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Game Setup -->
+        <div id="setupPanel" class="panel">
+            <div class="setup-form">
+                <h2 style="text-align: center; color: var(--vb-gold); margin-bottom: var(--spacing-xl);" id="setupTitle">Ustawienia gry</h2>
+
+                <div class="form-group">
+                    <label>Tryb gry:</label>
+                    <div class="mode-toggle">
+                        <button class="mode-option selected" onclick="selectGameMode('classic')" id="modeClassic">
+                            <h4>🎯 Klasyczny</h4>
+                            <p>Czysta rozgrywka bez niespodzianek</p>
+                        </button>
+                        <button class="mode-option" onclick="selectGameMode('powerups')" id="modePowerups">
+                            <h4>🎁 Z niespodziankami</h4>
+                            <p>Power-upy, bonusy i pułapki!</p>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Liczba drużyn:</label>
+                    <select id="teamCount" onchange="updateTeamInputs()">
+                        <option value="2">2 drużyny</option>
+                        <option value="3">3 drużyny</option>
+                        <option value="4">4 drużyny</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Nazwy drużyn:</label>
+                    <div class="team-inputs" id="teamInputs"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Czas na odpowiedź:</label>
+                    <select id="timerSetting">
+                        <option value="0">Bez limitu</option>
+                        <option value="15">15 sekund</option>
+                        <option value="30" selected>30 sekund</option>
+                        <option value="45">45 sekund</option>
+                        <option value="60">60 sekund</option>
+                    </select>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="showSetSelector()">Wstecz</button>
+                    <button class="btn btn-primary" onclick="startGame()">Rozpocznij grę!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Board -->
+        <div id="gamePanel" class="panel">
+            <div class="game-header">
+                <h2 class="game-title" id="gameTitle">Zestaw pytań</h2>
+                <span class="game-mode-badge" id="gameModeBadge">Tryb klasyczny</span>
+            </div>
+
+            <div class="game-board" id="gameBoard"></div>
+
+            <div class="scoreboard" id="scoreboard"></div>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="confirmEndGame()">Zakończ grę</button>
+            </div>
+        </div>
+
+        <!-- Question Modal -->
+        <div class="modal-overlay" id="questionModal">
+            <div class="modal-content">
+                <div class="modal-points" id="modalPoints">500</div>
+                <div class="modal-timer" id="modalTimer"></div>
+                <div class="modal-question" id="modalQuestion">Pytanie pojawi się tutaj</div>
+                <div class="modal-answer" id="modalAnswer">Odpowiedź</div>
+
+                <button class="btn btn-primary" id="showAnswerBtn" onclick="showAnswer()">Pokaż odpowiedź</button>
+
+                <div class="team-buttons" id="teamButtons" style="display: none;"></div>
+
+                <div class="btn-group" style="margin-top: var(--spacing-xl);">
+                    <button class="btn btn-secondary" onclick="closeQuestionModal()">Zamknij</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Power-up Modal -->
+        <div class="modal-overlay" id="powerupModal">
+            <div class="modal-content powerup-modal">
+                <div class="powerup-icon" id="powerupIcon">🎁</div>
+                <div class="powerup-name" id="powerupName">Bonus!</div>
+                <div class="powerup-desc" id="powerupDesc">Opis power-upa</div>
+
+                <div class="team-buttons" id="powerupTeamButtons"></div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="closePowerupModal()">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Panel -->
+        <div id="importPanel" class="panel">
+            <div class="import-section">
+                <h2>Stwórz własny zestaw</h2>
+
+                <div class="form-group">
+                    <label>Nazwa zestawu:</label>
+                    <input type="text" id="customSetName" placeholder="np. Historia - II Wojna Światowa">
+                </div>
+
+                <div class="import-tabs">
+                    <button class="import-tab active" onclick="showImportTab('paste')">Wklej tekst</button>
+                    <button class="import-tab" onclick="showImportTab('file')">Wczytaj plik</button>
+                </div>
+
+                <div class="import-content active" id="importPaste">
+                    <textarea class="import-textarea" id="importText" placeholder="Wklej pytania w formacie opisanym poniżej..."></textarea>
+                    <div class="format-help">Format:
+KATEGORIA: Nazwa kategorii 1
+100: Pytanie za 100 punktów | Odpowiedź
+200: Pytanie za 200 punktów | Odpowiedź
+300: Pytanie za 300 punktów | Odpowiedź
+400: Pytanie za 400 punktów | Odpowiedź
+500: Pytanie za 500 punktów | Odpowiedź
+
+KATEGORIA: Nazwa kategorii 2
+100: Pytanie | Odpowiedź
+... (powtórz dla 5 kategorii)</div>
+                </div>
+
+                <div class="import-content" id="importFile">
+                    <input type="file" class="import-file-input" id="fileInput" accept=".txt,.json" onchange="handleFileImport(event)">
+                    <label for="fileInput" class="import-file-label">
+                        <span style="font-size: 3rem; display: block; margin-bottom: var(--spacing-md);">📁</span>
+                        Kliknij lub przeciągnij plik<br>
+                        <small>(.txt lub .json)</small>
+                    </label>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
+                    <button class="btn btn-primary" onclick="importCustomSet()">Importuj i graj</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div id="resultsPanel" class="panel">
+            <div class="results-container">
+                <div class="winner-announcement">
+                    <div class="winner-icon">🏆</div>
+                    <div class="winner-name" id="winnerName">Drużyna A</div>
+                    <div class="winner-points" id="winnerPoints">wygrywa z wynikiem 2500 punktów!</div>
+                </div>
+
+                <div class="final-scores" id="finalScores"></div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="restartGame()">Zagraj ponownie</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Menu główne</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-link">
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
+        </div>
+    </div>
+
+    <script>
+        // ==================== BUILT-IN SETS ====================
+        const BUILTIN_SETS = [
+            {
+                id: 'ang-irregular-verbs',
+                name: 'Angielski - Czasowniki nieregularne',
+                description: 'Past Simple i Past Participle',
+                categories: [
+                    {
+                        name: 'Wielka Piątka',
+                        questions: [
+                            { points: 100, question: 'Jak brzmi Past Simple od "be"?', answer: 'was / were' },
+                            { points: 200, question: 'Podaj 3 formy: DO', answer: 'do - did - done' },
+                            { points: 300, question: 'Podaj 3 formy: HAVE', answer: 'have - had - had' },
+                            { points: 400, question: 'Podaj 3 formy: GO', answer: 'go - went - gone' },
+                            { points: 500, question: 'Uzupełnij: I have ___ (get) better at English.', answer: 'got / gotten' }
+                        ]
+                    },
+                    {
+                        name: 'Codzienne',
+                        questions: [
+                            { points: 100, question: 'Past Simple od "come":', answer: 'came' },
+                            { points: 200, question: 'Podaj 3 formy: EAT', answer: 'eat - ate - eaten' },
+                            { points: 300, question: 'Podaj 3 formy: DRINK', answer: 'drink - drank - drunk' },
+                            { points: 400, question: 'Podaj 3 formy: GIVE', answer: 'give - gave - given' },
+                            { points: 500, question: 'Podaj 3 formy: TAKE', answer: 'take - took - taken' }
+                        ]
+                    },
+                    {
+                        name: 'Komunikacja',
+                        questions: [
+                            { points: 100, question: 'Past Simple od "say":', answer: 'said' },
+                            { points: 200, question: 'Podaj 3 formy: TELL', answer: 'tell - told - told' },
+                            { points: 300, question: 'Podaj 3 formy: WRITE', answer: 'write - wrote - written' },
+                            { points: 400, question: 'Jak wymawia się "read" w Past Simple?', answer: '/red/' },
+                            { points: 500, question: 'Podaj 3 formy: SPEAK', answer: 'speak - spoke - spoken' }
+                        ]
+                    },
+                    {
+                        name: 'Wzorce GHT',
+                        questions: [
+                            { points: 100, question: 'Past Simple od "buy":', answer: 'bought' },
+                            { points: 200, question: 'Podaj 3 formy: BRING', answer: 'bring - brought - brought' },
+                            { points: 300, question: 'Podaj 3 formy: CATCH', answer: 'catch - caught - caught' },
+                            { points: 400, question: 'Podaj 3 formy: TEACH', answer: 'teach - taught - taught' },
+                            { points: 500, question: 'Podaj 3 formy: THINK', answer: 'think - thought - thought' }
+                        ]
+                    },
+                    {
+                        name: 'Trudne',
+                        questions: [
+                            { points: 100, question: 'Podaj 3 formy: CUT (uwaga!)', answer: 'cut - cut - cut' },
+                            { points: 200, question: 'Podaj 3 formy: LIE (leżeć)', answer: 'lie - lay - lain' },
+                            { points: 300, question: 'Jak odmienia się LIE (kłamać)?', answer: 'lie - lied - lied (regularnie!)' },
+                            { points: 400, question: 'Podaj 3 formy: RISE', answer: 'rise - rose - risen' },
+                            { points: 500, question: 'Podaj 3 formy: HIDE', answer: 'hide - hid - hidden' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'mat-tabliczka',
+                name: 'Matematyka - Tabliczka mnożenia',
+                description: 'Mnożenie i dzielenie do 100',
+                categories: [
+                    {
+                        name: 'Mnożenie x2-x3',
+                        questions: [
+                            { points: 100, question: '7 × 2 = ?', answer: '14' },
+                            { points: 200, question: '9 × 3 = ?', answer: '27' },
+                            { points: 300, question: '8 × 3 = ?', answer: '24' },
+                            { points: 400, question: '12 × 2 = ?', answer: '24' },
+                            { points: 500, question: '15 × 3 = ?', answer: '45' }
+                        ]
+                    },
+                    {
+                        name: 'Mnożenie x4-x5',
+                        questions: [
+                            { points: 100, question: '5 × 4 = ?', answer: '20' },
+                            { points: 200, question: '7 × 5 = ?', answer: '35' },
+                            { points: 300, question: '9 × 4 = ?', answer: '36' },
+                            { points: 400, question: '8 × 5 = ?', answer: '40' },
+                            { points: 500, question: '12 × 4 = ?', answer: '48' }
+                        ]
+                    },
+                    {
+                        name: 'Mnożenie x6-x7',
+                        questions: [
+                            { points: 100, question: '6 × 6 = ?', answer: '36' },
+                            { points: 200, question: '7 × 7 = ?', answer: '49' },
+                            { points: 300, question: '8 × 6 = ?', answer: '48' },
+                            { points: 400, question: '9 × 7 = ?', answer: '63' },
+                            { points: 500, question: '11 × 6 = ?', answer: '66' }
+                        ]
+                    },
+                    {
+                        name: 'Mnożenie x8-x9',
+                        questions: [
+                            { points: 100, question: '8 × 8 = ?', answer: '64' },
+                            { points: 200, question: '9 × 9 = ?', answer: '81' },
+                            { points: 300, question: '7 × 8 = ?', answer: '56' },
+                            { points: 400, question: '6 × 9 = ?', answer: '54' },
+                            { points: 500, question: '12 × 8 = ?', answer: '96' }
+                        ]
+                    },
+                    {
+                        name: 'Dzielenie',
+                        questions: [
+                            { points: 100, question: '24 ÷ 6 = ?', answer: '4' },
+                            { points: 200, question: '45 ÷ 9 = ?', answer: '5' },
+                            { points: 300, question: '72 ÷ 8 = ?', answer: '9' },
+                            { points: 400, question: '63 ÷ 7 = ?', answer: '9' },
+                            { points: 500, question: '132 ÷ 11 = ?', answer: '12' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'geo-wojewodztwa',
+                name: 'Geografia - Województwa Polski',
+                description: 'Stolice i położenie',
+                categories: [
+                    {
+                        name: 'Stolice',
+                        questions: [
+                            { points: 100, question: 'Stolica województwa mazowieckiego:', answer: 'Warszawa' },
+                            { points: 200, question: 'Stolica województwa małopolskiego:', answer: 'Kraków' },
+                            { points: 300, question: 'Stolica województwa warmińsko-mazurskiego:', answer: 'Olsztyn' },
+                            { points: 400, question: 'Stolica województwa kujawsko-pomorskiego:', answer: 'Bydgoszcz / Toruń' },
+                            { points: 500, question: 'Stolica województwa lubuskiego:', answer: 'Gorzów Wielkopolski / Zielona Góra' }
+                        ]
+                    },
+                    {
+                        name: 'Gdzie leży?',
+                        questions: [
+                            { points: 100, question: 'W którym województwie leży Gdańsk?', answer: 'pomorskie' },
+                            { points: 200, question: 'W którym województwie leży Wrocław?', answer: 'dolnośląskie' },
+                            { points: 300, question: 'W którym województwie leży Lublin?', answer: 'lubelskie' },
+                            { points: 400, question: 'W którym województwie leży Rzeszów?', answer: 'podkarpackie' },
+                            { points: 500, question: 'W którym województwie leży Białystok?', answer: 'podlaskie' }
+                        ]
+                    },
+                    {
+                        name: 'Sąsiedzi',
+                        questions: [
+                            { points: 100, question: 'Które województwo graniczy z Niemcami i Czechami?', answer: 'dolnośląskie' },
+                            { points: 200, question: 'Które województwo graniczy z Rosją (Kaliningrad)?', answer: 'warmińsko-mazurskie' },
+                            { points: 300, question: 'Które województwa graniczą z Ukrainą? (wymień 2)', answer: 'lubelskie, podkarpackie' },
+                            { points: 400, question: 'Które województwo ma najdłuższą granicę z morzem?', answer: 'zachodniopomorskie' },
+                            { points: 500, question: 'Z iloma województwami graniczy mazowieckie?', answer: '7' }
+                        ]
+                    },
+                    {
+                        name: 'Ciekawostki',
+                        questions: [
+                            { points: 100, question: 'Największe województwo powierzchniowo:', answer: 'mazowieckie' },
+                            { points: 200, question: 'Najmniejsze województwo powierzchniowo:', answer: 'opolskie' },
+                            { points: 300, question: 'Województwo z Tatrami:', answer: 'małopolskie' },
+                            { points: 400, question: 'Województwo z Puszczą Białowieską:', answer: 'podlaskie' },
+                            { points: 500, question: 'Ile jest województw w Polsce?', answer: '16' }
+                        ]
+                    },
+                    {
+                        name: 'Rzeki i jeziora',
+                        questions: [
+                            { points: 100, question: 'Przez które miasto przepływa Wisła: Kraków czy Wrocław?', answer: 'Kraków' },
+                            { points: 200, question: 'W którym województwie są Mazury?', answer: 'warmińsko-mazurskie' },
+                            { points: 300, question: 'Przez które województwo NIE przepływa Wisła: śląskie czy świętokrzyskie?', answer: 'śląskie' },
+                            { points: 400, question: 'Największe jezioro w Polsce (Śniardwy) leży w województwie:', answer: 'warmińsko-mazurskie' },
+                            { points: 500, question: 'Źródło Wisły znajduje się w województwie:', answer: 'śląskie' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'hist-daty',
+                name: 'Historia - Ważne daty',
+                description: 'Kluczowe wydarzenia z historii Polski',
+                categories: [
+                    {
+                        name: 'Średniowiecze',
+                        questions: [
+                            { points: 100, question: 'Rok chrztu Polski:', answer: '966' },
+                            { points: 200, question: 'Rok koronacji Bolesława Chrobrego:', answer: '1025' },
+                            { points: 300, question: 'Rok bitwy pod Legnicą (Mongołowie):', answer: '1241' },
+                            { points: 400, question: 'Rok założenia Akademii Krakowskiej:', answer: '1364' },
+                            { points: 500, question: 'Rok bitwy pod Grunwaldem:', answer: '1410' }
+                        ]
+                    },
+                    {
+                        name: 'Rzeczpospolita',
+                        questions: [
+                            { points: 100, question: 'Rok unii lubelskiej:', answer: '1569' },
+                            { points: 200, question: 'Rok pierwszej wolnej elekcji:', answer: '1573' },
+                            { points: 300, question: 'Rok odsieczy wiedeńskiej:', answer: '1683' },
+                            { points: 400, question: 'Rok I rozbioru Polski:', answer: '1772' },
+                            { points: 500, question: 'Rok uchwalenia Konstytucji 3 Maja:', answer: '1791' }
+                        ]
+                    },
+                    {
+                        name: 'XIX wiek',
+                        questions: [
+                            { points: 100, question: 'Rok III rozbioru Polski:', answer: '1795' },
+                            { points: 200, question: 'Rok powstania listopadowego:', answer: '1830' },
+                            { points: 300, question: 'Rok powstania styczniowego:', answer: '1863' },
+                            { points: 400, question: 'Rok utworzenia Księstwa Warszawskiego:', answer: '1807' },
+                            { points: 500, question: 'Rok Wiosny Ludów:', answer: '1848' }
+                        ]
+                    },
+                    {
+                        name: 'XX wiek',
+                        questions: [
+                            { points: 100, question: 'Rok odzyskania niepodległości:', answer: '1918' },
+                            { points: 200, question: 'Rok wybuchu II wojny światowej:', answer: '1939' },
+                            { points: 300, question: 'Rok powstania warszawskiego:', answer: '1944' },
+                            { points: 400, question: 'Rok stanu wojennego:', answer: '1981' },
+                            { points: 500, question: 'Rok pierwszych częściowo wolnych wyborów:', answer: '1989' }
+                        ]
+                    },
+                    {
+                        name: 'Współczesność',
+                        questions: [
+                            { points: 100, question: 'Rok wstąpienia Polski do NATO:', answer: '1999' },
+                            { points: 200, question: 'Rok wstąpienia Polski do UE:', answer: '2004' },
+                            { points: 300, question: 'Rok katastrofy smoleńskiej:', answer: '2010' },
+                            { points: 400, question: 'Rok pierwszych całkowicie wolnych wyborów:', answer: '1991' },
+                            { points: 500, question: 'Rok beatyfikacji Jana Pawła II:', answer: '2011' }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // ==================== POWER-UPS ====================
+        const POWERUPS = [
+            { id: 'bonus', icon: '🎁', name: 'Bonus!', desc: 'Drużyna otrzymuje +200 punktów!', effect: 'bonus', value: 200 },
+            { id: 'trap', icon: '💀', name: 'Pułapka!', desc: 'Drużyna traci 100 punktów!', effect: 'penalty', value: -100 },
+            { id: 'double', icon: '✨', name: 'Podwójne punkty!', desc: 'Następne pytanie za podwójne punkty!', effect: 'double' },
+            { id: 'swap', icon: '🔄', name: 'Zamiana!', desc: 'Zamień punkty z wybraną drużyną!', effect: 'swap' },
+            { id: 'shield', icon: '🛡️', name: 'Tarcza!', desc: 'Przy błędnej odpowiedzi nie tracisz punktów!', effect: 'shield' },
+            { id: 'steal', icon: '🦹', name: 'Kradzież!', desc: 'Zabierz 150 punktów od przeciwnika!', effect: 'steal', value: 150 }
+        ];
+
+        // ==================== STATE ====================
+        let currentSet = null;
+        let gameMode = 'classic'; // 'classic' or 'powerups'
+        let teams = [];
+        let currentTeamIndex = 0;
+        let timerSeconds = 30;
+        let timerInterval = null;
+        let usedQuestions = new Set();
+        let boardState = []; // tracks powerups on board
+        let activePowerup = null;
+        let doublePointsActive = false;
+        let shieldActive = false;
+        let customSets = [];
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCustomSets();
+            updateTeamInputs();
+        });
+
+        function loadCustomSets() {
+            const saved = localStorage.getItem('vabanque_sets');
+            customSets = saved ? JSON.parse(saved) : [];
+        }
+
+        function saveCustomSets() {
+            localStorage.setItem('vabanque_sets', JSON.stringify(customSets));
+        }
+
+        // ==================== NAVIGATION ====================
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active');
+        }
+
+        function showStartScreen() {
+            showPanel('startScreen');
+        }
+
+        function showSetSelector() {
+            renderSets();
+            showPanel('setSelector');
+        }
+
+        function showImportPanel() {
+            showPanel('importPanel');
+        }
+
+        // ==================== SET SELECTOR ====================
+        function renderSets() {
+            const grid = document.getElementById('setsGrid');
+            const allSets = [...BUILTIN_SETS, ...customSets];
+
+            grid.innerHTML = allSets.map(set => `
+                <div class="set-card" onclick="selectSet('${set.id}')">
+                    <h3>${set.name}</h3>
+                    <p>${set.description || ''}</p>
+                    <div class="set-meta">
+                        ${set.categories.length} kategorii × 5 pytań
+                        ${set.custom ? ' | Własny zestaw' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectSet(setId) {
+            const allSets = [...BUILTIN_SETS, ...customSets];
+            currentSet = allSets.find(s => s.id === setId);
+            if (currentSet) {
+                document.getElementById('setupTitle').textContent = currentSet.name;
+                showPanel('setupPanel');
+            }
+        }
+
+        // ==================== GAME SETUP ====================
+        function selectGameMode(mode) {
+            gameMode = mode;
+            document.getElementById('modeClassic').classList.toggle('selected', mode === 'classic');
+            document.getElementById('modePowerups').classList.toggle('selected', mode === 'powerups');
+        }
+
+        function updateTeamInputs() {
+            const count = parseInt(document.getElementById('teamCount').value);
+            const container = document.getElementById('teamInputs');
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3'];
+            const defaultNames = ['Drużyna A', 'Drużyna B', 'Drużyna C', 'Drużyna D'];
+
+            container.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                container.innerHTML += `
+                    <div class="team-input-row">
+                        <input type="color" class="team-color" value="${colors[i]}" id="teamColor${i}">
+                        <input type="text" placeholder="${defaultNames[i]}" id="teamName${i}" value="${defaultNames[i]}">
+                    </div>
+                `;
+            }
+        }
+
+        // ==================== START GAME ====================
+        function startGame() {
+            const teamCount = parseInt(document.getElementById('teamCount').value);
+            timerSeconds = parseInt(document.getElementById('timerSetting').value);
+
+            // Initialize teams
+            teams = [];
+            for (let i = 0; i < teamCount; i++) {
+                teams.push({
+                    name: document.getElementById(`teamName${i}`).value || `Drużyna ${i + 1}`,
+                    color: document.getElementById(`teamColor${i}`).value,
+                    score: 0
+                });
+            }
+
+            // Reset game state
+            currentTeamIndex = 0;
+            usedQuestions = new Set();
+            doublePointsActive = false;
+            shieldActive = false;
+
+            // Setup board with powerups if needed
+            setupBoard();
+
+            // Update UI
+            document.getElementById('gameTitle').textContent = currentSet.name;
+            document.getElementById('gameModeBadge').textContent =
+                gameMode === 'classic' ? '🎯 Tryb klasyczny' : '🎁 Tryb z niespodziankami';
+
+            renderBoard();
+            renderScoreboard();
+            showPanel('gamePanel');
+        }
+
+        function setupBoard() {
+            boardState = [];
+            const totalCells = currentSet.categories.length * 5;
+
+            // In powerups mode, randomly assign powerups to ~20% of cells
+            if (gameMode === 'powerups') {
+                const powerupCount = Math.floor(totalCells * 0.2);
+                const powerupPositions = new Set();
+
+                while (powerupPositions.size < powerupCount) {
+                    powerupPositions.add(Math.floor(Math.random() * totalCells));
+                }
+
+                for (let i = 0; i < totalCells; i++) {
+                    if (powerupPositions.has(i)) {
+                        const randomPowerup = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+                        boardState.push({ type: 'powerup', powerup: randomPowerup });
+                    } else {
+                        boardState.push({ type: 'question' });
+                    }
+                }
+            } else {
+                for (let i = 0; i < totalCells; i++) {
+                    boardState.push({ type: 'question' });
+                }
+            }
+        }
+
+        // ==================== RENDER BOARD ====================
+        function renderBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+
+            // Category headers
+            currentSet.categories.forEach(cat => {
+                board.innerHTML += `<div class="category-header">${cat.name}</div>`;
+            });
+
+            // Question cells (5 rows)
+            for (let row = 0; row < 5; row++) {
+                currentSet.categories.forEach((cat, catIndex) => {
+                    const cellIndex = catIndex * 5 + row;
+                    const cellId = `cell-${catIndex}-${row}`;
+                    const isUsed = usedQuestions.has(cellId);
+                    const points = cat.questions[row].points;
+
+                    board.innerHTML += `
+                        <div class="question-cell ${isUsed ? 'used' : ''}"
+                             id="${cellId}"
+                             onclick="handleCellClick(${catIndex}, ${row})">
+                            ${isUsed ? '' : points}
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function renderScoreboard() {
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = teams.map((team, i) => `
+                <div class="team-score ${i === currentTeamIndex ? 'active' : ''}" style="border-color: ${team.color}">
+                    <div class="name" style="color: ${team.color}">${team.name}</div>
+                    <div class="points">${team.score}</div>
+                </div>
+            `).join('');
+        }
+
+        // ==================== CELL CLICK ====================
+        function handleCellClick(catIndex, row) {
+            const cellId = `cell-${catIndex}-${row}`;
+            if (usedQuestions.has(cellId)) return;
+
+            const cellIndex = catIndex * 5 + row;
+            const cellState = boardState[cellIndex];
+
+            usedQuestions.add(cellId);
+
+            if (cellState.type === 'powerup' && gameMode === 'powerups') {
+                showPowerup(cellState.powerup, cellId);
+            } else {
+                const question = currentSet.categories[catIndex].questions[row];
+                showQuestion(question, cellId);
+            }
+        }
+
+        // ==================== QUESTION MODAL ====================
+        function showQuestion(question, cellId) {
+            const points = doublePointsActive ? question.points * 2 : question.points;
+            doublePointsActive = false;
+
+            document.getElementById('modalPoints').textContent = points + ' punktów';
+            document.getElementById('modalQuestion').textContent = question.question;
+            document.getElementById('modalAnswer').textContent = question.answer;
+            document.getElementById('modalAnswer').classList.remove('visible');
+            document.getElementById('showAnswerBtn').style.display = 'inline-block';
+            document.getElementById('teamButtons').style.display = 'none';
+            document.getElementById('teamButtons').dataset.points = points;
+            document.getElementById('teamButtons').dataset.cellId = cellId;
+
+            // Timer
+            if (timerSeconds > 0) {
+                startTimer();
+            } else {
+                document.getElementById('modalTimer').textContent = '';
+            }
+
+            document.getElementById('questionModal').classList.add('active');
+        }
+
+        function startTimer() {
+            let remaining = timerSeconds;
+            const timerEl = document.getElementById('modalTimer');
+            timerEl.textContent = remaining;
+            timerEl.classList.remove('warning');
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                remaining--;
+                timerEl.textContent = remaining;
+
+                if (remaining <= 5) {
+                    timerEl.classList.add('warning');
+                }
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    showAnswer();
+                }
+            }, 1000);
+        }
+
+        function showAnswer() {
+            clearInterval(timerInterval);
+            document.getElementById('modalAnswer').classList.add('visible');
+            document.getElementById('showAnswerBtn').style.display = 'none';
+            document.getElementById('modalTimer').textContent = '';
+
+            // Show team buttons
+            const points = parseInt(document.getElementById('teamButtons').dataset.points);
+            const buttonsHtml = teams.map((team, i) => `
+                <button class="team-btn" style="background: ${team.color}; color: white;"
+                        onclick="awardPoints(${i}, ${points})">
+                    ${team.name}
+                </button>
+            `).join('') + `
+                <button class="team-btn wrong" onclick="noCorrectAnswer()">
+                    Nikt nie odpowiedział
+                </button>
+            `;
+
+            document.getElementById('teamButtons').innerHTML = buttonsHtml;
+            document.getElementById('teamButtons').style.display = 'flex';
+        }
+
+        function awardPoints(teamIndex, points) {
+            teams[teamIndex].score += points;
+            closeQuestionModal();
+            advanceTurn();
+            checkGameEnd();
+        }
+
+        function noCorrectAnswer() {
+            // If shield is active, don't penalize
+            if (!shieldActive) {
+                // Optional: penalize current team for wrong answer
+                // teams[currentTeamIndex].score -= points / 2;
+            }
+            shieldActive = false;
+            closeQuestionModal();
+            advanceTurn();
+            checkGameEnd();
+        }
+
+        function closeQuestionModal() {
+            clearInterval(timerInterval);
+            document.getElementById('questionModal').classList.remove('active');
+            const cellId = document.getElementById('teamButtons').dataset.cellId;
+            document.getElementById(cellId).classList.add('used');
+            document.getElementById(cellId).textContent = '';
+            renderScoreboard();
+        }
+
+        // ==================== POWERUP MODAL ====================
+        function showPowerup(powerup, cellId) {
+            document.getElementById('powerupIcon').textContent = powerup.icon;
+            document.getElementById('powerupName').textContent = powerup.name;
+            document.getElementById('powerupDesc').textContent = powerup.desc;
+
+            activePowerup = { ...powerup, cellId };
+
+            // Update cell to show powerup icon
+            document.getElementById(cellId).textContent = powerup.icon;
+            document.getElementById(cellId).classList.add('powerup-revealed');
+
+            // Generate appropriate buttons based on powerup effect
+            let buttonsHtml = '';
+
+            if (powerup.effect === 'bonus' || powerup.effect === 'penalty') {
+                buttonsHtml = teams.map((team, i) => `
+                    <button class="team-btn" style="background: ${team.color}; color: white;"
+                            onclick="applyPowerup(${i})">
+                        ${team.name}
+                    </button>
+                `).join('');
+            } else if (powerup.effect === 'swap' || powerup.effect === 'steal') {
+                buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Wybierz drużynę, która to dostaje:</p>` +
+                    teams.map((team, i) => `
+                        <button class="team-btn" style="background: ${team.color}; color: white;"
+                                onclick="selectPowerupTeam(${i})">
+                            ${team.name}
+                        </button>
+                    `).join('');
+            } else if (powerup.effect === 'double' || powerup.effect === 'shield') {
+                buttonsHtml = teams.map((team, i) => `
+                    <button class="team-btn" style="background: ${team.color}; color: white;"
+                            onclick="applyPowerup(${i})">
+                        ${team.name}
+                    </button>
+                `).join('');
+            }
+
+            document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
+            document.getElementById('powerupModal').classList.add('active');
+        }
+
+        function applyPowerup(teamIndex) {
+            const powerup = activePowerup;
+
+            switch (powerup.effect) {
+                case 'bonus':
+                    teams[teamIndex].score += powerup.value;
+                    break;
+                case 'penalty':
+                    teams[teamIndex].score += powerup.value; // value is negative
+                    break;
+                case 'double':
+                    doublePointsActive = true;
+                    currentTeamIndex = teamIndex;
+                    break;
+                case 'shield':
+                    shieldActive = true;
+                    currentTeamIndex = teamIndex;
+                    break;
+            }
+
+            closePowerupModal();
+        }
+
+        let powerupRecipient = null;
+
+        function selectPowerupTeam(teamIndex) {
+            powerupRecipient = teamIndex;
+            const powerup = activePowerup;
+
+            if (powerup.effect === 'swap') {
+                // Show second selection for swap target
+                const buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Zamień punkty z:</p>` +
+                    teams.filter((_, i) => i !== teamIndex).map((team, i) => {
+                        const actualIndex = i >= teamIndex ? i + 1 : i;
+                        return `
+                            <button class="team-btn" style="background: ${team.color}; color: white;"
+                                    onclick="executeSwap(${teamIndex}, ${actualIndex})">
+                                ${team.name}
+                            </button>
+                        `;
+                    }).join('');
+                document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
+            } else if (powerup.effect === 'steal') {
+                const buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Ukradnij punkty od:</p>` +
+                    teams.filter((_, i) => i !== teamIndex).map((team, i) => {
+                        const actualIndex = i >= teamIndex ? i + 1 : i;
+                        return `
+                            <button class="team-btn" style="background: ${team.color}; color: white;"
+                                    onclick="executeSteal(${teamIndex}, ${actualIndex})">
+                                ${team.name}
+                            </button>
+                        `;
+                    }).join('');
+                document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
+            }
+        }
+
+        function executeSwap(team1, team2) {
+            const temp = teams[team1].score;
+            teams[team1].score = teams[team2].score;
+            teams[team2].score = temp;
+            closePowerupModal();
+        }
+
+        function executeSteal(thief, victim) {
+            const stealAmount = Math.min(activePowerup.value, teams[victim].score);
+            teams[victim].score -= stealAmount;
+            teams[thief].score += stealAmount;
+            closePowerupModal();
+        }
+
+        function closePowerupModal() {
+            document.getElementById('powerupModal').classList.remove('active');
+            document.getElementById(activePowerup.cellId).classList.add('used');
+            activePowerup = null;
+            powerupRecipient = null;
+            renderScoreboard();
+            advanceTurn();
+            checkGameEnd();
+        }
+
+        // ==================== GAME FLOW ====================
+        function advanceTurn() {
+            currentTeamIndex = (currentTeamIndex + 1) % teams.length;
+            renderScoreboard();
+        }
+
+        function checkGameEnd() {
+            const totalQuestions = currentSet.categories.length * 5;
+            if (usedQuestions.size >= totalQuestions) {
+                endGame();
+            }
+        }
+
+        function confirmEndGame() {
+            if (confirm('Czy na pewno chcesz zakończyć grę?')) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            // Find winner
+            const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+            const winner = sortedTeams[0];
+
+            document.getElementById('winnerName').textContent = winner.name;
+            document.getElementById('winnerName').style.color = winner.color;
+            document.getElementById('winnerPoints').textContent = `wygrywa z wynikiem ${winner.score} punktów!`;
+
+            // Final scores
+            document.getElementById('finalScores').innerHTML = sortedTeams.map((team, i) => `
+                <div class="final-score-card ${i === 0 ? 'winner' : ''}">
+                    <div class="name" style="color: ${team.color}">${i === 0 ? '🏆 ' : ''}${team.name}</div>
+                    <div class="points" style="font-size: var(--font-size-2xl); color: ${team.color}">${team.score}</div>
+                </div>
+            `).join('');
+
+            showPanel('resultsPanel');
+        }
+
+        function restartGame() {
+            showPanel('setupPanel');
+        }
+
+        // ==================== IMPORT ====================
+        function showImportTab(tab) {
+            document.querySelectorAll('.import-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.import-content').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`.import-tab:nth-child(${tab === 'paste' ? 1 : 2})`).classList.add('active');
+            document.getElementById(tab === 'paste' ? 'importPaste' : 'importFile').classList.add('active');
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+
+                if (file.name.endsWith('.json')) {
+                    try {
+                        const data = JSON.parse(content);
+                        if (validateImportedSet(data)) {
+                            data.id = 'custom_' + Date.now();
+                            data.custom = true;
+                            customSets.push(data);
+                            saveCustomSets();
+                            currentSet = data;
+                            alert('Zestaw zaimportowany pomyślnie!');
+                            showPanel('setupPanel');
+                        }
+                    } catch (err) {
+                        alert('Błąd parsowania JSON: ' + err.message);
+                    }
+                } else {
+                    document.getElementById('importText').value = content;
+                    showImportTab('paste');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importCustomSet() {
+            const name = document.getElementById('customSetName').value.trim();
+            const text = document.getElementById('importText').value.trim();
+
+            if (!name) {
+                alert('Podaj nazwę zestawu!');
+                return;
+            }
+
+            if (!text) {
+                alert('Wklej pytania!');
+                return;
+            }
+
+            const parsedSet = parseTextFormat(text);
+
+            if (!parsedSet) {
+                alert('Błąd formatu. Sprawdź czy format jest poprawny.');
+                return;
+            }
+
+            parsedSet.id = 'custom_' + Date.now();
+            parsedSet.name = name;
+            parsedSet.custom = true;
+
+            customSets.push(parsedSet);
+            saveCustomSets();
+            currentSet = parsedSet;
+
+            document.getElementById('setupTitle').textContent = name;
+            showPanel('setupPanel');
+        }
+
+        function parseTextFormat(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            const categories = [];
+            let currentCategory = null;
+
+            for (const line of lines) {
+                if (line.toUpperCase().startsWith('KATEGORIA:')) {
+                    if (currentCategory && currentCategory.questions.length > 0) {
+                        categories.push(currentCategory);
+                    }
+                    currentCategory = {
+                        name: line.substring(10).trim(),
+                        questions: []
+                    };
+                } else if (currentCategory) {
+                    const match = line.match(/^(\d+):\s*(.+)\s*\|\s*(.+)$/);
+                    if (match) {
+                        currentCategory.questions.push({
+                            points: parseInt(match[1]),
+                            question: match[2].trim(),
+                            answer: match[3].trim()
+                        });
+                    }
+                }
+            }
+
+            if (currentCategory && currentCategory.questions.length > 0) {
+                categories.push(currentCategory);
+            }
+
+            if (categories.length === 0) {
+                return null;
+            }
+
+            // Ensure each category has 5 questions
+            categories.forEach(cat => {
+                while (cat.questions.length < 5) {
+                    const points = [100, 200, 300, 400, 500][cat.questions.length];
+                    cat.questions.push({
+                        points: points,
+                        question: '(Brak pytania)',
+                        answer: '-'
+                    });
+                }
+                cat.questions = cat.questions.slice(0, 5);
+                cat.questions.sort((a, b) => a.points - b.points);
+            });
+
+            return {
+                description: `${categories.length} kategorii`,
+                categories: categories.slice(0, 6) // max 6 categories
+            };
+        }
+
+        function validateImportedSet(data) {
+            if (!data.categories || !Array.isArray(data.categories)) {
+                alert('Brak tablicy "categories" w JSON');
+                return false;
+            }
+
+            for (const cat of data.categories) {
+                if (!cat.name || !cat.questions || !Array.isArray(cat.questions)) {
+                    alert('Nieprawidłowa struktura kategorii');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
