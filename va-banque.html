@@ -859,6 +859,8 @@
                     <label>Czas na odpowiedź:</label>
                     <select id="timerSetting">
                         <option value="0">Bez limitu</option>
+                        <option value="3">⚡ 3 sekundy (błyskawiczna!)</option>
+                        <option value="7">7 sekund (szybka)</option>
                         <option value="15">15 sekund</option>
                         <option value="30" selected>30 sekund</option>
                         <option value="45">45 sekund</option>
@@ -935,9 +937,8 @@
                     <ul>
                         <li>Drużyny grają <strong>po kolei</strong> (A → B → C → ...)</li>
                         <li>Drużyna na turze wybiera pole z planszy</li>
-                        <li>Ma czas na odpowiedź (jeśli ustawiony timer)</li>
-                        <li>Poprawna odpowiedź = punkty dla drużyny</li>
-                        <li>Błędna/brak odpowiedzi = następna drużyna może spróbować</li>
+                        <li>Po odsłonięciu odpowiedzi kliknij drużynę, która odpowiedziała poprawnie</li>
+                        <li>Jeśli nikt nie zna odpowiedzi - kliknij "Nikt nie odpowiedział"</li>
                     </ul>
 
                     <h3>✨ Power-upy (tryb z niespodziankami)</h3>
@@ -1657,56 +1658,27 @@ KATEGORIA: Nazwa kategorii 2
             }, 1000);
         }
 
-        let answeringTeamIndex = 0; // Która drużyna teraz odpowiada
-
         function showAnswer() {
             clearInterval(timerInterval);
             document.getElementById('modalAnswer').classList.add('visible');
             document.getElementById('showAnswerBtn').style.display = 'none';
             document.getElementById('modalTimer').textContent = '';
 
-            // Pierwsza szansa dla drużyny na turze
-            answeringTeamIndex = currentTeamIndex;
-            showAnswerButtons();
-        }
-
-        function showAnswerButtons() {
+            // Pokaż przyciski wszystkich drużyn
             const points = parseInt(document.getElementById('teamButtons').dataset.points);
-            const currentTeam = teams[answeringTeamIndex];
-
-            const buttonsHtml = `
-                <p style="margin-bottom: var(--spacing-md); color: var(--vb-gold);">
-                    Odpowiada: <strong>${currentTeam.name}</strong>
-                </p>
-                <button class="team-btn" style="background: var(--vb-success); color: white;"
-                        onclick="awardPoints(${answeringTeamIndex}, ${points})">
-                    ✓ Poprawna odpowiedź
+            const buttonsHtml = teams.map((team, i) => `
+                <button class="team-btn" style="background: ${team.color}; color: white;"
+                        onclick="awardPoints(${i}, ${points})">
+                    ✓ ${team.name}
                 </button>
-                <button class="team-btn" style="background: var(--vb-danger); color: white;"
-                        onclick="wrongAnswer()">
-                    ✗ Błędna odpowiedź
-                </button>
+            `).join('') + `
                 <button class="team-btn wrong" onclick="noCorrectAnswer()">
-                    Nikt nie zna odpowiedzi
+                    Nikt nie odpowiedział
                 </button>
             `;
 
             document.getElementById('teamButtons').innerHTML = buttonsHtml;
             document.getElementById('teamButtons').style.display = 'flex';
-        }
-
-        function wrongAnswer() {
-            // Następna drużyna może spróbować
-            answeringTeamIndex = (answeringTeamIndex + 1) % teams.length;
-
-            // Jeśli wróciliśmy do drużyny początkowej, nikt nie zna odpowiedzi
-            if (answeringTeamIndex === currentTeamIndex) {
-                noCorrectAnswer();
-                return;
-            }
-
-            // Pokaż przyciski dla następnej drużyny
-            showAnswerButtons();
         }
 
         function awardPoints(teamIndex, points) {
@@ -1721,9 +1693,25 @@ KATEGORIA: Nazwa kategorii 2
                 if (powerup.effect === 'bonus') {
                     teams[teamIndex].score += powerup.value;
                 } else if (powerup.effect === 'steal') {
-                    // Pokaż wybór od kogo ukraść
-                    showStealSelection(teamIndex, powerup.value);
-                    return; // Nie zamykaj jeszcze modala
+                    // Automatycznie kradnij od lidera
+                    const victimIndex = getLeaderIndex(teamIndex);
+                    const actualSteal = Math.min(powerup.value, teams[victimIndex].score);
+                    teams[victimIndex].score -= actualSteal;
+                    teams[teamIndex].score += actualSteal;
+
+                    // Pokaż info o kradzieży
+                    document.getElementById('teamButtons').innerHTML = `
+                        <p style="color: var(--vb-gold); font-size: var(--font-size-lg); margin-top: var(--spacing-md);">
+                            🦹 ${teams[teamIndex].name} ukradła ${actualSteal} pkt od ${teams[victimIndex].name}!
+                        </p>
+                    `;
+
+                    setTimeout(() => {
+                        closeQuestionModal();
+                        advanceTurn();
+                        checkGameEnd();
+                    }, 1500);
+                    return;
                 }
                 // double już jest wliczone w points
             }
@@ -1731,33 +1719,6 @@ KATEGORIA: Nazwa kategorii 2
             closeQuestionModal();
             advanceTurn();
             checkGameEnd();
-        }
-
-        function showStealSelection(thiefIndex, stealAmount) {
-            // Automatycznie kradnij od lidera (lub 2. miejsca jeśli złodziej jest liderem)
-            const victimIndex = getLeaderIndex(thiefIndex);
-            executeStealFromQuestion(thiefIndex, victimIndex, stealAmount);
-        }
-
-        function executeStealFromQuestion(thiefIndex, victimIndex, stealAmount) {
-            const actualSteal = Math.min(stealAmount, teams[victimIndex].score);
-            teams[victimIndex].score -= actualSteal;
-            teams[thiefIndex].score += actualSteal;
-
-            // Pokaż info o kradzieży
-            const thief = teams[thiefIndex];
-            const victim = teams[victimIndex];
-            document.getElementById('teamButtons').innerHTML = `
-                <p style="color: var(--vb-gold); font-size: var(--font-size-lg); margin-top: var(--spacing-md);">
-                    🦹 ${thief.name} ukradła ${actualSteal} pkt od ${victim.name}!
-                </p>
-            `;
-
-            setTimeout(() => {
-                closeQuestionModal();
-                advanceTurn();
-                checkGameEnd();
-            }, 1500);
         }
 
         function noCorrectAnswer() {
