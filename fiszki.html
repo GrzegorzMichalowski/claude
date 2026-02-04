@@ -565,6 +565,47 @@
         .footer-link a {
             color: rgba(255,255,255,0.8);
         }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-lg);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Community card additions */
+        .set-card .author {
+            font-size: var(--font-size-sm);
+            color: var(--fiszki-primary-dark);
+            margin-top: var(--spacing-xs);
+        }
+
+        .set-card .plays {
+            font-size: var(--font-size-xs);
+            opacity: 0.7;
+            margin-top: var(--spacing-xs);
+        }
     </style>
 </head>
 <body>
@@ -582,6 +623,10 @@
                 <button class="mode-btn" onclick="showSetSelector('test')">
                     <span class="icon">✍️</span>
                     Test
+                </button>
+                <button class="mode-btn" onclick="showCommunity()">
+                    <span class="icon">🌍</span>
+                    Społeczność
                 </button>
                 <button class="mode-btn" onclick="showEditor()">
                     <span class="icon">✏️</span>
@@ -762,12 +807,60 @@
             </div>
         </div>
 
+        <!-- Community Panel -->
+        <div id="communityPanel" class="panel">
+            <h2>🌍 Zestawy społeczności</h2>
+            <p style="text-align: center; margin-bottom: var(--spacing-lg); opacity: 0.8;">
+                Darmowe zestawy udostępnione przez innych nauczycieli
+            </p>
+            <div class="sets-grid" id="communityGrid"></div>
+            <div class="btn-group" style="margin-top: var(--spacing-lg);">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Share Modal -->
+        <div class="modal-overlay" id="shareModal">
+            <div class="modal-content" style="max-width: 500px; background: white; color: #333; padding: var(--spacing-xl); border-radius: var(--radius-lg);">
+                <h2 style="color: var(--fiszki-primary); margin-bottom: var(--spacing-lg);">🌍 Udostępnij zestaw</h2>
+                <p style="margin-bottom: var(--spacing-lg);">Twój zestaw będzie widoczny dla wszystkich po zatwierdzeniu przez moderatora.</p>
+                <div class="form-group" style="margin-bottom: var(--spacing-lg);">
+                    <label style="color: #333; margin-bottom: var(--spacing-sm); display: block;">Twoje imię/pseudonim:</label>
+                    <input type="text" id="authorName" placeholder="np. Jan K." maxlength="50"
+                           style="width: 100%; padding: var(--spacing-md); border: 2px solid #ddd; border-radius: var(--radius-md); color: #333;">
+                </div>
+                <input type="hidden" id="shareSetId">
+                <div class="btn-group" style="justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeShareModal()" style="color: #333;">Anuluj</button>
+                    <button class="btn btn-primary" onclick="submitToFirebase()">📤 Wyślij</button>
+                </div>
+            </div>
+        </div>
+
         <div class="footer-link">
             <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
         </div>
     </div>
 
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-dummy-key-for-rtdb",
+            authDomain: "turniej-tabliczka.firebaseapp.com",
+            databaseURL: "https://turniej-tabliczka-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "turniej-tabliczka",
+            storageBucket: "turniej-tabliczka.firebasestorage.app",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         // Built-in sets
         const BUILTIN_SETS = [
             {
@@ -1408,7 +1501,8 @@
                     <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)}</p>
                     <div class="set-meta">${set.cards.length} fiszek | Poziom: ${set.level}</div>
                     <div class="btn-group" style="margin-top: var(--spacing-md);">
-                        <button class="btn btn-primary" onclick="showEditor('${set.id}')">✏️ Edytuj</button>
+                        <button class="btn btn-primary" onclick="showEditor('${set.id}')">✏️</button>
+                        <button class="btn" style="background: var(--fiszki-accent); color: #333;" onclick="openShareModal('${set.id}')">🌍</button>
                         <button class="btn btn-danger" onclick="deleteSet('${set.id}')">🗑️</button>
                     </div>
                 </div>
@@ -1464,6 +1558,130 @@
                 inne: 'Inne'
             };
             return names[category] || category;
+        }
+
+        // ==================== COMMUNITY / FIREBASE ====================
+        function showCommunity() {
+            hideAll();
+            document.getElementById('communityPanel').classList.add('active');
+            loadCommunitySets();
+        }
+
+        async function loadCommunitySets() {
+            const container = document.getElementById('communityGrid');
+            container.innerHTML = '<p style="text-align: center; opacity: 0.7; grid-column: 1/-1;">Ładowanie...</p>';
+
+            try {
+                const snapshot = await db.ref('communityFiszkiSets').orderByChild('status').equalTo('approved').once('value');
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<p style="text-align: center; opacity: 0.7; grid-column: 1/-1;">Brak zestawów społeczności. Bądź pierwszy - udostępnij swój zestaw!</p>';
+                    return;
+                }
+
+                const sets = [];
+                snapshot.forEach(child => {
+                    sets.push({ id: child.key, ...child.val() });
+                });
+
+                // Sort by plays (most popular first)
+                sets.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+
+                container.innerHTML = sets.map(set => `
+                    <div class="set-card" onclick="playCommunitySet('${set.id}')">
+                        <h3>${escapeHtml(set.name)}</h3>
+                        <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)}</p>
+                        <div class="author">👤 ${escapeHtml(set.author)}</div>
+                        <div class="set-meta">${set.cards.length} fiszek | Poziom: ${set.level}</div>
+                        <div class="plays">▶️ Użyto: ${set.plays || 0} razy</div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Błąd ładowania zestawów:', error);
+                container.innerHTML = '<p style="text-align: center; color: #e74c3c; grid-column: 1/-1;">Błąd ładowania. Sprawdź połączenie z internetem.</p>';
+            }
+        }
+
+        async function playCommunitySet(setId) {
+            try {
+                const snapshot = await db.ref('communityFiszkiSets/' + setId).once('value');
+                if (!snapshot.exists()) {
+                    alert('Zestaw nie istnieje!');
+                    return;
+                }
+
+                const communitySet = { id: setId, ...snapshot.val() };
+
+                // Increment play count
+                db.ref('communityFiszkiSets/' + setId + '/plays').transaction(plays => (plays || 0) + 1);
+
+                // Set as current set and start study mode
+                currentSet = communitySet;
+                currentMode = 'study';
+                startStudy();
+
+            } catch (error) {
+                console.error('Błąd:', error);
+                alert('Błąd ładowania zestawu.');
+            }
+        }
+
+        function openShareModal(setId) {
+            document.getElementById('shareSetId').value = setId;
+            document.getElementById('authorName').value = localStorage.getItem('fiszki_author') || '';
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        async function submitToFirebase() {
+            const setId = document.getElementById('shareSetId').value;
+            const author = document.getElementById('authorName').value.trim();
+
+            if (!author) {
+                alert('Podaj swoje imię lub pseudonim!');
+                return;
+            }
+
+            const sets = getCustomSets();
+            const set = sets.find(s => s.id === setId);
+            if (!set) {
+                alert('Zestaw nie istnieje!');
+                return;
+            }
+
+            if (set.cards.length < 5) {
+                alert('Zestaw musi mieć minimum 5 fiszek!');
+                return;
+            }
+
+            // Save author name
+            localStorage.setItem('fiszki_author', author);
+
+            try {
+                const communitySet = {
+                    name: set.name,
+                    author: author,
+                    category: set.category,
+                    level: set.level,
+                    cards: set.cards,
+                    status: 'pending',
+                    plays: 0,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                await db.ref('communityFiszkiSets').push(communitySet);
+
+                closeShareModal();
+                alert('Zestaw wysłany! Będzie dostępny po zatwierdzeniu przez moderatora.');
+
+            } catch (error) {
+                console.error('Błąd wysyłania:', error);
+                alert('Błąd wysyłania. Spróbuj ponownie.');
+            }
         }
     </script>
 

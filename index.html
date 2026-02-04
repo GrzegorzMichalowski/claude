@@ -328,13 +328,61 @@
 
         <footer class="footer">
             <a href="https://github.com/GrzegorzMichalowski/claude" target="_blank">GitHub</a> |
-            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a> |
+            <a href="moderator.html" id="moderatorLink" style="position: relative;">
+                🔧
+                <span id="pendingBadge" style="display: none; position: absolute; top: -8px; right: -8px; background: #e74c3c; color: white; font-size: 10px; padding: 2px 5px; border-radius: 10px; font-weight: bold;"></span>
+            </a>
         </footer>
     </main>
 
     <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
+    <!-- Firebase for pending badge -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-dummy-key-for-rtdb",
+            authDomain: "turniej-tabliczka.firebaseapp.com",
+            databaseURL: "https://turniej-tabliczka-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "turniej-tabliczka",
+            storageBucket: "turniej-tabliczka.firebasestorage.app",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Load pending count for moderator badge
+        async function loadPendingCount() {
+            let total = 0;
+            const collections = ['communityQuizSets', 'communityFiszkiSets', 'communityVabanqueSets'];
+
+            for (const col of collections) {
+                try {
+                    const snapshot = await db.ref(col).orderByChild('status').equalTo('pending').once('value');
+                    if (snapshot.exists()) {
+                        snapshot.forEach(() => total++);
+                    }
+                } catch (e) {}
+            }
+
+            const badge = document.getElementById('pendingBadge');
+            if (total > 0) {
+                badge.textContent = total;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Load pending count on page load
+        loadPendingCount();
+
         function showTab(tabId) {
             // Hide all groups
             document.querySelectorAll('.cards-group').forEach(g => g.classList.remove('active'));

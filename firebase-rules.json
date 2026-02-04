@@ -155,7 +155,67 @@
     },
 
     // ==========================================
-    // KONFIGURACJA ADMINA (Milionerzy)
+    // ZESTAWY FISZEK SPOŁECZNOŚCI
+    // ==========================================
+    "communityFiszkiSets": {
+      ".read": true,
+      ".write": true,
+
+      "$setId": {
+        ".validate": "
+          newData.hasChildren(['name', 'author', 'cards', 'status', 'createdAt'])
+
+          // Nazwa: max 100 znaków
+          && newData.child('name').isString()
+          && newData.child('name').val().length >= 1
+          && newData.child('name').val().length <= 100
+
+          // Autor: max 50 znaków
+          && newData.child('author').isString()
+          && newData.child('author').val().length >= 1
+          && newData.child('author').val().length <= 50
+
+          // Status: pending, approved, rejected
+          && newData.child('status').val().matches(/^(pending|approved|rejected)$/)
+
+          // Karty muszą istnieć
+          && newData.hasChild('cards')
+        "
+      }
+    },
+
+    // ==========================================
+    // ZESTAWY VA BANQUE SPOŁECZNOŚCI
+    // ==========================================
+    "communityVabanqueSets": {
+      ".read": true,
+      ".write": true,
+
+      "$setId": {
+        ".validate": "
+          newData.hasChildren(['name', 'author', 'categories', 'status', 'createdAt'])
+
+          // Nazwa: max 100 znaków
+          && newData.child('name').isString()
+          && newData.child('name').val().length >= 1
+          && newData.child('name').val().length <= 100
+
+          // Autor: max 50 znaków
+          && newData.child('author').isString()
+          && newData.child('author').val().length >= 1
+          && newData.child('author').val().length <= 50
+
+          // Status: pending, approved, rejected
+          && newData.child('status').val().matches(/^(pending|approved|rejected)$/)
+
+          // Kategorie muszą istnieć
+          && newData.hasChild('categories')
+        "
+      }
+    },
+
+    // ==========================================
+    // KONFIGURACJA ADMINA
     // ==========================================
     "adminConfig": {
       // Odczyt dozwolony (potrzebny do weryfikacji hasła)

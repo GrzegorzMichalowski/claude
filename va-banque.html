@@ -806,6 +806,10 @@
                     <span class="icon">🎮</span>
                     Graj
                 </button>
+                <button class="mode-btn" onclick="showCommunity()">
+                    <span class="icon">🌍</span>
+                    Społeczność
+                </button>
                 <button class="mode-btn" onclick="showImportPanel()">
                     <span class="icon">📝</span>
                     Stwórz zestaw
@@ -1031,12 +1035,59 @@ KATEGORIA: Nazwa kategorii 2
             </div>
         </div>
 
+        <!-- Community Panel -->
+        <div id="communityPanel" class="panel">
+            <h2 style="text-align: center; color: var(--vb-gold); margin-bottom: var(--spacing-md);">🌍 Zestawy społeczności</h2>
+            <p style="text-align: center; margin-bottom: var(--spacing-xl); opacity: 0.8;">
+                Darmowe zestawy udostępnione przez innych nauczycieli
+            </p>
+            <div class="sets-grid" id="communityGrid"></div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Share Modal -->
+        <div class="modal-overlay" id="shareModal">
+            <div class="modal-content" style="max-width: 500px; background: var(--vb-primary); padding: var(--spacing-xl); border-radius: var(--radius-lg); border: 2px solid var(--vb-gold);">
+                <h2 style="color: var(--vb-gold); margin-bottom: var(--spacing-lg);">🌍 Udostępnij zestaw</h2>
+                <p style="margin-bottom: var(--spacing-lg); opacity: 0.9;">Twój zestaw będzie widoczny dla wszystkich po zatwierdzeniu przez moderatora.</p>
+                <div class="form-group" style="margin-bottom: var(--spacing-lg);">
+                    <label style="color: var(--vb-gold);">Twoje imię/pseudonim:</label>
+                    <input type="text" id="authorName" placeholder="np. Jan K." maxlength="50">
+                </div>
+                <input type="hidden" id="shareSetId">
+                <div class="btn-group" style="justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeShareModal()">Anuluj</button>
+                    <button class="btn btn-primary" onclick="submitToFirebase()">📤 Wyślij</button>
+                </div>
+            </div>
+        </div>
+
         <div class="footer-link">
             <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
         </div>
     </div>
 
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-dummy-key-for-rtdb",
+            authDomain: "turniej-tabliczka.firebaseapp.com",
+            databaseURL: "https://turniej-tabliczka-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "turniej-tabliczka",
+            storageBucket: "turniej-tabliczka.firebasestorage.app",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         // ==================== BUILT-IN SETS ====================
         const BUILTIN_SETS = [
             {
@@ -1344,6 +1395,14 @@ KATEGORIA: Nazwa kategorii 2
                         ${set.categories.length} kategorii × 5 pytań
                         ${set.custom ? ' | Własny zestaw' : ''}
                     </div>
+                    ${set.custom ? `
+                        <div style="margin-top: var(--spacing-sm);">
+                            <button class="btn" style="background: var(--vb-accent); color: var(--vb-primary); padding: 5px 10px; font-size: 0.85rem;"
+                                    onclick="event.stopPropagation(); openShareModal('${set.id}')">
+                                🌍 Udostępnij
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
@@ -1933,6 +1992,133 @@ KATEGORIA: Nazwa kategorii 2
             }
 
             return true;
+        }
+
+        // ==================== COMMUNITY / FIREBASE ====================
+        function showCommunity() {
+            showPanel('communityPanel');
+            loadCommunitySets();
+        }
+
+        async function loadCommunitySets() {
+            const container = document.getElementById('communityGrid');
+            container.innerHTML = '<p style="text-align: center; opacity: 0.7; grid-column: 1/-1;">Ładowanie...</p>';
+
+            try {
+                const snapshot = await db.ref('communityVabanqueSets').orderByChild('status').equalTo('approved').once('value');
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<p style="text-align: center; opacity: 0.7; grid-column: 1/-1;">Brak zestawów społeczności. Bądź pierwszy - udostępnij swój zestaw!</p>';
+                    return;
+                }
+
+                const sets = [];
+                snapshot.forEach(child => {
+                    sets.push({ id: child.key, ...child.val() });
+                });
+
+                // Sort by plays (most popular first)
+                sets.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+
+                container.innerHTML = sets.map(set => `
+                    <div class="set-card" onclick="playCommunitySet('${set.id}')">
+                        <h3>${escapeHtml(set.name)}</h3>
+                        <p>${set.description || ''}</p>
+                        <div style="font-size: 0.9rem; margin-top: var(--spacing-xs);">👤 ${escapeHtml(set.author)}</div>
+                        <div class="set-meta">${set.categories.length} kategorii × 5 pytań</div>
+                        <div style="font-size: 0.8rem; opacity: 0.7; margin-top: var(--spacing-xs);">▶️ Zagrano: ${set.plays || 0} razy</div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Błąd ładowania zestawów:', error);
+                container.innerHTML = '<p style="text-align: center; color: var(--vb-danger); grid-column: 1/-1;">Błąd ładowania. Sprawdź połączenie z internetem.</p>';
+            }
+        }
+
+        async function playCommunitySet(setId) {
+            try {
+                const snapshot = await db.ref('communityVabanqueSets/' + setId).once('value');
+                if (!snapshot.exists()) {
+                    alert('Zestaw nie istnieje!');
+                    return;
+                }
+
+                const communitySet = { id: setId, ...snapshot.val() };
+
+                // Increment play count
+                db.ref('communityVabanqueSets/' + setId + '/plays').transaction(plays => (plays || 0) + 1);
+
+                // Set as current set and go to setup
+                currentSet = communitySet;
+                document.getElementById('setupTitle').textContent = currentSet.name;
+                showPanel('setupPanel');
+
+            } catch (error) {
+                console.error('Błąd:', error);
+                alert('Błąd ładowania zestawu.');
+            }
+        }
+
+        function openShareModal(setId) {
+            document.getElementById('shareSetId').value = setId;
+            document.getElementById('authorName').value = localStorage.getItem('vabanque_author') || '';
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        async function submitToFirebase() {
+            const setId = document.getElementById('shareSetId').value;
+            const author = document.getElementById('authorName').value.trim();
+
+            if (!author) {
+                alert('Podaj swoje imię lub pseudonim!');
+                return;
+            }
+
+            const set = customSets.find(s => s.id === setId);
+            if (!set) {
+                alert('Zestaw nie istnieje!');
+                return;
+            }
+
+            if (set.categories.length < 3) {
+                alert('Zestaw musi mieć minimum 3 kategorie!');
+                return;
+            }
+
+            // Save author name
+            localStorage.setItem('vabanque_author', author);
+
+            try {
+                const communitySet = {
+                    name: set.name,
+                    description: set.description || '',
+                    author: author,
+                    categories: set.categories,
+                    status: 'pending',
+                    plays: 0,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                await db.ref('communityVabanqueSets').push(communitySet);
+
+                closeShareModal();
+                alert('Zestaw wysłany! Będzie dostępny po zatwierdzeniu przez moderatora.');
+
+            } catch (error) {
+                console.error('Błąd wysyłania:', error);
+                alert('Błąd wysyłania. Spróbuj ponownie.');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     </script>
 
