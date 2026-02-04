@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uzupełnij luki - Narzędzia dla Nauczycieli</title>
+    <meta name="theme-color" content="#6f42c1">
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <style>
+        :root {
+            --gapfill-primary: #6f42c1;
+            --gapfill-primary-dark: #5a32a3;
+            --gapfill-accent: #b983ff;
+            --gapfill-bg: linear-gradient(135deg, #6f42c1 0%, #b983ff 100%);
+        }
+
+        body {
+            background: var(--gapfill-bg);
+            color: var(--color-text-light);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .home-btn {
+            background: rgba(255,255,255,0.2);
+            color: var(--color-text-light);
+            align-self: flex-start;
+        }
+
+        .home-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--color-text-light);
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--spacing-lg);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Start Screen */
+        .start-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .intro-text {
+            text-align: center;
+            max-width: 500px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        /* Set selector */
+        .sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--spacing-lg);
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .set-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            color: var(--color-text-primary);
+        }
+
+        .set-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .set-card h3 {
+            color: var(--gapfill-primary-dark);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+        }
+
+        .set-card p {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .set-card .set-meta {
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-xs);
+            color: var(--color-text-muted);
+        }
+
+        /* Panel */
+        .panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            padding: var(--spacing-lg);
+        }
+
+        .panel.active {
+            display: flex;
+        }
+
+        /* Exercise */
+        .exercise-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-lg);
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 500px;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: var(--font-size-sm);
+            opacity: 0.9;
+        }
+
+        .exercise-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            width: 100%;
+            max-width: 600px;
+            color: var(--color-text-primary);
+        }
+
+        .tense-badge {
+            display: inline-block;
+            background: var(--gapfill-primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .sentence {
+            font-size: var(--font-size-xl);
+            line-height: 1.8;
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .sentence .gap {
+            display: inline-block;
+            min-width: 120px;
+            border-bottom: 3px solid var(--gapfill-primary);
+            margin: 0 4px;
+            text-align: center;
+            font-weight: var(--font-weight-bold);
+            color: var(--gapfill-primary);
+        }
+
+        .sentence .gap.correct {
+            border-color: var(--color-success);
+            color: var(--color-success);
+        }
+
+        .sentence .gap.wrong {
+            border-color: var(--color-danger);
+            color: var(--color-danger);
+        }
+
+        .hint {
+            text-align: center;
+            color: var(--color-text-muted);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .hint strong {
+            color: var(--gapfill-primary-dark);
+        }
+
+        .input-section {
+            display: flex;
+            gap: var(--spacing-sm);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .answer-input {
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-size: var(--font-size-lg);
+            border: 2px solid #ddd;
+            border-radius: var(--radius-md);
+            text-align: center;
+            min-width: 200px;
+            transition: var(--transition-normal);
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--gapfill-primary);
+        }
+
+        .answer-input.correct {
+            border-color: var(--color-success);
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .answer-input.wrong {
+            border-color: var(--color-danger);
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        .answer-input:disabled {
+            background: #f8f9fa;
+        }
+
+        .feedback {
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-xs);
+            margin-top: var(--spacing-md);
+        }
+
+        .feedback .result {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .feedback .result.correct {
+            color: var(--color-success);
+        }
+
+        .feedback .result.wrong {
+            color: var(--color-danger);
+        }
+
+        .feedback .correct-answer {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            min-height: 44px;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-primary {
+            background: var(--gapfill-primary);
+            color: var(--color-text-light);
+        }
+
+        .btn-success {
+            background: var(--color-success);
+            color: var(--color-text-light);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.3);
+            color: var(--color-text-light);
+        }
+
+        .btn-white {
+            background: white;
+            color: var(--gapfill-primary-dark);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: var(--spacing-lg);
+        }
+
+        /* Results */
+        .results-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--spacing-lg);
+        }
+
+        .results-icon {
+            font-size: 5rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .results-title {
+            font-size: var(--font-size-2xl);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .results-stats {
+            display: flex;
+            gap: var(--spacing-xl);
+            margin: var(--spacing-xl) 0;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            min-width: 100px;
+        }
+
+        .stat-box .number {
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .stat-box .label {
+            font-size: var(--font-size-sm);
+            opacity: 0.8;
+        }
+
+        .results-details {
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin: var(--spacing-lg) 0;
+            max-width: 500px;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: var(--font-size-sm);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item .verb {
+            opacity: 0.8;
+        }
+
+        .result-item .answer {
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .result-item .answer.correct {
+            color: #90EE90;
+        }
+
+        .result-item .answer.wrong {
+            color: #FFB6C1;
+        }
+
+        /* Link to Fiszki */
+        .fiszki-link {
+            background: rgba(255,255,255,0.15);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .fiszki-link a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        .footer-link {
+            text-align: center;
+            padding: var(--spacing-md);
+            font-size: var(--font-size-sm);
+        }
+
+        .footer-link a {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .exercise-card {
+                padding: var(--spacing-lg);
+            }
+
+            .sentence {
+                font-size: var(--font-size-lg);
+            }
+
+            .answer-input {
+                width: 100%;
+                min-width: unset;
+            }
+
+            .results-stats {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">&#8592; Strona główna</a>
+        <h1>Uzupełnij luki</h1>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <p class="intro-text">
+                Przećwicz czasowniki nieregularne w kontekście zdań.<br>
+                Wybierz zestaw i uzupełnij brakujące formy.
+            </p>
+
+            <div class="sets-grid" id="setsGrid"></div>
+
+            <div class="fiszki-link">
+                Nie znasz jeszcze form? <a href="fiszki.html">Najpierw naucz się z Fiszek</a>
+            </div>
+        </div>
+
+        <!-- Exercise Panel -->
+        <div id="exercisePanel" class="panel">
+            <div class="exercise-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Zdanie 1 / 10</div>
+
+                <div class="exercise-card">
+                    <div class="tense-badge" id="tenseBadge">Past Simple</div>
+
+                    <div class="sentence" id="sentence">
+                        Yesterday I <span class="gap" id="gapDisplay">_____</span> to school.
+                    </div>
+
+                    <div class="hint" id="hint">
+                        Forma podstawowa: <strong>go</strong> (iść)
+                    </div>
+
+                    <div class="input-section">
+                        <input type="text" class="answer-input" id="answerInput"
+                               placeholder="Wpisz odpowiedź..."
+                               autocomplete="off"
+                               autocapitalize="off">
+                        <button class="btn btn-primary" id="checkBtn" onclick="checkAnswer()">Sprawdź</button>
+                        <button class="btn btn-success" id="nextBtn" onclick="nextExercise()" style="display: none;">Dalej</button>
+                    </div>
+
+                    <div class="feedback" id="feedback"></div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="endExercise()">Zakończ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div id="resultsPanel" class="panel">
+            <div class="results-container">
+                <div class="results-icon" id="resultsIcon">🎉</div>
+                <h2 class="results-title" id="resultsTitle">Świetna robota!</h2>
+
+                <div class="results-stats">
+                    <div class="stat-box">
+                        <div class="number" id="statCorrect">0</div>
+                        <div class="label">Poprawne</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="statWrong">0</div>
+                        <div class="label">Błędne</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="statPercent">0%</div>
+                        <div class="label">Wynik</div>
+                    </div>
+                </div>
+
+                <div class="results-details" id="resultsDetails"></div>
+
+                <div class="btn-group">
+                    <button class="btn btn-white" onclick="restartSet()">Powtórz zestaw</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Wybierz inny</button>
+                </div>
+
+                <div class="fiszki-link">
+                    Chcesz powtórzyć formy? <a href="fiszki.html">Wróć do Fiszek</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-link">
+            <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
+        </div>
+    </div>
+
+    <script>
+        // Exercise sets - matching the Fiszki structure
+        const EXERCISE_SETS = [
+            {
+                id: 'gapfill-1',
+                name: '🟢 Zestaw 1: Wielka Piątka',
+                description: 'Najważniejsze czasowniki - be, do, have, go, get, make',
+                level: 'Klasy 4-6',
+                exercises: [
+                    // BE
+                    { sentence: 'I ___ very tired yesterday.', hint: 'be (być)', answer: ['was'], tense: 'Past Simple' },
+                    { sentence: 'They ___ at school last Monday.', hint: 'be (być)', answer: ['were'], tense: 'Past Simple' },
+                    { sentence: 'She has ___ to Paris twice.', hint: 'be (być)', answer: ['been'], tense: 'Present Perfect' },
+                    // DO
+                    { sentence: 'He ___ his homework after dinner.', hint: 'do (robić)', answer: ['did'], tense: 'Past Simple' },
+                    { sentence: 'I have ___ all my tasks today.', hint: 'do (robić)', answer: ['done'], tense: 'Present Perfect' },
+                    // HAVE
+                    { sentence: 'We ___ a great party last weekend.', hint: 'have (mieć)', answer: ['had'], tense: 'Past Simple' },
+                    { sentence: 'She has ___ this car for five years.', hint: 'have (mieć)', answer: ['had'], tense: 'Present Perfect' },
+                    // GO
+                    { sentence: 'Yesterday I ___ to the cinema.', hint: 'go (iść)', answer: ['went'], tense: 'Past Simple' },
+                    { sentence: 'They have ___ home already.', hint: 'go (iść)', answer: ['gone'], tense: 'Present Perfect' },
+                    // GET
+                    { sentence: 'She ___ a new phone for her birthday.', hint: 'get (dostać)', answer: ['got'], tense: 'Past Simple' },
+                    { sentence: 'I have ___ better at English.', hint: 'get (dostać/stać się)', answer: ['got', 'gotten'], tense: 'Present Perfect' },
+                    // MAKE
+                    { sentence: 'Mom ___ a delicious cake yesterday.', hint: 'make (robić/tworzyć)', answer: ['made'], tense: 'Past Simple' },
+                    { sentence: 'He has ___ a lot of friends here.', hint: 'make (robić/tworzyć)', answer: ['made'], tense: 'Present Perfect' }
+                ]
+            },
+            {
+                id: 'gapfill-2',
+                name: '🔵 Zestaw 2: Codzienne czynności',
+                description: 'come, eat, drink, give, see, take, know, say, tell, think, write, read',
+                level: 'Klasy 5-6',
+                exercises: [
+                    // COME
+                    { sentence: 'She ___ to my party last Friday.', hint: 'come (przychodzić)', answer: ['came'], tense: 'Past Simple' },
+                    { sentence: 'Has he ___ back from vacation?', hint: 'come (przychodzić)', answer: ['come'], tense: 'Present Perfect' },
+                    // EAT
+                    { sentence: 'I ___ pizza for lunch yesterday.', hint: 'eat (jeść)', answer: ['ate'], tense: 'Past Simple' },
+                    { sentence: 'Have you ___ breakfast yet?', hint: 'eat (jeść)', answer: ['eaten'], tense: 'Present Perfect' },
+                    // DRINK
+                    { sentence: 'He ___ three cups of coffee this morning.', hint: 'drink (pić)', answer: ['drank'], tense: 'Past Simple' },
+                    { sentence: 'I have never ___ green tea.', hint: 'drink (pić)', answer: ['drunk'], tense: 'Present Perfect' },
+                    // GIVE
+                    { sentence: 'She ___ me a beautiful present.', hint: 'give (dawać)', answer: ['gave'], tense: 'Past Simple' },
+                    { sentence: 'They have ___ money to charity.', hint: 'give (dawać)', answer: ['given'], tense: 'Present Perfect' },
+                    // SEE
+                    { sentence: 'I ___ a great film last night.', hint: 'see (widzieć)', answer: ['saw'], tense: 'Past Simple' },
+                    { sentence: 'Have you ___ my keys anywhere?', hint: 'see (widzieć)', answer: ['seen'], tense: 'Present Perfect' },
+                    // TAKE
+                    { sentence: 'He ___ my umbrella by mistake.', hint: 'take (brać)', answer: ['took'], tense: 'Past Simple' },
+                    { sentence: 'She has ___ the dog for a walk.', hint: 'take (brać)', answer: ['taken'], tense: 'Present Perfect' },
+                    // KNOW
+                    { sentence: 'I ___ the answer but I forgot it.', hint: 'know (wiedzieć)', answer: ['knew'], tense: 'Past Simple' },
+                    { sentence: 'We have ___ each other for years.', hint: 'know (wiedzieć)', answer: ['known'], tense: 'Present Perfect' },
+                    // SAY
+                    { sentence: 'What ___ she about the meeting?', hint: 'say (powiedzieć)', answer: ['said'], tense: 'Past Simple' },
+                    // TELL
+                    { sentence: 'He ___ me a funny story yesterday.', hint: 'tell (mówić komuś)', answer: ['told'], tense: 'Past Simple' },
+                    // THINK
+                    { sentence: 'I ___ about you all day.', hint: 'think (myśleć)', answer: ['thought'], tense: 'Past Simple' },
+                    // WRITE
+                    { sentence: 'She ___ a letter to her grandma.', hint: 'write (pisać)', answer: ['wrote'], tense: 'Past Simple' },
+                    { sentence: 'Have you ___ the essay yet?', hint: 'write (pisać)', answer: ['written'], tense: 'Present Perfect' },
+                    // READ
+                    { sentence: 'I ___ this book last summer.', hint: 'read (czytać) - wymowa: /red/', answer: ['read'], tense: 'Past Simple' }
+                ]
+            },
+            {
+                id: 'gapfill-3',
+                name: '🟠 Zestaw 3: Wzorce fonetyczne',
+                description: 'Grupa GHT (bought) i identyczne (cut-cut-cut)',
+                level: 'Klasy 6-7',
+                exercises: [
+                    // GHT group
+                    { sentence: 'I ___ a new laptop yesterday.', hint: 'buy (kupować)', answer: ['bought'], tense: 'Past Simple' },
+                    { sentence: 'She has ___ flowers for mom.', hint: 'buy (kupować)', answer: ['bought'], tense: 'Present Perfect' },
+                    { sentence: 'He ___ some snacks to the party.', hint: 'bring (przynosić)', answer: ['brought'], tense: 'Past Simple' },
+                    { sentence: 'Have you ___ your homework?', hint: 'bring (przynosić)', answer: ['brought'], tense: 'Present Perfect' },
+                    { sentence: 'The cat ___ a mouse.', hint: 'catch (łapać)', answer: ['caught'], tense: 'Past Simple' },
+                    { sentence: 'The police have ___ the thief.', hint: 'catch (łapać)', answer: ['caught'], tense: 'Present Perfect' },
+                    { sentence: 'They ___ bravely in the battle.', hint: 'fight (walczyć)', answer: ['fought'], tense: 'Past Simple' },
+                    { sentence: 'Mr Smith ___ us English last year.', hint: 'teach (uczyć)', answer: ['taught'], tense: 'Past Simple' },
+                    // Identical group
+                    { sentence: 'This dress ___ 50 dollars.', hint: 'cost (kosztować)', answer: ['cost'], tense: 'Past Simple' },
+                    { sentence: 'I ___ the paper with scissors.', hint: 'cut (ciąć)', answer: ['cut'], tense: 'Past Simple' },
+                    { sentence: 'The ball ___ the window.', hint: 'hit (uderzać)', answer: ['hit'], tense: 'Past Simple' },
+                    { sentence: 'I ___ my leg playing football.', hint: 'hurt (ranić)', answer: ['hurt'], tense: 'Past Simple' },
+                    { sentence: 'She ___ the book on the shelf.', hint: 'put (kłaść)', answer: ['put'], tense: 'Past Simple' },
+                    { sentence: 'Mom ___ me go to the party.', hint: 'let (pozwalać)', answer: ['let'], tense: 'Past Simple' }
+                ]
+            },
+            {
+                id: 'gapfill-4',
+                name: '🔴 Zestaw 4: Egzamin 8-klasisty',
+                description: 'Czasowniki wymagane na egzaminie - ruch i zmiana',
+                level: 'Klasy 7-8',
+                exercises: [
+                    { sentence: 'She ___ a famous singer.', hint: 'become (stawać się)', answer: ['became'], tense: 'Past Simple' },
+                    { sentence: 'He has ___ very popular recently.', hint: 'become (stawać się)', answer: ['become'], tense: 'Present Perfect' },
+                    { sentence: 'The movie ___ at 8 PM.', hint: 'begin (zaczynać)', answer: ['began'], tense: 'Past Simple' },
+                    { sentence: 'I ___ my phone yesterday!', hint: 'break (łamać/psuć)', answer: ['broke'], tense: 'Past Simple' },
+                    { sentence: 'They ___ this house in 1990.', hint: 'build (budować)', answer: ['built'], tense: 'Past Simple' },
+                    { sentence: 'She ___ the red dress for the party.', hint: 'choose (wybierać)', answer: ['chose'], tense: 'Past Simple' },
+                    { sentence: 'He ___ to work every day last year.', hint: 'drive (prowadzić auto)', answer: ['drove'], tense: 'Past Simple' },
+                    { sentence: 'I ___ off my bike and hurt my knee.', hint: 'fall (upadać)', answer: ['fell'], tense: 'Past Simple' },
+                    { sentence: 'We ___ to Spain last summer.', hint: 'fly (latać)', answer: ['flew'], tense: 'Past Simple' },
+                    { sentence: 'I ___ to call you back. Sorry!', hint: 'forget (zapominać)', answer: ['forgot'], tense: 'Past Simple' },
+                    { sentence: 'Have you ___ about the meeting?', hint: 'forget (zapominać)', answer: ['forgotten'], tense: 'Present Perfect' },
+                    { sentence: 'I ___ a strange noise outside.', hint: 'hear (słyszeć)', answer: ['heard'], tense: 'Past Simple' },
+                    { sentence: 'She always ___ her promises.', hint: 'keep (trzymać/zachowywać)', answer: ['kept'], tense: 'Past Simple' },
+                    { sentence: 'He ___ the room without a word.', hint: 'leave (opuszczać)', answer: ['left'], tense: 'Past Simple' },
+                    { sentence: 'I ___ my keys somewhere.', hint: 'lose (gubić)', answer: ['lost'], tense: 'Past Simple' },
+                    { sentence: 'We ___ for dinner last week.', hint: 'meet (spotykać)', answer: ['met'], tense: 'Past Simple' },
+                    { sentence: 'She ___ for the tickets online.', hint: 'pay (płacić)', answer: ['paid'], tense: 'Past Simple' },
+                    { sentence: 'He ___ 5 kilometers every morning.', hint: 'run (biegać)', answer: ['ran'], tense: 'Past Simple' },
+                    { sentence: 'I ___ you an email yesterday.', hint: 'send (wysyłać)', answer: ['sent'], tense: 'Past Simple' },
+                    { sentence: 'She ___ beautifully at the concert.', hint: 'sing (śpiewać)', answer: ['sang'], tense: 'Past Simple' },
+                    { sentence: 'I ___ only 4 hours last night.', hint: 'sleep (spać)', answer: ['slept'], tense: 'Past Simple' },
+                    { sentence: 'He ___ three languages fluently.', hint: 'speak (mówić)', answer: ['spoke'], tense: 'Past Simple' },
+                    { sentence: 'We ___ the weekend at the beach.', hint: 'spend (spędzać)', answer: ['spent'], tense: 'Past Simple' },
+                    { sentence: 'Someone ___ my bicycle!', hint: 'steal (kraść)', answer: ['stole'], tense: 'Past Simple' },
+                    { sentence: 'She ___ across the lake.', hint: 'swim (pływać)', answer: ['swam'], tense: 'Past Simple' },
+                    { sentence: 'I finally ___ the instructions.', hint: 'understand (rozumieć)', answer: ['understood'], tense: 'Past Simple' },
+                    { sentence: 'She ___ a beautiful dress to the party.', hint: 'wear (nosić ubranie)', answer: ['wore'], tense: 'Past Simple' },
+                    { sentence: 'Our team ___ the championship!', hint: 'win (wygrywać)', answer: ['won'], tense: 'Past Simple' }
+                ]
+            },
+            {
+                id: 'gapfill-5',
+                name: '🟣 Zestaw 5: Trudne przypadki',
+                description: 'Często mylone czasowniki i fałszywi przyjaciele',
+                level: 'Klasy 7-8+',
+                exercises: [
+                    // LIE (leżeć) vs LIE (kłamać)
+                    { sentence: 'The cat ___ on the sofa all day. (leżeć)', hint: 'lie (leżeć) - lay - lain', answer: ['lay'], tense: 'Past Simple' },
+                    { sentence: 'He ___ to me about his age! (kłamać)', hint: 'lie (kłamać) - REGULARNY!', answer: ['lied'], tense: 'Past Simple' },
+                    { sentence: 'The book has ___ on the table for weeks.', hint: 'lie (leżeć) - lay - lain', answer: ['lain'], tense: 'Present Perfect' },
+                    // RISE
+                    { sentence: 'The sun ___ at 6 AM yesterday.', hint: 'rise (wzrastać/wschodzić)', answer: ['rose'], tense: 'Past Simple' },
+                    { sentence: 'Prices have ___ dramatically.', hint: 'rise (wzrastać)', answer: ['risen'], tense: 'Present Perfect' },
+                    // BEAT
+                    { sentence: 'Our team ___ them 3-0!', hint: 'beat (bić/pokonać)', answer: ['beat'], tense: 'Past Simple' },
+                    { sentence: 'She has never ___ me at chess.', hint: 'beat (bić/pokonać)', answer: ['beaten'], tense: 'Present Perfect' },
+                    // BITE
+                    { sentence: 'The dog ___ the postman.', hint: 'bite (gryźć)', answer: ['bit'], tense: 'Past Simple' },
+                    { sentence: 'I have been ___ by a mosquito.', hint: 'bite (gryźć)', answer: ['bitten'], tense: 'Present Perfect' },
+                    // HIDE
+                    { sentence: 'The children ___ behind the tree.', hint: 'hide (chować się)', answer: ['hid'], tense: 'Past Simple' },
+                    { sentence: 'Where have you ___ my keys?', hint: 'hide (chować)', answer: ['hidden'], tense: 'Present Perfect' },
+                    // HOLD
+                    { sentence: 'She ___ the baby carefully.', hint: 'hold (trzymać)', answer: ['held'], tense: 'Past Simple' },
+                    // THROW
+                    { sentence: 'He ___ the ball to his friend.', hint: 'throw (rzucać)', answer: ['threw'], tense: 'Past Simple' },
+                    { sentence: 'Someone has ___ rubbish here.', hint: 'throw (rzucać)', answer: ['thrown'], tense: 'Present Perfect' },
+                    // WAKE
+                    { sentence: 'I ___ up at 7 this morning.', hint: 'wake (budzić się)', answer: ['woke'], tense: 'Past Simple' },
+                    { sentence: 'Has the baby ___ up yet?', hint: 'wake (budzić się)', answer: ['woken'], tense: 'Present Perfect' }
+                ]
+            }
+        ];
+
+        // State
+        let currentSet = null;
+        let currentExerciseIndex = 0;
+        let exercises = [];
+        let results = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSets();
+
+            // Enter key handler
+            document.getElementById('answerInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const checkBtn = document.getElementById('checkBtn');
+                    const nextBtn = document.getElementById('nextBtn');
+                    if (nextBtn.style.display !== 'none') {
+                        nextExercise();
+                    } else {
+                        checkAnswer();
+                    }
+                }
+            });
+        });
+
+        function renderSets() {
+            const grid = document.getElementById('setsGrid');
+            grid.innerHTML = EXERCISE_SETS.map(set => `
+                <div class="set-card" onclick="startSet('${set.id}')">
+                    <h3>${set.name}</h3>
+                    <p>${set.description}</p>
+                    <div class="set-meta">${set.exercises.length} zdań | ${set.level}</div>
+                </div>
+            `).join('');
+        }
+
+        function showStartScreen() {
+            document.getElementById('startScreen').style.display = 'flex';
+            document.getElementById('exercisePanel').classList.remove('active');
+            document.getElementById('resultsPanel').classList.remove('active');
+        }
+
+        function startSet(setId) {
+            currentSet = EXERCISE_SETS.find(s => s.id === setId);
+            if (!currentSet) return;
+
+            // Shuffle exercises
+            exercises = shuffleArray([...currentSet.exercises]);
+            currentExerciseIndex = 0;
+            results = [];
+
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('resultsPanel').classList.remove('active');
+            document.getElementById('exercisePanel').classList.add('active');
+
+            showExercise();
+        }
+
+        function restartSet() {
+            if (!currentSet) return;
+            startSet(currentSet.id);
+        }
+
+        function showExercise() {
+            const exercise = exercises[currentExerciseIndex];
+            const total = exercises.length;
+
+            // Progress
+            const progress = ((currentExerciseIndex) / total) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `Zdanie ${currentExerciseIndex + 1} / ${total}`;
+
+            // Tense badge
+            document.getElementById('tenseBadge').textContent = exercise.tense;
+
+            // Sentence with gap
+            const sentenceParts = exercise.sentence.split('___');
+            document.getElementById('sentence').innerHTML =
+                sentenceParts[0] + '<span class="gap" id="gapDisplay">_____</span>' + sentenceParts[1];
+
+            // Hint
+            document.getElementById('hint').innerHTML = `Forma podstawowa: <strong>${exercise.hint}</strong>`;
+
+            // Reset input
+            const input = document.getElementById('answerInput');
+            input.value = '';
+            input.className = 'answer-input';
+            input.disabled = false;
+            input.focus();
+
+            // Reset buttons
+            document.getElementById('checkBtn').style.display = 'inline-block';
+            document.getElementById('nextBtn').style.display = 'none';
+
+            // Clear feedback
+            document.getElementById('feedback').innerHTML = '';
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById('answerInput');
+            const exercise = exercises[currentExerciseIndex];
+            const userAnswer = input.value.trim().toLowerCase();
+
+            if (!userAnswer) {
+                input.focus();
+                return;
+            }
+
+            const isCorrect = exercise.answer.some(ans =>
+                ans.toLowerCase() === userAnswer
+            );
+
+            // Update UI
+            input.disabled = true;
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'inline-block';
+
+            const gap = document.getElementById('gapDisplay');
+            const feedback = document.getElementById('feedback');
+
+            if (isCorrect) {
+                input.classList.add('correct');
+                gap.textContent = userAnswer;
+                gap.classList.add('correct');
+                feedback.innerHTML = '<div class="result correct">✓ Dobrze!</div>';
+            } else {
+                input.classList.add('wrong');
+                gap.textContent = exercise.answer[0];
+                gap.classList.add('wrong');
+                feedback.innerHTML = `
+                    <div class="result wrong">✗ Nie tym razem</div>
+                    <div class="correct-answer">Poprawna odpowiedź: <strong>${exercise.answer.join(' / ')}</strong></div>
+                `;
+            }
+
+            // Save result
+            results.push({
+                hint: exercise.hint,
+                userAnswer: userAnswer,
+                correctAnswer: exercise.answer[0],
+                isCorrect: isCorrect
+            });
+
+            // Focus next button
+            document.getElementById('nextBtn').focus();
+        }
+
+        function nextExercise() {
+            currentExerciseIndex++;
+
+            if (currentExerciseIndex >= exercises.length) {
+                showResults();
+            } else {
+                showExercise();
+            }
+        }
+
+        function endExercise() {
+            showResults();
+        }
+
+        function showResults() {
+            document.getElementById('exercisePanel').classList.remove('active');
+            document.getElementById('resultsPanel').classList.add('active');
+
+            const correct = results.filter(r => r.isCorrect).length;
+            const wrong = results.filter(r => !r.isCorrect).length;
+            const total = results.length;
+            const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+            document.getElementById('statCorrect').textContent = correct;
+            document.getElementById('statWrong').textContent = wrong;
+            document.getElementById('statPercent').textContent = percent + '%';
+
+            // Icon and title
+            if (percent >= 90) {
+                document.getElementById('resultsIcon').textContent = '🏆';
+                document.getElementById('resultsTitle').textContent = 'Doskonale!';
+            } else if (percent >= 70) {
+                document.getElementById('resultsIcon').textContent = '👍';
+                document.getElementById('resultsTitle').textContent = 'Dobra robota!';
+            } else if (percent >= 50) {
+                document.getElementById('resultsIcon').textContent = '📚';
+                document.getElementById('resultsTitle').textContent = 'Jeszcze trochę nauki!';
+            } else {
+                document.getElementById('resultsIcon').textContent = '💪';
+                document.getElementById('resultsTitle').textContent = 'Nie poddawaj się!';
+            }
+
+            // Details
+            const details = document.getElementById('resultsDetails');
+            details.innerHTML = results.map(r => `
+                <div class="result-item">
+                    <span class="verb">${r.hint.split('(')[0].trim()}</span>
+                    <span class="answer ${r.isCorrect ? 'correct' : 'wrong'}">
+                        ${r.isCorrect ? '✓' : '✗'} ${r.userAnswer} ${!r.isCorrect ? '→ ' + r.correctAnswer : ''}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
