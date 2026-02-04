@@ -279,6 +279,59 @@
             margin-top: var(--spacing-lg);
         }
 
+        /* Turn indicator */
+        .turn-indicator {
+            background: linear-gradient(135deg, var(--vb-gold), #ffed4a);
+            color: var(--vb-primary);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-full);
+            font-weight: var(--font-weight-bold);
+            font-size: var(--font-size-lg);
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            animation: turnPulse 2s infinite;
+        }
+
+        @keyframes turnPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); }
+            50% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.7); }
+        }
+
+        /* Instructions modal */
+        .instructions-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+        }
+
+        .instructions-content {
+            text-align: left;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .instructions-content h3 {
+            color: var(--vb-gold);
+            margin-top: var(--spacing-lg);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .instructions-content ul {
+            margin-left: var(--spacing-lg);
+            line-height: 1.8;
+        }
+
+        .instructions-content .rule-box {
+            background: rgba(255,255,255,0.1);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin: var(--spacing-sm) 0;
+        }
+
         /* Game Board */
         .game-header {
             display: flex;
@@ -824,7 +877,11 @@
         <div id="gamePanel" class="panel">
             <div class="game-header">
                 <h2 class="game-title" id="gameTitle">Zestaw pytań</h2>
-                <span class="game-mode-badge" id="gameModeBadge">Tryb klasyczny</span>
+                <div class="turn-indicator" id="turnIndicator">Tura: Drużyna A</div>
+                <div>
+                    <button class="instructions-btn" onclick="showInstructions()">📖 Zasady</button>
+                    <span class="game-mode-badge" id="gameModeBadge">Tryb klasyczny</span>
+                </div>
             </div>
 
             <div class="game-board" id="gameBoard"></div>
@@ -865,6 +922,46 @@
 
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="closePowerupModal()">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Modal -->
+        <div class="modal-overlay" id="instructionsModal">
+            <div class="modal-content">
+                <h2 style="color: var(--vb-gold); margin-bottom: var(--spacing-lg);">📖 Zasady gry Va Banque</h2>
+                <div class="instructions-content">
+                    <h3>🎮 Przebieg gry</h3>
+                    <ul>
+                        <li>Drużyny grają <strong>po kolei</strong> (A → B → C → ...)</li>
+                        <li>Drużyna na turze wybiera pole z planszy</li>
+                        <li>Ma czas na odpowiedź (jeśli ustawiony timer)</li>
+                        <li>Poprawna odpowiedź = punkty dla drużyny</li>
+                        <li>Błędna/brak odpowiedzi = następna drużyna może spróbować</li>
+                    </ul>
+
+                    <h3>✨ Power-upy (tryb z niespodziankami)</h3>
+                    <div class="rule-box">
+                        <strong>Z pytaniem</strong> - musisz odpowiedzieć poprawnie:
+                        <ul>
+                            <li>✨ <strong>Podwójne</strong> - 2× punkty za to pytanie</li>
+                            <li>🎁 <strong>Bonus</strong> - punkty + 200 extra</li>
+                            <li>🦹 <strong>Kradzież</strong> - punkty + kradniesz 150 od lidera</li>
+                        </ul>
+                    </div>
+                    <div class="rule-box">
+                        <strong>Pułapki</strong> - natychmiastowe, bez pytania:
+                        <ul>
+                            <li>💀 <strong>Pułapka</strong> - tracisz 100 punktów</li>
+                            <li>🔄 <strong>Zamiana</strong> - zamieniasz punkty z liderem</li>
+                        </ul>
+                    </div>
+
+                    <h3>🏆 Zwycięstwo</h3>
+                    <p>Wygrywa drużyna z największą liczbą punktów po odpowiedzeniu na wszystkie pytania.</p>
+                </div>
+                <div class="btn-group" style="margin-top: var(--spacing-xl);">
+                    <button class="btn btn-primary" onclick="closeInstructions()">Rozumiem!</button>
                 </div>
             </div>
         </div>
@@ -1384,10 +1481,42 @@ KATEGORIA: Nazwa kategorii 2
             const scoreboard = document.getElementById('scoreboard');
             scoreboard.innerHTML = teams.map((team, i) => `
                 <div class="team-score ${i === currentTeamIndex ? 'active' : ''}" style="border-color: ${team.color}">
-                    <div class="name" style="color: ${team.color}">${team.name}</div>
+                    <div class="name" style="color: ${team.color}">${i === currentTeamIndex ? '▶ ' : ''}${team.name}</div>
                     <div class="points">${team.score}</div>
                 </div>
             `).join('');
+
+            // Update turn indicator
+            const turnIndicator = document.getElementById('turnIndicator');
+            if (turnIndicator) {
+                const currentTeam = teams[currentTeamIndex];
+                turnIndicator.textContent = `Tura: ${currentTeam.name}`;
+                turnIndicator.style.background = `linear-gradient(135deg, ${currentTeam.color}, ${currentTeam.color}dd)`;
+            }
+        }
+
+        // Helper: znajdź lidera (drużynę z największą liczbą punktów)
+        function getLeaderIndex(excludeIndex = -1) {
+            let leaderIndex = 0;
+            let maxScore = -Infinity;
+
+            teams.forEach((team, i) => {
+                if (i !== excludeIndex && team.score > maxScore) {
+                    maxScore = team.score;
+                    leaderIndex = i;
+                }
+            });
+
+            return leaderIndex;
+        }
+
+        // Instructions modal
+        function showInstructions() {
+            document.getElementById('instructionsModal').classList.add('active');
+        }
+
+        function closeInstructions() {
+            document.getElementById('instructionsModal').classList.remove('active');
         }
 
         // ==================== CELL CLICK ====================
@@ -1462,9 +1591,10 @@ KATEGORIA: Nazwa kategorii 2
         }
 
         function showInstantPowerup(powerup, cellId) {
+            const currentTeam = teams[currentTeamIndex];
+
             document.getElementById('powerupIcon').textContent = powerup.icon;
             document.getElementById('powerupName').textContent = powerup.name;
-            document.getElementById('powerupDesc').textContent = powerup.desc;
 
             activePowerup = { ...powerup, cellId };
 
@@ -1472,57 +1602,38 @@ KATEGORIA: Nazwa kategorii 2
             document.getElementById(cellId).textContent = powerup.icon;
             document.getElementById(cellId).classList.add('powerup-revealed');
 
-            let buttonsHtml = '';
+            let resultHtml = '';
 
             if (powerup.effect === 'penalty') {
-                // Pułapka - wybierz drużynę która traci punkty
-                buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Która drużyna trafia na pułapkę?</p>` +
-                    teams.map((team, i) => `
-                        <button class="team-btn" style="background: ${team.color}; color: white;"
-                                onclick="applyInstantPowerup(${i})">
-                            ${team.name}
-                        </button>
-                    `).join('');
+                // Pułapka - automatycznie uderza w drużynę która kliknęła
+                teams[currentTeamIndex].score += powerup.value; // value is negative
+                document.getElementById('powerupDesc').textContent =
+                    `${currentTeam.name} wdepnęła w pułapkę i traci ${Math.abs(powerup.value)} punktów!`;
+                resultHtml = `<p style="color: var(--vb-danger); font-size: var(--font-size-lg);">
+                    ${currentTeam.name}: ${currentTeam.score} pkt
+                </p>`;
             } else if (powerup.effect === 'swap') {
-                // Zamiana - wybierz drużynę która musi zamienić punkty
-                buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">Która drużyna zamienia punkty?</p>` +
-                    teams.map((team, i) => `
-                        <button class="team-btn" style="background: ${team.color}; color: white;"
-                                onclick="selectSwapTeam(${i})">
-                            ${team.name}
-                        </button>
-                    `).join('');
+                // Zamiana - automatycznie zamienia z liderem
+                const leaderIndex = getLeaderIndex(currentTeamIndex);
+                const leader = teams[leaderIndex];
+
+                // Zamień punkty
+                const temp = currentTeam.score;
+                teams[currentTeamIndex].score = leader.score;
+                teams[leaderIndex].score = temp;
+
+                document.getElementById('powerupDesc').textContent =
+                    `${currentTeam.name} zamienia punkty z liderem (${leader.name})!`;
+                resultHtml = `<p style="font-size: var(--font-size-lg);">
+                    ${currentTeam.name}: ${currentTeam.score} pkt ↔ ${leader.name}: ${leader.score} pkt
+                </p>`;
             }
 
-            document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
+            document.getElementById('powerupTeamButtons').innerHTML = resultHtml;
             document.getElementById('powerupModal').classList.add('active');
         }
 
-        function applyInstantPowerup(teamIndex) {
-            const powerup = activePowerup;
 
-            if (powerup.effect === 'penalty') {
-                teams[teamIndex].score += powerup.value; // value is negative
-            }
-
-            closePowerupModal();
-        }
-
-        function selectSwapTeam(teamIndex) {
-            // Pokaż wybór z kim zamienić
-            const buttonsHtml = `<p style="margin-bottom: var(--spacing-md);">${teams[teamIndex].name} zamienia punkty z:</p>` +
-                teams.filter((_, i) => i !== teamIndex).map((team, i) => {
-                    const actualIndex = i >= teamIndex ? i + 1 : i;
-                    return `
-                        <button class="team-btn" style="background: ${team.color}; color: white;"
-                                onclick="executeSwap(${teamIndex}, ${actualIndex})">
-                            ${team.name} (${teams[actualIndex].score} pkt)
-                        </button>
-                    `;
-                }).join('');
-
-            document.getElementById('powerupTeamButtons').innerHTML = buttonsHtml;
-        }
 
         function startTimer() {
             let remaining = timerSeconds;
@@ -1546,27 +1657,56 @@ KATEGORIA: Nazwa kategorii 2
             }, 1000);
         }
 
+        let answeringTeamIndex = 0; // Która drużyna teraz odpowiada
+
         function showAnswer() {
             clearInterval(timerInterval);
             document.getElementById('modalAnswer').classList.add('visible');
             document.getElementById('showAnswerBtn').style.display = 'none';
             document.getElementById('modalTimer').textContent = '';
 
-            // Show team buttons
+            // Pierwsza szansa dla drużyny na turze
+            answeringTeamIndex = currentTeamIndex;
+            showAnswerButtons();
+        }
+
+        function showAnswerButtons() {
             const points = parseInt(document.getElementById('teamButtons').dataset.points);
-            const buttonsHtml = teams.map((team, i) => `
-                <button class="team-btn" style="background: ${team.color}; color: white;"
-                        onclick="awardPoints(${i}, ${points})">
-                    ${team.name}
+            const currentTeam = teams[answeringTeamIndex];
+
+            const buttonsHtml = `
+                <p style="margin-bottom: var(--spacing-md); color: var(--vb-gold);">
+                    Odpowiada: <strong>${currentTeam.name}</strong>
+                </p>
+                <button class="team-btn" style="background: var(--vb-success); color: white;"
+                        onclick="awardPoints(${answeringTeamIndex}, ${points})">
+                    ✓ Poprawna odpowiedź
                 </button>
-            `).join('') + `
+                <button class="team-btn" style="background: var(--vb-danger); color: white;"
+                        onclick="wrongAnswer()">
+                    ✗ Błędna odpowiedź
+                </button>
                 <button class="team-btn wrong" onclick="noCorrectAnswer()">
-                    Nikt nie odpowiedział
+                    Nikt nie zna odpowiedzi
                 </button>
             `;
 
             document.getElementById('teamButtons').innerHTML = buttonsHtml;
             document.getElementById('teamButtons').style.display = 'flex';
+        }
+
+        function wrongAnswer() {
+            // Następna drużyna może spróbować
+            answeringTeamIndex = (answeringTeamIndex + 1) % teams.length;
+
+            // Jeśli wróciliśmy do drużyny początkowej, nikt nie zna odpowiedzi
+            if (answeringTeamIndex === currentTeamIndex) {
+                noCorrectAnswer();
+                return;
+            }
+
+            // Pokaż przyciski dla następnej drużyny
+            showAnswerButtons();
         }
 
         function awardPoints(teamIndex, points) {
@@ -1594,18 +1734,9 @@ KATEGORIA: Nazwa kategorii 2
         }
 
         function showStealSelection(thiefIndex, stealAmount) {
-            const buttonsHtml = `<p style="margin-top: var(--spacing-lg); margin-bottom: var(--spacing-md); color: var(--vb-gold);">Ukradnij ${stealAmount} punktów od:</p>` +
-                teams.filter((_, i) => i !== thiefIndex).map((team, i) => {
-                    const actualIndex = i >= thiefIndex ? i + 1 : i;
-                    return `
-                        <button class="team-btn" style="background: ${team.color}; color: white;"
-                                onclick="executeStealFromQuestion(${thiefIndex}, ${actualIndex}, ${stealAmount})">
-                            ${team.name} (${teams[actualIndex].score} pkt)
-                        </button>
-                    `;
-                }).join('');
-
-            document.getElementById('teamButtons').innerHTML = buttonsHtml;
+            // Automatycznie kradnij od lidera (lub 2. miejsca jeśli złodziej jest liderem)
+            const victimIndex = getLeaderIndex(thiefIndex);
+            executeStealFromQuestion(thiefIndex, victimIndex, stealAmount);
         }
 
         function executeStealFromQuestion(thiefIndex, victimIndex, stealAmount) {
@@ -1613,9 +1744,20 @@ KATEGORIA: Nazwa kategorii 2
             teams[victimIndex].score -= actualSteal;
             teams[thiefIndex].score += actualSteal;
 
-            closeQuestionModal();
-            advanceTurn();
-            checkGameEnd();
+            // Pokaż info o kradzieży
+            const thief = teams[thiefIndex];
+            const victim = teams[victimIndex];
+            document.getElementById('teamButtons').innerHTML = `
+                <p style="color: var(--vb-gold); font-size: var(--font-size-lg); margin-top: var(--spacing-md);">
+                    🦹 ${thief.name} ukradła ${actualSteal} pkt od ${victim.name}!
+                </p>
+            `;
+
+            setTimeout(() => {
+                closeQuestionModal();
+                advanceTurn();
+                checkGameEnd();
+            }, 1500);
         }
 
         function noCorrectAnswer() {
@@ -1635,13 +1777,6 @@ KATEGORIA: Nazwa kategorii 2
         }
 
         // ==================== POWERUP FUNCTIONS ====================
-        function executeSwap(team1, team2) {
-            const temp = teams[team1].score;
-            teams[team1].score = teams[team2].score;
-            teams[team2].score = temp;
-            closePowerupModal();
-        }
-
         function closePowerupModal() {
             document.getElementById('powerupModal').classList.remove('active');
             if (activePowerup && activePowerup.cellId) {
