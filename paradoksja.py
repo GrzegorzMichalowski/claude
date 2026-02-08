@@ -269,28 +269,43 @@ class Game:
     def narrator(self, text: str, delay: float = NARRATOR_DELAY):
         """Narracja z efektem maszyny do pisania"""
         term_width = get_terminal_width()
-        padding = max(0, (term_width - WIDTH) // 2)
-        pad_str = ' ' * padding
 
-        # Wrap text to width
+        # Przetwórz tekst - zawiń i wyśrodkuj
         lines = []
         for paragraph in text.split('\n'):
-            if paragraph.strip():
-                # Remove ANSI codes for wrapping, then re-add
-                clean = strip_ansi(paragraph.strip())
-                wrapped = textwrap.wrap(clean, width=WIDTH-4)
-                # Try to preserve formatting for simple cases
-                if paragraph.strip() != clean:
-                    lines.append(paragraph.strip())
+            stripped = paragraph.strip()
+            if stripped:
+                # Sprawdź czy to kolorowany tekst (zaczyna się od \033)
+                if '\033[' in stripped:
+                    # Kolorowany tekst - nie zawijaj, wyświetl jako jest
+                    lines.append(stripped)
                 else:
+                    # Zwykły tekst - zawiń do WIDTH
+                    wrapped = textwrap.wrap(stripped, width=WIDTH - 4)
                     lines.extend(wrapped)
                 lines.append('')
             else:
                 lines.append('')
 
         for line in lines:
-            print(pad_str, end='')
-            for char in line:
+            # Oblicz padding dla centrowania
+            visible_len = len(strip_ansi(line))
+            line_padding = max(0, (term_width - visible_len) // 2)
+            print(' ' * line_padding, end='')
+
+            # Efekt maszyny do pisania (pomijamy kody ANSI w opóźnieniu)
+            i = 0
+            while i < len(line):
+                # Sprawdź czy to początek kodu ANSI
+                if line[i:i+2] == '\033[':
+                    # Znajdź koniec kodu ANSI
+                    end = line.find('m', i)
+                    if end != -1:
+                        print(line[i:end+1], end='', flush=True)
+                        i = end + 1
+                        continue
+
+                char = line[i]
                 print(char, end='', flush=True)
                 if char in '.!?':
                     time.sleep(delay * 6)
@@ -298,6 +313,7 @@ class Game:
                     time.sleep(delay * 3)
                 else:
                     time.sleep(delay)
+                i += 1
             print()
 
     def fast_print(self, text: str):
