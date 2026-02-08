@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PARADOKSJA - Gra Przygodowa</title>
+    <link rel="stylesheet" href="styles-common.css">
+    <style>
+        :root {
+            --pixel-size: 4px;
+            --game-bg: #1a1a2e;
+            --text-color: #e8e8e8;
+            --accent-gold: #ffd700;
+            --accent-blue: #4fc3f7;
+            --accent-green: #81c784;
+            --accent-red: #e57373;
+            --accent-purple: #b39ddb;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--game-bg);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            color: var(--text-color);
+        }
+
+        /* Pixel font simulation */
+        @font-face {
+            font-family: 'PixelFont';
+            src: local('Courier New');
+        }
+
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: var(--spacing-md);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== INTRO SCREEN ===== */
+        .intro-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-title {
+            font-size: 3rem;
+            color: var(--accent-gold);
+            text-shadow: 4px 4px 0 #b8860b,
+                         0 0 20px rgba(255, 215, 0, 0.5);
+            margin-bottom: var(--spacing-md);
+            letter-spacing: 8px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 4px 4px 0 #b8860b, 0 0 20px rgba(255, 215, 0, 0.3); }
+            to { text-shadow: 4px 4px 0 #b8860b, 0 0 40px rgba(255, 215, 0, 0.8); }
+        }
+
+        .game-subtitle {
+            font-size: 1.2rem;
+            color: var(--accent-blue);
+            margin-bottom: var(--spacing-xl);
+            opacity: 0.9;
+        }
+
+        /* Pixel Art Castle */
+        .pixel-castle {
+            width: 200px;
+            height: 160px;
+            position: relative;
+            margin: var(--spacing-xl) auto;
+        }
+
+        .castle-tower {
+            position: absolute;
+            background: #4a4a6a;
+            border: 3px solid #3a3a5a;
+        }
+
+        .castle-tower.left {
+            width: 40px;
+            height: 100px;
+            bottom: 0;
+            left: 20px;
+        }
+
+        .castle-tower.right {
+            width: 40px;
+            height: 100px;
+            bottom: 0;
+            right: 20px;
+        }
+
+        .castle-tower.center {
+            width: 60px;
+            height: 130px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .castle-roof {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 25px solid transparent;
+            border-right: 25px solid transparent;
+            border-bottom: 30px solid #e74c3c;
+        }
+
+        .castle-roof.left { top: -30px; left: -5px; }
+        .castle-roof.right { top: -30px; left: -5px; }
+        .castle-roof.center {
+            border-left: 35px solid transparent;
+            border-right: 35px solid transparent;
+            border-bottom: 40px solid #c0392b;
+            top: -40px;
+            left: -5px;
+        }
+
+        .castle-window {
+            position: absolute;
+            width: 12px;
+            height: 16px;
+            background: #ffd700;
+            border-radius: 6px 6px 0 0;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .castle-door {
+            position: absolute;
+            width: 30px;
+            height: 45px;
+            background: #8b4513;
+            border-radius: 15px 15px 0 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 3px solid #5d3a1a;
+        }
+
+        .castle-flag {
+            position: absolute;
+            width: 25px;
+            height: 15px;
+            background: var(--accent-gold);
+            top: -55px;
+            left: 50%;
+            transform: translateX(-50%);
+            clip-path: polygon(0 0, 100% 50%, 0 100%);
+        }
+
+        .castle-flag::before {
+            content: '';
+            position: absolute;
+            width: 3px;
+            height: 25px;
+            background: #333;
+            left: 0;
+            bottom: 0;
+        }
+
+        .intro-story {
+            max-width: 600px;
+            line-height: 1.8;
+            margin-bottom: var(--spacing-xl);
+            padding: var(--spacing-lg);
+            background: rgba(255,255,255,0.05);
+            border-radius: var(--radius-lg);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .intro-story p {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .highlight {
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+
+        .start-btn {
+            padding: var(--spacing-md) var(--spacing-xl);
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, var(--accent-gold), #f39c12);
+            color: #1a1a2e;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5);
+        }
+
+        /* ===== GAME SCREEN ===== */
+        .game-screen {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .game-screen.active {
+            display: flex;
+        }
+
+        /* Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-md);
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .player-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .player-name {
+            font-weight: bold;
+            color: var(--accent-gold);
+        }
+
+        .player-score {
+            font-size: 0.9rem;
+            color: var(--accent-blue);
+        }
+
+        .game-controls {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .control-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-md);
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: var(--accent-gold);
+        }
+
+        /* Main Game Area */
+        .game-main {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: var(--spacing-md);
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .game-main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Location Panel */
+        .location-panel {
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .location-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .location-icon {
+            font-size: 2.5rem;
+        }
+
+        .location-title {
+            font-size: 1.5rem;
+            color: var(--accent-gold);
+        }
+
+        .location-realm {
+            font-size: 0.9rem;
+            color: var(--accent-purple);
+            opacity: 0.8;
+        }
+
+        /* Pixel Art Scene */
+        .scene-container {
+            position: relative;
+            height: 200px;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+            border: 3px solid rgba(255,255,255,0.1);
+        }
+
+        .scene-ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: #27ae60;
+        }
+
+        .scene-element {
+            position: absolute;
+        }
+
+        /* Location Description */
+        .location-description {
+            line-height: 1.7;
+            margin-bottom: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: rgba(0,0,0,0.2);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        /* NPC Present */
+        .npc-present {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-md);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .npc-present:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateX(5px);
+        }
+
+        .npc-avatar {
+            font-size: 2rem;
+        }
+
+        .npc-info {
+            flex: 1;
+        }
+
+        .npc-name {
+            font-weight: bold;
+            color: var(--accent-gold);
+        }
+
+        .npc-hint {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        /* Actions */
+        .actions-panel {
+            margin-top: auto;
+        }
+
+        .actions-title {
+            font-size: 0.9rem;
+            color: var(--accent-blue);
+            margin-bottom: var(--spacing-sm);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: var(--spacing-sm);
+        }
+
+        .action-btn {
+            padding: var(--spacing-md);
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-md);
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+        }
+
+        .action-btn:hover {
+            background: var(--accent-gold);
+            color: #1a1a2e;
+            border-color: var(--accent-gold);
+            transform: translateY(-2px);
+        }
+
+        .action-btn.direction {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+
+        .action-btn.direction:hover {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .panel-section {
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            color: var(--accent-gold);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        /* Inventory */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-xs);
+        }
+
+        .inventory-slot {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .inventory-slot.filled {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .inventory-slot.filled:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-gold);
+        }
+
+        /* Progress */
+        .progress-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: rgba(255,255,255,0.05);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+        }
+
+        .progress-item.completed {
+            background: rgba(129, 199, 132, 0.2);
+            color: var(--accent-green);
+        }
+
+        .progress-item.current {
+            background: rgba(255, 215, 0, 0.2);
+            color: var(--accent-gold);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        /* Mini Map */
+        .mini-map {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+
+        .map-cell {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            opacity: 0.3;
+            transition: all 0.2s ease;
+        }
+
+        .map-cell.visited {
+            opacity: 0.7;
+        }
+
+        .map-cell.current {
+            opacity: 1;
+            background: var(--accent-gold);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        /* ===== DIALOG MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-md);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2c3e50, #1a1a2e);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 3px solid var(--accent-gold);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-avatar {
+            font-size: 3rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--accent-gold);
+        }
+
+        .modal-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .dialog-text {
+            line-height: 1.8;
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .dialog-text p {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .dialog-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Puzzle Area */
+        .puzzle-area {
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .puzzle-question {
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            margin-bottom: var(--spacing-md);
+            text-align: center;
+        }
+
+        .puzzle-input-group {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .puzzle-input {
+            flex: 1;
+            padding: var(--spacing-md);
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-md);
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .puzzle-input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .puzzle-submit {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--accent-green);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .puzzle-submit:hover {
+            background: #66bb6a;
+            transform: translateY(-2px);
+        }
+
+        .puzzle-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+
+        .puzzle-option {
+            padding: var(--spacing-md);
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-md);
+            color: white;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .puzzle-option:hover {
+            background: rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .hint-btn {
+            display: block;
+            width: 100%;
+            padding: var(--spacing-sm);
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--accent-gold);
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: var(--spacing-sm);
+        }
+
+        .hint-text {
+            margin-top: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+        }
+
+        .modal-close {
+            padding: var(--spacing-md) var(--spacing-xl);
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: var(--radius-md);
+            color: white;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Feedback Messages */
+        .feedback {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--radius-md);
+            font-weight: bold;
+            z-index: 2000;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        .feedback.success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .feedback.error {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .feedback.info {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        /* ===== VICTORY SCREEN ===== */
+        .victory-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .victory-screen.active {
+            display: flex;
+        }
+
+        .victory-title {
+            font-size: 3rem;
+            color: var(--accent-gold);
+            margin-bottom: var(--spacing-md);
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        .victory-message {
+            max-width: 600px;
+            line-height: 1.8;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .final-stats {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .final-stat {
+            padding: var(--spacing-lg);
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+
+        .final-stat-value {
+            font-size: 2.5rem;
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+
+        .final-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .trophy {
+            font-size: 5rem;
+            margin-bottom: var(--spacing-lg);
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Home Button */
+        .home-btn {
+            position: fixed;
+            top: var(--spacing-md);
+            left: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-md);
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            z-index: 100;
+            transition: all 0.2s ease;
+        }
+
+        .home-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: var(--accent-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .game-title {
+                font-size: 2rem;
+                letter-spacing: 4px;
+            }
+
+            .location-title {
+                font-size: 1.2rem;
+            }
+
+            .scene-container {
+                height: 150px;
+            }
+
+            .game-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .puzzle-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">&#8592; Powrót</a>
+
+    <div class="game-container">
+        <!-- INTRO SCREEN -->
+        <div id="introScreen" class="intro-screen">
+            <div class="game-title">PARADOKSJA</div>
+            <div class="game-subtitle">Przygoda w Krainie Wiedzy</div>
+
+            <div class="pixel-castle">
+                <div class="castle-tower left">
+                    <div class="castle-roof left"></div>
+                    <div class="castle-window" style="top: 20px; left: 14px;"></div>
+                </div>
+                <div class="castle-tower center">
+                    <div class="castle-roof center"></div>
+                    <div class="castle-flag"></div>
+                    <div class="castle-window" style="top: 30px; left: 24px;"></div>
+                    <div class="castle-door"></div>
+                </div>
+                <div class="castle-tower right">
+                    <div class="castle-roof right"></div>
+                    <div class="castle-window" style="top: 20px; left: 14px;"></div>
+                </div>
+            </div>
+
+            <div class="intro-story">
+                <p>Witaj, młody podróżniku! Nazywam się <span class="highlight">Profesor Paradoks</span> i potrzebuję Twojej pomocy!</p>
+                <p>Zły czarnoksiężnik <span class="highlight">Ignorancjusz</span> ukradł trzy <span class="highlight">Kryształy Wiedzy</span> i ukrył je w magicznych krainach:</p>
+                <p>📚 <span class="highlight">Kraina Polskiego</span> - gdzie słowa mają moc</p>
+                <p>🔢 <span class="highlight">Kraina Matematyki</span> - gdzie liczby rządzą</p>
+                <p>🇬🇧 <span class="highlight">Kraina Angielskiego</span> - gdzie słowa brzmią inaczej</p>
+                <p>Tylko <span class="highlight">Ty</span> możesz je odzyskać! Czy jesteś gotowy na przygodę?</p>
+            </div>
+
+            <button class="start-btn" onclick="startGame()">
+                Rozpocznij Przygodę!
+            </button>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="gameScreen" class="game-screen">
+            <div class="game-header">
+                <div class="player-info">
+                    <div class="player-avatar">🧙</div>
+                    <div class="player-stats">
+                        <div class="player-name">Bohater</div>
+                        <div class="player-score">Punkty: <span id="playerScore">0</span> | Kryształy: <span id="crystalCount">0</span>/3</div>
+                    </div>
+                </div>
+                <div class="game-controls">
+                    <button class="control-btn" onclick="showHelp()">❓ Pomoc</button>
+                    <button class="control-btn" onclick="showMap()">🗺️ Mapa</button>
+                </div>
+            </div>
+
+            <div class="game-main">
+                <div class="location-panel">
+                    <div class="location-header">
+                        <span class="location-icon" id="locationIcon">🏰</span>
+                        <div>
+                            <div class="location-title" id="locationTitle">Zamek Paradoksji</div>
+                            <div class="location-realm" id="locationRealm">Punkt Startowy</div>
+                        </div>
+                    </div>
+
+                    <div class="scene-container" id="sceneContainer">
+                        <div class="scene-ground"></div>
+                    </div>
+
+                    <div class="location-description" id="locationDescription">
+                        Stoisz przed majestatycznym zamkiem. Profesor Paradoks czeka na Ciebie w środku...
+                    </div>
+
+                    <div id="npcArea"></div>
+
+                    <div class="actions-panel">
+                        <div class="actions-title">Dostępne akcje</div>
+                        <div class="actions-grid" id="actionsGrid">
+                            <!-- Actions will be generated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="side-panel">
+                    <div class="panel-section">
+                        <div class="panel-title">🎒 Ekwipunek</div>
+                        <div class="inventory-grid" id="inventoryGrid">
+                            <div class="inventory-slot"></div>
+                            <div class="inventory-slot"></div>
+                            <div class="inventory-slot"></div>
+                            <div class="inventory-slot"></div>
+                            <div class="inventory-slot"></div>
+                            <div class="inventory-slot"></div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <div class="panel-title">📜 Postęp</div>
+                        <div class="progress-list" id="progressList">
+                            <div class="progress-item current">🔮 Znajdź Kryształ Polskiego</div>
+                            <div class="progress-item">🔮 Znajdź Kryształ Matematyki</div>
+                            <div class="progress-item">🔮 Znajdź Kryształ Angielskiego</div>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <div class="panel-title">🗺️ Mini Mapa</div>
+                        <div class="mini-map" id="miniMap">
+                            <!-- Map cells generated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VICTORY SCREEN -->
+        <div id="victoryScreen" class="victory-screen">
+            <div class="trophy">🏆</div>
+            <div class="victory-title">ZWYCIĘSTWO!</div>
+            <div class="victory-message">
+                <p>Udało Ci się! Wszystkie trzy Kryształy Wiedzy wróciły na swoje miejsce!</p>
+                <p>Ignorancjusz został pokonany, a Paradoksja znów rozkwita!</p>
+                <p>Profesor Paradoks jest z Ciebie bardzo dumny!</p>
+            </div>
+            <div class="final-stats">
+                <div class="final-stat">
+                    <div class="final-stat-value" id="finalScore">0</div>
+                    <div class="final-stat-label">Punktów</div>
+                </div>
+                <div class="final-stat">
+                    <div class="final-stat-value" id="finalPuzzles">0</div>
+                    <div class="final-stat-label">Zagadek</div>
+                </div>
+            </div>
+            <button class="start-btn" onclick="location.reload()">Zagraj Ponownie</button>
+        </div>
+    </div>
+
+    <!-- DIALOG MODAL -->
+    <div class="modal-overlay" id="dialogModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-avatar" id="modalAvatar">🧙</span>
+                <div>
+                    <div class="modal-title" id="modalTitle">Profesor Paradoks</div>
+                    <div class="modal-subtitle" id="modalSubtitle">Strażnik Wiedzy</div>
+                </div>
+            </div>
+            <div class="dialog-text" id="dialogText">
+                <!-- Dialog content -->
+            </div>
+            <div id="puzzleContainer"></div>
+            <button class="modal-close" onclick="closeDialog()">Zamknij</button>
+        </div>
+    </div>
+
+    <!-- FEEDBACK -->
+    <div id="feedback" class="feedback" style="display: none;"></div>
+
+    <script>
+        // ===== GAME DATA =====
+        const gameData = {
+            locations: {
+                zamek: {
+                    id: 'zamek',
+                    name: 'Zamek Paradoksji',
+                    realm: 'Punkt Startowy',
+                    icon: '🏰',
+                    description: 'Majestatyczny zamek wznosi się przed Tobą. To centrum Paradoksji, gdzie Profesor Paradoks prowadzi swoje badania nad wiedzą. Trzy ścieżki prowadzą do magicznych krain.',
+                    connections: ['las_polski', 'gory_matematyki', 'wyspa_angielskiego'],
+                    npc: 'profesor',
+                    scene: 'castle'
+                },
+                las_polski: {
+                    id: 'las_polski',
+                    name: 'Zaczarowany Las',
+                    realm: '📚 Kraina Polskiego',
+                    icon: '🌲',
+                    description: 'Drzewa szepczą starożytne wiersze, a liście układają się w słowa. W głębi lasu dostrzegasz świątynię pełną ksiąg. To tutaj ukryty jest Kryształ Polskiego!',
+                    connections: ['zamek', 'swiatynia_slow'],
+                    npc: 'poeta',
+                    scene: 'forest'
+                },
+                swiatynia_slow: {
+                    id: 'swiatynia_slow',
+                    name: 'Świątynia Słów',
+                    realm: '📚 Kraina Polskiego',
+                    icon: '📚',
+                    description: 'Ogromna biblioteka pełna magicznych ksiąg. Pośrodku świeci się piedestał - to tutaj powinien spoczywać Kryształ Polskiego! Strażniczka wiedzy czeka na kogoś godnego.',
+                    connections: ['las_polski'],
+                    npc: 'strażniczka_slow',
+                    puzzle: 'polski',
+                    scene: 'library'
+                },
+                gory_matematyki: {
+                    id: 'gory_matematyki',
+                    name: 'Góry Liczb',
+                    realm: '🔢 Kraina Matematyki',
+                    icon: '⛰️',
+                    description: 'Szczyty gór mają kształty cyfr i symboli matematycznych. Każdy kamień to równanie, każda ścieżka to wzór. Gdzieś wysoko jest Obserwatorium!',
+                    connections: ['zamek', 'obserwatorium'],
+                    npc: 'geometer',
+                    scene: 'mountains'
+                },
+                obserwatorium: {
+                    id: 'obserwatorium',
+                    name: 'Obserwatorium Gwiazd',
+                    realm: '🔢 Kraina Matematyki',
+                    icon: '🔭',
+                    description: 'Wielki teleskop skierowany w niebo pełne konstelacji liczbowych. Tutaj Kryształ Matematyki czeka na tego, kto rozwiąże zagadkę!',
+                    connections: ['gory_matematyki'],
+                    npc: 'astronom',
+                    puzzle: 'matematyka',
+                    scene: 'observatory'
+                },
+                wyspa_angielskiego: {
+                    id: 'wyspa_angielskiego',
+                    name: 'Zatoka Mórz',
+                    realm: '🇬🇧 Kraina Angielskiego',
+                    icon: '🚢',
+                    description: 'Przed Tobą rozciąga się morze. Na horyzoncie widać wyspę, gdzie wszyscy mówią po angielsku. Kapitan statku może Cię tam zabrać!',
+                    connections: ['zamek', 'lighthouse'],
+                    npc: 'kapitan',
+                    scene: 'bay'
+                },
+                lighthouse: {
+                    id: 'lighthouse',
+                    name: 'Latarnia Morska',
+                    realm: '🇬🇧 Kraina Angielskiego',
+                    icon: '🏝️',
+                    description: 'Wysoka latarnia morska stoi na klifie. Jej światło miga w tajemniczym rytmie. Strażnik latarni zna sekret Kryształu Angielskiego!',
+                    connections: ['wyspa_angielskiego'],
+                    npc: 'lighthouse_keeper',
+                    puzzle: 'angielski',
+                    scene: 'lighthouse'
+                }
+            },
+            npcs: {
+                profesor: {
+                    id: 'profesor',
+                    name: 'Profesor Paradoks',
+                    title: 'Strażnik Wiedzy',
+                    avatar: '🧙‍♂️',
+                    dialog: [
+                        'Witaj, młody bohaterze! Cieszę się, że przybyłeś!',
+                        'Ignorancjusz ukradł trzy Kryształy Wiedzy i ukrył je w trzech krainach.',
+                        'Musisz udać się do każdej z nich i rozwiązać zagadki strażników.',
+                        'Na północ znajduje się Las Polski 📚, na wschód Góry Matematyki 🔢, a na południe Wyspa Angielskiego 🇬🇧.',
+                        'Powodzenia! Wierzę w Ciebie!'
+                    ]
+                },
+                poeta: {
+                    id: 'poeta',
+                    name: 'Poeta Wierszomir',
+                    title: 'Mistrz Rymów',
+                    avatar: '📜',
+                    dialog: [
+                        'Ach, wędrowcze! Słyszę, że szukasz Kryształu...',
+                        'Strażniczka Słów w Świątyni może Ci pomóc, ale musisz udowodnić, że znasz moc języka polskiego!',
+                        'Idź dalej w głąb lasu, a znajdziesz Świątynię.'
+                    ]
+                },
+                strażniczka_slow: {
+                    id: 'strażniczka_slow',
+                    name: 'Strażniczka Słów',
+                    title: 'Opiekunka Kryształu Polskiego',
+                    avatar: '📖',
+                    dialog: [
+                        'Witaj w Świątyni Słów! Jestem strażniczką Kryształu Polskiego.',
+                        'Aby go otrzymać, musisz udowodnić swoją znajomość języka polskiego.',
+                        'Rozwiąż moją zagadkę, a Kryształ będzie Twój!'
+                    ],
+                    hasPuzzle: true
+                },
+                geometer: {
+                    id: 'geometer',
+                    name: 'Geometra Kątowid',
+                    title: 'Mędrzec Liczb',
+                    avatar: '📐',
+                    dialog: [
+                        'Liczby są wszędzie, młody przyjacielu!',
+                        'Obserwatorium na szczycie kryje Kryształ Matematyki.',
+                        'Ale Astronom zada Ci nie lada wyzwanie!'
+                    ]
+                },
+                astronom: {
+                    id: 'astronom',
+                    name: 'Astronom Gwiazdomir',
+                    title: 'Opiekun Kryształu Matematyki',
+                    avatar: '🌟',
+                    dialog: [
+                        'Gwiazdy układają się w liczby, a liczby w gwiazdy...',
+                        'Kryształ Matematyki jest tutaj, ale musisz udowodnić swój talent matematyczny!',
+                        'Czy jesteś gotowy na wyzwanie?'
+                    ],
+                    hasPuzzle: true
+                },
+                kapitan: {
+                    id: 'kapitan',
+                    name: 'Kapitan Żeglarz',
+                    title: 'Władca Mórz',
+                    avatar: '⚓',
+                    dialog: [
+                        'Ahoj! Chcesz popłynąć na Wyspę?',
+                        'Latarnia Morska to Twój cel - tam znajdziesz Kryształ Angielskiego.',
+                        'Ale uwaga - strażnik mówi tylko po angielsku!'
+                    ]
+                },
+                lighthouse_keeper: {
+                    id: 'lighthouse_keeper',
+                    name: 'Lighthouse Keeper',
+                    title: 'Guardian of the English Crystal',
+                    avatar: '💡',
+                    dialog: [
+                        'Welcome, young traveler!',
+                        'I am the keeper of the English Crystal.',
+                        'To prove your knowledge, you must solve my English puzzle!',
+                        'Are you ready?'
+                    ],
+                    hasPuzzle: true
+                }
+            },
+            puzzles: {
+                polski: {
+                    id: 'polski',
+                    type: 'choice',
+                    question: 'Które z poniższych zdań zawiera błąd ortograficzny?',
+                    options: [
+                        'Poszedłem na spacer do parku.',
+                        'Kupiłem nową książkę w księgarni.',
+                        'Wziąłem parasol bo padał deszcz.',
+                        'Spotkałem się z przyjacielem.'
+                    ],
+                    correct: 2,
+                    hint: 'Sprawdź znaki interpunkcyjne - po "parasol" czegoś brakuje!',
+                    explanation: 'Poprawnie powinno być: "Wziąłem parasol, bo padał deszcz." - przed "bo" powinien być przecinek.',
+                    crystal: 'Kryształ Polskiego',
+                    crystalEmoji: '📚'
+                },
+                matematyka: {
+                    id: 'matematyka',
+                    type: 'input',
+                    question: 'Rozwiąż równanie: Jeśli 3x + 7 = 22, to ile wynosi x?',
+                    answer: '5',
+                    hint: 'Najpierw odejmij 7 od obu stron, potem podziel przez 3.',
+                    explanation: '3x + 7 = 22 → 3x = 15 → x = 5',
+                    crystal: 'Kryształ Matematyki',
+                    crystalEmoji: '🔢'
+                },
+                angielski: {
+                    id: 'angielski',
+                    type: 'choice',
+                    question: 'Choose the correct sentence:',
+                    options: [
+                        'She don\'t like apples.',
+                        'She doesn\'t likes apples.',
+                        'She doesn\'t like apples.',
+                        'She not like apples.'
+                    ],
+                    correct: 2,
+                    hint: 'Remember: "she" uses "doesn\'t" (does not), and after "doesn\'t" we use the base form of the verb.',
+                    explanation: '"Doesn\'t" is used with he/she/it, and after "doesn\'t" the verb stays in base form (like → like, not likes).',
+                    crystal: 'Kryształ Angielskiego',
+                    crystalEmoji: '🇬🇧'
+                }
+            },
+            scenes: {
+                castle: `
+                    <div class="scene-element" style="left: 50%; transform: translateX(-50%); bottom: 40px;">
+                        <div style="width: 120px; height: 100px; position: relative;">
+                            <div style="position: absolute; width: 30px; height: 60px; background: #6c5ce7; bottom: 0; left: 10px; border: 2px solid #5f4bd3;"></div>
+                            <div style="position: absolute; width: 50px; height: 80px; background: #7c6cf7; bottom: 0; left: 35px; border: 2px solid #6c5ce7;"></div>
+                            <div style="position: absolute; width: 30px; height: 60px; background: #6c5ce7; bottom: 0; right: 10px; border: 2px solid #5f4bd3;"></div>
+                            <div style="position: absolute; width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 25px solid #e74c3c; top: -25px; left: 5px;"></div>
+                            <div style="position: absolute; width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 30px solid #c0392b; top: -30px; left: 30px;"></div>
+                            <div style="position: absolute; width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 25px solid #e74c3c; top: -25px; right: 5px;"></div>
+                            <div style="position: absolute; width: 20px; height: 30px; background: #3d2914; border-radius: 10px 10px 0 0; bottom: 0; left: 50px;"></div>
+                            <div style="position: absolute; width: 10px; height: 12px; background: #ffd700; border-radius: 5px 5px 0 0; top: 10px; left: 45px; box-shadow: 0 0 10px rgba(255,215,0,0.5);"></div>
+                        </div>
+                    </div>
+                    <div style="position: absolute; top: 20px; right: 30px; font-size: 2rem;">☀️</div>
+                `,
+                forest: `
+                    <div style="position: absolute; bottom: 40px; left: 20px; font-size: 3rem;">🌲</div>
+                    <div style="position: absolute; bottom: 40px; left: 80px; font-size: 2.5rem;">🌳</div>
+                    <div style="position: absolute; bottom: 40px; right: 20px; font-size: 3rem;">🌲</div>
+                    <div style="position: absolute; bottom: 40px; right: 80px; font-size: 2.5rem;">🌳</div>
+                    <div style="position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%); font-size: 2rem;">🦊</div>
+                    <div style="position: absolute; top: 20px; left: 30px; font-size: 1.5rem; opacity: 0.6;">🍃</div>
+                    <div style="position: absolute; top: 40px; right: 40px; font-size: 1.5rem; opacity: 0.6;">🍃</div>
+                `,
+                library: `
+                    <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 200px; height: 120px; background: #8b4513; border-radius: 10px 10px 0 0; border: 3px solid #5d3a1a;">
+                        <div style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 2rem;">📚</div>
+                        <div style="position: absolute; top: 50px; left: 20px; font-size: 1.5rem;">📖</div>
+                        <div style="position: absolute; top: 50px; right: 20px; font-size: 1.5rem;">📖</div>
+                        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 50px; background: #3d2914; border-radius: 5px 5px 0 0;"></div>
+                    </div>
+                    <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 2rem; animation: glow 2s infinite alternate;">✨</div>
+                `,
+                mountains: `
+                    <div style="position: absolute; bottom: 40px; left: 20px; width: 0; height: 0; border-left: 60px solid transparent; border-right: 60px solid transparent; border-bottom: 100px solid #5d6d7e;"></div>
+                    <div style="position: absolute; bottom: 40px; right: 40px; width: 0; height: 0; border-left: 50px solid transparent; border-right: 50px solid transparent; border-bottom: 80px solid #7f8c8d;"></div>
+                    <div style="position: absolute; bottom: 40px; left: 80px; width: 0; height: 0; border-left: 40px solid transparent; border-right: 40px solid transparent; border-bottom: 120px solid #85929e;"></div>
+                    <div style="position: absolute; bottom: 130px; left: 107px; font-size: 1.5rem;">🏔️</div>
+                    <div style="position: absolute; top: 30px; left: 100px; font-size: 1.2rem;">➕</div>
+                    <div style="position: absolute; top: 50px; right: 60px; font-size: 1.2rem;">✖️</div>
+                `,
+                observatory: `
+                    <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 80px; height: 100px; background: #2c3e50; border-radius: 50% 50% 0 0;">
+                        <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%) rotate(-30deg); font-size: 2.5rem;">🔭</div>
+                    </div>
+                    <div style="position: absolute; top: 15px; left: 20px; font-size: 1.5rem;">⭐</div>
+                    <div style="position: absolute; top: 30px; right: 30px; font-size: 1.2rem;">✨</div>
+                    <div style="position: absolute; top: 50px; left: 40px; font-size: 1rem;">⭐</div>
+                    <div style="position: absolute; top: 20px; right: 80px; font-size: 2rem;">🌙</div>
+                    <div style="position: absolute; top: 60px; right: 50px; font-size: 1rem;">⭐</div>
+                    <div class="scene-ground" style="background: #5d6d7e;"></div>
+                `,
+                bay: `
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(180deg, #3498db, #2980b9);"></div>
+                    <div style="position: absolute; bottom: 40px; left: 30%; font-size: 3rem;">⛵</div>
+                    <div style="position: absolute; bottom: 60px; right: 20px; font-size: 2rem;">🏝️</div>
+                    <div style="position: absolute; top: 20px; right: 30px; font-size: 2rem;">☀️</div>
+                    <div style="position: absolute; bottom: 35px; left: 10px; font-size: 1rem; color: #fff; opacity: 0.5;">〰️〰️</div>
+                    <div style="position: absolute; bottom: 30px; right: 40px; font-size: 1rem; color: #fff; opacity: 0.5;">〰️〰️</div>
+                    <div class="scene-ground" style="background: #f4d03f; height: 20px;"></div>
+                `,
+                lighthouse: `
+                    <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 40px; height: 120px; background: linear-gradient(90deg, #ecf0f1, #bdc3c7); border-radius: 5px;">
+                        <div style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 50px; height: 30px; background: #e74c3c; border-radius: 5px;">
+                            <div style="position: absolute; top: 5px; left: 50%; transform: translateX(-50%); width: 20px; height: 15px; background: #ffd700; border-radius: 3px; animation: blink 1s infinite;"></div>
+                        </div>
+                    </div>
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: linear-gradient(180deg, #3498db, #2980b9);"></div>
+                    <div style="position: absolute; top: 30px; left: 20px; font-size: 1.5rem;">🌊</div>
+                    <div style="position: absolute; top: 20px; right: 40px; font-size: 2rem;">🌙</div>
+                    <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }</style>
+                `
+            }
+        };
+
+        // ===== GAME STATE =====
+        let gameState = {
+            currentLocation: 'zamek',
+            score: 0,
+            crystals: [],
+            inventory: [],
+            visitedLocations: ['zamek'],
+            solvedPuzzles: [],
+            hintsUsed: 0
+        };
+
+        // ===== GAME FUNCTIONS =====
+        function startGame() {
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('gameScreen').classList.add('active');
+            renderLocation();
+            renderMiniMap();
+            updateUI();
+        }
+
+        function renderLocation() {
+            const location = gameData.locations[gameState.currentLocation];
+
+            document.getElementById('locationIcon').textContent = location.icon;
+            document.getElementById('locationTitle').textContent = location.name;
+            document.getElementById('locationRealm').textContent = location.realm;
+            document.getElementById('locationDescription').textContent = location.description;
+
+            // Render scene
+            const sceneContainer = document.getElementById('sceneContainer');
+            sceneContainer.innerHTML = `<div class="scene-ground"></div>` + (gameData.scenes[location.scene] || '');
+
+            // Render NPC if present
+            const npcArea = document.getElementById('npcArea');
+            if (location.npc && gameData.npcs[location.npc]) {
+                const npc = gameData.npcs[location.npc];
+                npcArea.innerHTML = `
+                    <div class="npc-present" onclick="talkToNPC('${npc.id}')">
+                        <span class="npc-avatar">${npc.avatar}</span>
+                        <div class="npc-info">
+                            <div class="npc-name">${npc.name}</div>
+                            <div class="npc-hint">Kliknij aby porozmawiać</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                npcArea.innerHTML = '';
+            }
+
+            // Render actions
+            renderActions();
+        }
+
+        function renderActions() {
+            const location = gameData.locations[gameState.currentLocation];
+            const actionsGrid = document.getElementById('actionsGrid');
+
+            let html = '';
+
+            // Direction buttons
+            location.connections.forEach(connId => {
+                const conn = gameData.locations[connId];
+                html += `
+                    <button class="action-btn direction" onclick="goTo('${connId}')">
+                        ${conn.icon} ${conn.name}
+                    </button>
+                `;
+            });
+
+            // Puzzle button if available and not solved
+            if (location.puzzle && !gameState.solvedPuzzles.includes(location.puzzle)) {
+                html += `
+                    <button class="action-btn" onclick="startPuzzle('${location.puzzle}')" style="background: rgba(255, 215, 0, 0.2); border-color: rgba(255, 215, 0, 0.4);">
+                        ✨ Rozwiąż zagadkę
+                    </button>
+                `;
+            }
+
+            actionsGrid.innerHTML = html;
+        }
+
+        function goTo(locationId) {
+            gameState.currentLocation = locationId;
+            if (!gameState.visitedLocations.includes(locationId)) {
+                gameState.visitedLocations.push(locationId);
+                gameState.score += 10;
+            }
+            renderLocation();
+            renderMiniMap();
+            updateUI();
+            showFeedback('info', `Przechodzisz do: ${gameData.locations[locationId].name}`);
+        }
+
+        function talkToNPC(npcId) {
+            const npc = gameData.npcs[npcId];
+
+            document.getElementById('modalAvatar').textContent = npc.avatar;
+            document.getElementById('modalTitle').textContent = npc.name;
+            document.getElementById('modalSubtitle').textContent = npc.title;
+            document.getElementById('dialogText').innerHTML = npc.dialog.map(p => `<p>${p}</p>`).join('');
+            document.getElementById('puzzleContainer').innerHTML = '';
+
+            document.getElementById('dialogModal').classList.add('active');
+        }
+
+        function startPuzzle(puzzleId) {
+            const puzzle = gameData.puzzles[puzzleId];
+            const location = gameData.locations[gameState.currentLocation];
+            const npc = location.npc ? gameData.npcs[location.npc] : null;
+
+            document.getElementById('modalAvatar').textContent = npc ? npc.avatar : '❓';
+            document.getElementById('modalTitle').textContent = npc ? npc.name : 'Zagadka';
+            document.getElementById('modalSubtitle').textContent = 'Rozwiąż zagadkę aby zdobyć kryształ!';
+            document.getElementById('dialogText').innerHTML = '<p>Oto Twoje wyzwanie:</p>';
+
+            let puzzleHtml = `
+                <div class="puzzle-area">
+                    <div class="puzzle-question">${puzzle.question}</div>
+            `;
+
+            if (puzzle.type === 'choice') {
+                puzzleHtml += '<div class="puzzle-options">';
+                puzzle.options.forEach((opt, i) => {
+                    puzzleHtml += `
+                        <button class="puzzle-option" onclick="checkAnswer('${puzzleId}', ${i})">
+                            ${opt}
+                        </button>
+                    `;
+                });
+                puzzleHtml += '</div>';
+            } else if (puzzle.type === 'input') {
+                puzzleHtml += `
+                    <div class="puzzle-input-group">
+                        <input type="text" class="puzzle-input" id="puzzleAnswer" placeholder="Wpisz odpowiedź...">
+                        <button class="puzzle-submit" onclick="checkInputAnswer('${puzzleId}')">Sprawdź</button>
+                    </div>
+                `;
+            }
+
+            puzzleHtml += `
+                <button class="hint-btn" onclick="showHint('${puzzleId}')">💡 Pokaż podpowiedź</button>
+                <div id="hintText" class="hint-text" style="display: none;"></div>
+            </div>
+            `;
+
+            document.getElementById('puzzleContainer').innerHTML = puzzleHtml;
+            document.getElementById('dialogModal').classList.add('active');
+        }
+
+        function checkAnswer(puzzleId, selectedIndex) {
+            const puzzle = gameData.puzzles[puzzleId];
+
+            if (selectedIndex === puzzle.correct) {
+                solvePuzzle(puzzleId);
+            } else {
+                showFeedback('error', 'Niepoprawna odpowiedź! Spróbuj ponownie.');
+            }
+        }
+
+        function checkInputAnswer(puzzleId) {
+            const puzzle = gameData.puzzles[puzzleId];
+            const answer = document.getElementById('puzzleAnswer').value.trim().toLowerCase();
+
+            if (answer === puzzle.answer.toLowerCase()) {
+                solvePuzzle(puzzleId);
+            } else {
+                showFeedback('error', 'Niepoprawna odpowiedź! Spróbuj ponownie.');
+            }
+        }
+
+        function solvePuzzle(puzzleId) {
+            const puzzle = gameData.puzzles[puzzleId];
+
+            gameState.solvedPuzzles.push(puzzleId);
+            gameState.crystals.push(puzzle.crystalEmoji);
+            gameState.inventory.push(puzzle.crystalEmoji);
+            gameState.score += 50;
+
+            closeDialog();
+            showFeedback('success', `Brawo! Zdobyłeś ${puzzle.crystal}! (+50 punktów)`);
+
+            updateUI();
+            renderLocation();
+
+            // Check for victory
+            if (gameState.crystals.length === 3) {
+                setTimeout(showVictory, 1500);
+            }
+        }
+
+        function showHint(puzzleId) {
+            const puzzle = gameData.puzzles[puzzleId];
+            const hintDiv = document.getElementById('hintText');
+            hintDiv.textContent = '💡 ' + puzzle.hint;
+            hintDiv.style.display = 'block';
+            gameState.hintsUsed++;
+        }
+
+        function closeDialog() {
+            document.getElementById('dialogModal').classList.remove('active');
+        }
+
+        function updateUI() {
+            document.getElementById('playerScore').textContent = gameState.score;
+            document.getElementById('crystalCount').textContent = gameState.crystals.length;
+
+            // Update inventory
+            const invGrid = document.getElementById('inventoryGrid');
+            const slots = invGrid.querySelectorAll('.inventory-slot');
+            slots.forEach((slot, i) => {
+                if (gameState.inventory[i]) {
+                    slot.textContent = gameState.inventory[i];
+                    slot.classList.add('filled');
+                } else {
+                    slot.textContent = '';
+                    slot.classList.remove('filled');
+                }
+            });
+
+            // Update progress
+            const progressList = document.getElementById('progressList');
+            const crystalNames = ['Polskiego', 'Matematyki', 'Angielskiego'];
+            const crystalIds = ['polski', 'matematyka', 'angielski'];
+
+            progressList.innerHTML = crystalIds.map((id, i) => {
+                const solved = gameState.solvedPuzzles.includes(id);
+                return `
+                    <div class="progress-item ${solved ? 'completed' : (i === gameState.crystals.length ? 'current' : '')}">
+                        ${solved ? '✅' : '🔮'} ${solved ? 'Zdobyto' : 'Znajdź'} Kryształ ${crystalNames[i]}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMiniMap() {
+            const mapConfig = [
+                { id: null, icon: '' },
+                { id: 'swiatynia_slow', icon: '📚' },
+                { id: null, icon: '' },
+                { id: 'las_polski', icon: '🌲' },
+                { id: 'zamek', icon: '🏰' },
+                { id: 'gory_matematyki', icon: '⛰️' },
+                { id: 'wyspa_angielskiego', icon: '🚢' },
+                { id: 'obserwatorium', icon: '🔭' },
+                { id: 'lighthouse', icon: '🏝️' }
+            ];
+
+            const miniMap = document.getElementById('miniMap');
+            miniMap.innerHTML = mapConfig.map(cell => {
+                if (!cell.id) return '<div class="map-cell"></div>';
+                const visited = gameState.visitedLocations.includes(cell.id);
+                const current = gameState.currentLocation === cell.id;
+                return `
+                    <div class="map-cell ${visited ? 'visited' : ''} ${current ? 'current' : ''}"
+                         onclick="${visited ? `goTo('${cell.id}')` : ''}"
+                         title="${gameData.locations[cell.id]?.name || ''}">
+                        ${cell.icon}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showVictory() {
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('victoryScreen').classList.add('active');
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalPuzzles').textContent = gameState.solvedPuzzles.length;
+        }
+
+        function showFeedback(type, message) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = 'feedback ' + type;
+            feedback.style.display = 'block';
+
+            setTimeout(() => {
+                feedback.style.display = 'none';
+            }, 3000);
+        }
+
+        function showHelp() {
+            document.getElementById('modalAvatar').textContent = '❓';
+            document.getElementById('modalTitle').textContent = 'Pomoc';
+            document.getElementById('modalSubtitle').textContent = 'Jak grać w Paradoksję';
+            document.getElementById('dialogText').innerHTML = `
+                <p><strong>Cel gry:</strong> Odzyskaj trzy Kryształy Wiedzy ukryte w magicznych krainach!</p>
+                <p><strong>Poruszanie się:</strong> Klikaj przyciski z nazwami lokacji aby się przemieszczać.</p>
+                <p><strong>Rozmowy:</strong> Klikaj na postacie aby z nimi rozmawiać i zdobywać wskazówki.</p>
+                <p><strong>Zagadki:</strong> W niektórych miejscach znajdziesz zagadki - rozwiąż je aby zdobyć kryształy!</p>
+                <p><strong>Podpowiedzi:</strong> Jeśli utkniesz, możesz użyć podpowiedzi przy każdej zagadce.</p>
+            `;
+            document.getElementById('puzzleContainer').innerHTML = '';
+            document.getElementById('dialogModal').classList.add('active');
+        }
+
+        function showMap() {
+            document.getElementById('modalAvatar').textContent = '🗺️';
+            document.getElementById('modalTitle').textContent = 'Mapa Paradoksji';
+            document.getElementById('modalSubtitle').textContent = 'Odwiedzone lokacje';
+
+            const locations = Object.values(gameData.locations);
+            const html = locations.map(loc => {
+                const visited = gameState.visitedLocations.includes(loc.id);
+                const current = gameState.currentLocation === loc.id;
+                return `
+                    <p style="opacity: ${visited ? 1 : 0.4}">
+                        ${loc.icon} <strong>${loc.name}</strong>
+                        ${current ? '← Jesteś tutaj' : ''}
+                        ${visited ? '✓' : '?'}
+                    </p>
+                `;
+            }).join('');
+
+            document.getElementById('dialogText').innerHTML = html;
+            document.getElementById('puzzleContainer').innerHTML = '';
+            document.getElementById('dialogModal').classList.add('active');
+        }
+
+        // Close modal on click outside
+        document.getElementById('dialogModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDialog();
+            }
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDialog();
+            }
+        });
+    </script>
+</body>
+</html>
