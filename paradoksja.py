@@ -12,7 +12,9 @@ Wersja: 2.0
 import os
 import sys
 import time
+import shutil
 import textwrap
+import re
 from typing import Dict, List, Optional
 
 # ============================================================================
@@ -23,6 +25,48 @@ WIDTH = 60
 NARRATOR_DELAY = 0.025
 FAST_DELAY = 0.015
 SLOW_DELAY = 0.045
+
+# ============================================================================
+# CENTROWANIE
+# ============================================================================
+
+def get_terminal_width() -> int:
+    """Pobierz szerokość terminala"""
+    try:
+        return shutil.get_terminal_size().columns
+    except:
+        return 80
+
+def strip_ansi(text: str) -> str:
+    """Usuń kody ANSI z tekstu (do liczenia długości)"""
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
+
+def center_line(text: str) -> str:
+    """Wyśrodkuj pojedynczą linię"""
+    term_width = get_terminal_width()
+    visible_length = len(strip_ansi(text))
+    padding = max(0, (term_width - visible_length) // 2)
+    return ' ' * padding + text
+
+def center_block(text: str) -> str:
+    """Wyśrodkuj blok tekstu (każdą linię osobno)"""
+    lines = text.split('\n')
+    centered_lines = [center_line(line) if line.strip() else '' for line in lines]
+    return '\n'.join(centered_lines)
+
+def cprint(text: str = ''):
+    """Wydrukuj wyśrodkowany tekst"""
+    if text:
+        print(center_block(text))
+    else:
+        print()
+
+def cinput(prompt: str = '') -> str:
+    """Wyśrodkowany input"""
+    if prompt:
+        print(center_line(prompt), end='')
+    return input()
 
 # Kolory ANSI
 class C:
@@ -215,28 +259,39 @@ class Game:
 
     def pause(self, prompt="[Naciśnij ENTER aby kontynuować...]"):
         """Czekaj na ENTER"""
-        input(f"\n{C.DIM}{prompt}{C.RESET}")
+        cprint(f"\n{C.DIM}{prompt}{C.RESET}")
+        input(center_line(""))
 
     def divider(self, char="═", length=WIDTH):
         """Wyświetl separator"""
-        print(f"{C.GOLD}{char * length}{C.RESET}")
+        cprint(f"{C.GOLD}{char * length}{C.RESET}")
 
     def narrator(self, text: str, delay: float = NARRATOR_DELAY):
         """Narracja z efektem maszyny do pisania"""
+        term_width = get_terminal_width()
+        padding = max(0, (term_width - WIDTH) // 2)
+        pad_str = ' ' * padding
+
         # Wrap text to width
         lines = []
         for paragraph in text.split('\n'):
             if paragraph.strip():
-                wrapped = textwrap.wrap(paragraph.strip(), width=WIDTH-4)
-                lines.extend(wrapped)
-                lines.append('')  # Empty line between paragraphs
+                # Remove ANSI codes for wrapping, then re-add
+                clean = strip_ansi(paragraph.strip())
+                wrapped = textwrap.wrap(clean, width=WIDTH-4)
+                # Try to preserve formatting for simple cases
+                if paragraph.strip() != clean:
+                    lines.append(paragraph.strip())
+                else:
+                    lines.extend(wrapped)
+                lines.append('')
             else:
                 lines.append('')
 
         for line in lines:
+            print(pad_str, end='')
             for char in line:
                 print(char, end='', flush=True)
-                # Variable speed for punctuation
                 if char in '.!?':
                     time.sleep(delay * 6)
                 elif char in ',;:':
@@ -251,15 +306,15 @@ class Game:
 
     def dialog(self, speaker: str, text: str, color: str = C.YELLOW):
         """Wyświetl dialog postaci"""
-        print(f"\n{color}╭─ {speaker} ─╮{C.RESET}")
+        cprint(f"\n{color}╭─ {speaker} ─╮{C.RESET}")
         wrapped = textwrap.wrap(text, width=WIDTH-4)
         for line in wrapped:
-            print(f'{color}│{C.RESET} {C.ITALIC}"{line}"{C.RESET}')
-        print(f"{color}╰{'─' * (len(speaker) + 4)}╯{C.RESET}")
+            cprint(f'{color}│{C.RESET} {C.ITALIC}"{line}"{C.RESET}')
+        cprint(f"{color}╰{'─' * (len(speaker) + 4)}╯{C.RESET}")
 
     def action(self, text: str):
         """Wyświetl akcję/komentarz gracza"""
-        print(f"\n{C.DIM}[{text}]{C.RESET}")
+        cprint(f"\n{C.DIM}[{text}]{C.RESET}")
 
     def emphasis(self, text: str) -> str:
         """Tekst wyróżniony"""
@@ -286,18 +341,18 @@ class Game:
     def show_title(self):
         """Ekran tytułowy"""
         self.clear()
-        print(TITLE_ART)
-        print(f"\n{C.DIM}        Gra edukacyjna dla uczniów klas 5-6{C.RESET}")
-        print(f"{C.DIM}          Polski • Matematyka • Angielski{C.RESET}")
-        self.pause("\n        [Naciśnij ENTER aby rozpocząć...]")
+        cprint(TITLE_ART)
+        cprint(f"\n{C.DIM}Gra edukacyjna dla uczniów klas 5-6{C.RESET}")
+        cprint(f"{C.DIM}Polski • Matematyka • Angielski{C.RESET}")
+        self.pause("\n[Naciśnij ENTER aby rozpocząć...]")
 
     def intro_school(self):
         """Prolog - pusta szkoła"""
         self.clear()
-        print(f"\n{C.DIM}╔══════════════════════════════════════════════════════╗{C.RESET}")
-        print(f"{C.GOLD}                        PROLOG{C.RESET}")
-        print(f"{C.DIM}╚══════════════════════════════════════════════════════╝{C.RESET}")
-        print()
+        cprint(f"\n{C.DIM}╔══════════════════════════════════════════════════════╗{C.RESET}")
+        cprint(f"{C.GOLD}                        PROLOG{C.RESET}")
+        cprint(f"{C.DIM}╚══════════════════════════════════════════════════════╝{C.RESET}")
+        cprint()
 
         self.narrator("Piątek. 16:30.")
         time.sleep(0.5)
@@ -318,9 +373,9 @@ class Game:
     def intro_door(self):
         """Odkrycie drzwi"""
         self.clear()
-        print(f"\n{C.DIM}═══════════════════════════════════════════════════════{C.RESET}")
-        print(f"{C.GOLD}              Korytarz - Drugie piętro{C.RESET}")
-        print(f"{C.DIM}═══════════════════════════════════════════════════════{C.RESET}\n")
+        cprint(f"\n{C.DIM}═══════════════════════════════════════════════════════{C.RESET}")
+        cprint(f"{C.GOLD}Korytarz - Drugie piętro{C.RESET}")
+        cprint(f"{C.DIM}═══════════════════════════════════════════════════════{C.RESET}\n")
 
         self.narrator("Masz znaleźć salę 217. Ale... czekaj. Nie było sali 217 na drugim piętrze? Jesteś pewien, że była 217, a nie 207...?")
 
@@ -350,7 +405,7 @@ class Game:
     def intro_book(self):
         """Odkrycie Księgi"""
         self.clear()
-        print(BOOK_ART)
+        cprint(BOOK_ART)
 
         self.narrator("Na biurku leży książka. Ale nie zwykła książka.")
 
@@ -363,7 +418,7 @@ class Game:
         time.sleep(0.5)
         self.narrator(f"\nI nagle się {self.loud('OTWIERA')}.")
 
-        print(f"\n{C.RED}{C.BOLD}BACH!{C.RESET}")
+        cprint(f"\n{C.RED}{C.BOLD}BACH!{C.RESET}")
         time.sleep(0.3)
 
         self.narrator("\nKartki same się przewracają. Szybko. Coraz szybciej. Litery zlatują ze stron. Dosłownie. Unoszą się w powietrzu.")
@@ -377,7 +432,7 @@ class Game:
     def intro_dialog(self):
         """Rozmowa z Księgą"""
         self.clear()
-        print(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
 
         self.dialog("📚 Księga", "Wreszcie. WRESZCIE ktoś przyszedł. Myślałem, że tu zgnuję w tym pokoju pełnym kubków z niedopitą kawą i stosów kartkówek do sprawdzenia.")
 
@@ -392,7 +447,7 @@ class Game:
         self.pause()
 
         self.clear()
-        print(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
 
         self.dialog("📚 Księga", "Moja rola? Przechowuję wiedzę. Całą. No, prawie całą. Od historii dinozaurów po to, dlaczego 'rz' brzmi jak 'ż', ale pisze się inaczej.")
 
@@ -415,7 +470,7 @@ class Game:
     def intro_choice(self):
         """Wybór gracza"""
         self.clear()
-        print(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
 
         self.dialog("📚 Księga", "Potrzebuję pomocy. Twojej pomocy. Musisz wejść do mojego świata — do Paradoksji — i odzyskać kawałki Motywacji.")
 
@@ -425,24 +480,24 @@ class Game:
 
         self.dialog("📚 Księga", "No to co? Wchodzisz, czy ślisz się na poprawkę?")
 
-        print(f"\n{C.GOLD}════════════════ TWÓJ WYBÓR ════════════════{C.RESET}")
-        print(f"\n  {C.GREEN}[1]{C.RESET} \"Wchodzę.\" {self.whisper('(bo czemu nie)')}")
-        print(f"  {C.RED}[2]{C.RESET} \"Uciekam stąd!\" {self.whisper('(game over)')}")
+        cprint(f"\n{C.GOLD}════════════════ TWÓJ WYBÓR ════════════════{C.RESET}")
+        cprint(f"\n  {C.GREEN}[1]{C.RESET} \"Wchodzę.\" {self.whisper('(bo czemu nie)')}")
+        cprint(f"  {C.RED}[2]{C.RESET} \"Uciekam stąd!\" {self.whisper('(game over)')}")
 
         while True:
-            choice = input(f"\n{C.CYAN}Twój wybór (1/2): {C.RESET}").strip()
+            choice = cinput(f"\n{C.CYAN}Twój wybór (1/2): {C.RESET}").strip()
             if choice == '1':
                 return True
             elif choice == '2':
                 self.game_over_escape()
                 return False
             else:
-                print("Wpisz 1 lub 2")
+                cprint("Wpisz 1 lub 2")
 
     def game_over_escape(self):
         """Game over - ucieczka"""
         self.clear()
-        print(f"\n{C.RED}══════════════ GAME OVER ══════════════{C.RESET}\n")
+        cprint(f"\n{C.RED}══════════════ GAME OVER ══════════════{C.RESET}\n")
 
         self.narrator("Uciekasz.")
 
@@ -454,9 +509,9 @@ class Game:
 
         self.narrator("\nI nigdy, przenigdy nie dowiesz się, co by było, gdybyś jednak wszedł do tej księgi.")
 
-        print(f"\n{self.emphasis('Koniec.')}")
+        cprint(f"\n{self.emphasis('Koniec.')}")
 
-        print(f"\n{self.whisper('(No dobra, to był głupi wybór. Uruchom grę jeszcze raz, żeby spróbować mądrzej.)')}")
+        cprint(f"\n{self.whisper('(No dobra, to był głupi wybór. Uruchom grę jeszcze raz, żeby spróbować mądrzej.)')}")
 
         input(f"\n{C.DIM}[Naciśnij ENTER aby zakończyć...]{C.RESET}")
         self.running = False
@@ -464,7 +519,7 @@ class Game:
     def intro_transport(self):
         """Transport do Paradoksji"""
         self.clear()
-        print(f"\n{C.GOLD}══════════════ Między światami ══════════════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}══════════════ Między światami ══════════════{C.RESET}\n")
 
         self.narrator("Wybierasz \"wchodzę\".")
 
@@ -476,7 +531,7 @@ class Game:
 
         self.narrator("\nI nagle—")
 
-        print(f"\n{C.RED}{C.BOLD}SZUUUUUUUUUM!{C.RESET}")
+        cprint(f"\n{C.RED}{C.BOLD}SZUUUUUUUUUM!{C.RESET}")
         time.sleep(0.5)
 
         self.narrator(f"\nŚwiat się {self.loud('KRĘCI')}.")
@@ -489,12 +544,12 @@ class Game:
 
         self.narrator("\nI nagle...")
 
-        print(f"\n{C.RED}{C.BOLD}ŁUBUDU!{C.RESET}")
+        cprint(f"\n{C.RED}{C.BOLD}ŁUBUDU!{C.RESET}")
         time.sleep(0.3)
 
         self.narrator("\nLądowanie. Twarde. Na tyłku.")
 
-        print(f"\n{self.thought('Auć.')}")
+        cprint(f"\n{self.thought('Auć.')}")
 
         self.narrator("\nWstajesz. Otrzepujesz spodnie. I rozglądasz się.")
 
@@ -505,9 +560,9 @@ class Game:
     def hub_arrival(self):
         """Przybycie do Hubu"""
         self.clear()
-        print(HUB_ART)
+        cprint(HUB_ART)
 
-        print(f"\n{C.GOLD}═══════ ✨ BIBLIOTECZNY LIMBO ✨ ═══════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}═══════ ✨ BIBLIOTECZNY LIMBO ✨ ═══════{C.RESET}\n")
 
         self.narrator("Jesteś w... przestrzeni.")
 
@@ -529,9 +584,9 @@ class Game:
     def notka_intro(self):
         """Spotkanie z Notką"""
         self.clear()
-        print(NOTKA_ART)
+        cprint(NOTKA_ART)
 
-        print(f"\n{C.GOLD}═══════ Biblioteczny Limbo ═══════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}═══════ Biblioteczny Limbo ═══════{C.RESET}\n")
 
         self.narrator("To jest... kartka papieru. Z narysowaną buźką. I mówi do ciebie.")
 
@@ -550,13 +605,13 @@ class Game:
         self.pause()
 
         self.clear()
-        print(PORTAL_ART)
+        cprint(PORTAL_ART)
 
         self.dialog("📄 Notka", "Twoja misja: odzyskać kawałki Motywacji. Są trzy:")
 
-        print(f"\n  🪶 {self.emphasis('Polszczyzna Przeklęta')} — poziom easy, dla rozgrzewki.")
-        print(f"  🔢 {self.emphasis('Mathlandia')} — poziom medium, tu już musisz myśleć.")
-        print(f"  🇬🇧 {self.emphasis('Anglolad')} — poziom hard, bo angielski zawsze hard.")
+        cprint(f"\n  🪶 {self.emphasis('Polszczyzna Przeklęta')} — poziom easy, dla rozgrzewki.")
+        cprint(f"  🔢 {self.emphasis('Mathlandia')} — poziom medium, tu już musisz myśleć.")
+        cprint(f"  🇬🇧 {self.emphasis('Anglolad')} — poziom hard, bo angielski zawsze hard.")
 
         self.dialog("📄 Notka", "Radzę iść po kolei. Bo jeśli wpadniesz do Angloladu bez przygotowania, to się pogubisz jak ja w tablicy Excela.")
 
@@ -577,10 +632,10 @@ class Game:
     def show_hub(self):
         """Pokaż hub z portalami"""
         self.clear()
-        print(PORTAL_ART)
+        cprint(PORTAL_ART)
 
         # Status motywacji
-        print(f"\n{C.GOLD}══════════ Status Motywacji ══════════{C.RESET}")
+        cprint(f"\n{C.GOLD}══════════ Status Motywacji ══════════{C.RESET}")
 
         statuses = {
             'polski': '📚 Polski',
@@ -590,42 +645,42 @@ class Game:
 
         for key, name in statuses.items():
             status = f"{C.GREEN}✓ ZDOBYTA{C.RESET}" if key in self.puzzles_solved else f"{C.DIM}○ Brak{C.RESET}"
-            print(f"  {name}: {status}")
+            cprint(f"  {name}: {status}")
 
-        print(f"\n  {C.GOLD}⭐ Punkty: {self.score}{C.RESET}")
+        cprint(f"\n  {C.GOLD}⭐ Punkty: {self.score}{C.RESET}")
 
         if len(self.puzzles_solved) == 3:
-            print(f"\n{C.GREEN}{C.BOLD}Wszystkie Motywacje zebrane! Wpisz 'powrót' aby wrócić do Księgi!{C.RESET}")
+            cprint(f"\n{C.GREEN}{C.BOLD}Wszystkie Motywacje zebrane! Wpisz 'powrót' aby wrócić do Księgi!{C.RESET}")
 
         # Menu wyboru
-        print(f"\n{C.CYAN}Dokąd wchodzisz?{C.RESET}")
+        cprint(f"\n{C.CYAN}Dokąd wchodzisz?{C.RESET}")
 
         if 'polski' not in self.puzzles_solved:
-            print(f"  {C.GREEN}[1]{C.RESET} Polszczyzna Przeklęta")
+            cprint(f"  {C.GREEN}[1]{C.RESET} Polszczyzna Przeklęta")
         else:
-            print(f"  {C.DIM}[1] Polszczyzna Przeklęta ✓{C.RESET}")
+            cprint(f"  {C.DIM}[1] Polszczyzna Przeklęta ✓{C.RESET}")
 
         if 'matematyka' not in self.puzzles_solved:
-            print(f"  {C.GREEN}[2]{C.RESET} Mathlandia")
+            cprint(f"  {C.GREEN}[2]{C.RESET} Mathlandia")
         else:
-            print(f"  {C.DIM}[2] Mathlandia ✓{C.RESET}")
+            cprint(f"  {C.DIM}[2] Mathlandia ✓{C.RESET}")
 
         if 'angielski' not in self.puzzles_solved:
-            print(f"  {C.GREEN}[3]{C.RESET} Anglolad")
+            cprint(f"  {C.GREEN}[3]{C.RESET} Anglolad")
         else:
-            print(f"  {C.DIM}[3] Anglolad ✓{C.RESET}")
+            cprint(f"  {C.DIM}[3] Anglolad ✓{C.RESET}")
 
         if len(self.puzzles_solved) == 3:
-            print(f"  {C.GOLD}[4]{C.RESET} Wróć do Księgi (zakończ)")
+            cprint(f"  {C.GOLD}[4]{C.RESET} Wróć do Księgi (zakończ)")
 
-        print(f"  {C.RED}[q]{C.RESET} Wyjdź z gry")
+        cprint(f"  {C.RED}[q]{C.RESET} Wyjdź z gry")
 
     # ======================== POLSZCZYZNA ========================
 
     def polski_intro(self):
         """Intro do Polszczyzny"""
         self.clear()
-        print(f"\n{C.GREEN}══════════ 🪶 POLSZCZYZNA PRZEKLĘTA 🪶 ══════════{C.RESET}\n")
+        cprint(f"\n{C.GREEN}══════════ 🪶 POLSZCZYZNA PRZEKLĘTA 🪶 ══════════{C.RESET}\n")
 
         self.narrator("Wchodzisz w portal.")
 
@@ -649,9 +704,9 @@ class Game:
     def polski_geralt(self):
         """Spotkanie z Geraltem"""
         self.clear()
-        print(GERALT_ART)
+        cprint(GERALT_ART)
 
-        print(f"\n{C.GREEN}══════════ Las Przecinkowy ══════════{C.RESET}\n")
+        cprint(f"\n{C.GREEN}══════════ Las Przecinkowy ══════════{C.RESET}\n")
 
         self.narrator("Mężczyzna. Siwe włosy związane w kucyk. Miecz u boku. Zmęczona mina człowieka, który widział za dużo.")
 
@@ -675,40 +730,40 @@ class Game:
     def polski_puzzle(self):
         """Zagadka Polskiego"""
         self.clear()
-        print(f"\n{C.GREEN}══════════ 🪶 ZAGADKA POLSKIEGO 🪶 ══════════{C.RESET}\n")
+        cprint(f"\n{C.GREEN}══════════ 🪶 ZAGADKA POLSKIEGO 🪶 ══════════{C.RESET}\n")
 
         self.dialog("⚔️ Geralt", "Oto twoje wyzwanie. Znajdź błąd. I nie pomyl się. Bo w Polszczyźnie błędy... gryzą.")
 
-        print(f"\n{C.CYAN}╔════════════════════════════════════════════════════╗")
-        print(f"║  Które z poniższych zdań zawiera BŁĄD INTERPUNKCYJNY?  ║")
-        print(f"╚════════════════════════════════════════════════════╝{C.RESET}")
+        cprint(f"\n{C.CYAN}╔════════════════════════════════════════════════════╗")
+        cprint(f"║  Które z poniższych zdań zawiera BŁĄD INTERPUNKCYJNY?  ║")
+        cprint(f"╚════════════════════════════════════════════════════╝{C.RESET}")
 
-        print(f"\n  {C.GREEN}[A]{C.RESET} Poszedłem na spacer do parku.")
-        print(f"  {C.GREEN}[B]{C.RESET} Kupiłem nową książkę w księgarni.")
-        print(f"  {C.GREEN}[C]{C.RESET} Wziąłem parasol bo padał deszcz.")
-        print(f"  {C.GREEN}[D]{C.RESET} Spotkałem się z przyjacielem.")
+        cprint(f"\n  {C.GREEN}[A]{C.RESET} Poszedłem na spacer do parku.")
+        cprint(f"  {C.GREEN}[B]{C.RESET} Kupiłem nową książkę w księgarni.")
+        cprint(f"  {C.GREEN}[C]{C.RESET} Wziąłem parasol bo padał deszcz.")
+        cprint(f"  {C.GREEN}[D]{C.RESET} Spotkałem się z przyjacielem.")
 
         hint_shown = False
 
         while True:
-            answer = input(f"\n{C.CYAN}Twoja odpowiedź (A/B/C/D lub 'podpowiedź'): {C.RESET}").strip().lower()
+            answer = cinput(f"\n{C.CYAN}Twoja odpowiedź (A/B/C/D lub 'podpowiedź'): {C.RESET}").strip().lower()
 
             if answer in ['podpowiedź', 'podpowiedz', 'hint', 'p']:
                 if not hint_shown:
-                    print(f"\n{C.YELLOW}💡 Podpowiedź: Sprawdź znaki interpunkcyjne — po \"parasol\" czegoś brakuje! Przed \"bo\" powinien być...{C.RESET}")
+                    cprint(f"\n{C.YELLOW}💡 Podpowiedź: Sprawdź znaki interpunkcyjne — po \"parasol\" czegoś brakuje! Przed \"bo\" powinien być...{C.RESET}")
                     hint_shown = True
                     self.hints_used += 1
                 else:
-                    print(f"\n{C.YELLOW}💡 Przed \"bo\" wprowadzającym zdanie podrzędne ZAWSZE stawiamy przecinek!{C.RESET}")
+                    cprint(f"\n{C.YELLOW}💡 Przed \"bo\" wprowadzającym zdanie podrzędne ZAWSZE stawiamy przecinek!{C.RESET}")
                 continue
 
             if answer in ['c', '3']:
                 self.polski_success()
                 return
             elif answer in ['a', 'b', 'd', '1', '2', '4']:
-                print(f"\n{C.RED}❌ Niestety, to nie jest poprawna odpowiedź. Spróbuj jeszcze raz!{C.RESET}")
+                cprint(f"\n{C.RED}❌ Niestety, to nie jest poprawna odpowiedź. Spróbuj jeszcze raz!{C.RESET}")
             else:
-                print(f"{C.DIM}Wpisz A, B, C lub D{C.RESET}")
+                cprint(f"{C.DIM}Wpisz A, B, C lub D{C.RESET}")
 
     def polski_success(self):
         """Sukces w Polskim"""
@@ -718,9 +773,9 @@ class Game:
         self.score += 100
 
         self.clear()
-        print(f"\n{C.GREEN}{'═' * 50}")
-        print(f"           ✨ BRAWO! POPRAWNA ODPOWIEDŹ! ✨")
-        print(f"{'═' * 50}{C.RESET}\n")
+        cprint(f"\n{C.GREEN}{'═' * 50}")
+        cprint(f"           ✨ BRAWO! POPRAWNA ODPOWIEDŹ! ✨")
+        cprint(f"{'═' * 50}{C.RESET}\n")
 
         self.narrator("Geralt kiwa głową. Po raz pierwszy widzisz cień uśmiechu na jego twarzy.")
 
@@ -732,8 +787,8 @@ class Game:
 
         self.narrator("\nBierzesz ją. Jest ciepła. Wibruje lekko w dłoni.")
 
-        print(f"\n{C.GREEN}+100 punktów!{C.RESET}")
-        print(f"{C.GOLD}📚 Zdobyto Motywację Polskiego!{C.RESET}")
+        cprint(f"\n{C.GREEN}+100 punktów!{C.RESET}")
+        cprint(f"{C.GOLD}📚 Zdobyto Motywację Polskiego!{C.RESET}")
 
         self.dialog("⚔️ Geralt", "Idź. Czekają cię jeszcze dwie krainy. I uważaj na te przecinki... one tu dosłownie spadają z drzew.")
 
@@ -746,7 +801,7 @@ class Game:
     def matma_intro(self):
         """Intro do Matmy"""
         self.clear()
-        print(f"\n{C.BLUE}══════════ 🔢 MATHLANDIA 🔢 ══════════{C.RESET}\n")
+        cprint(f"\n{C.BLUE}══════════ 🔢 MATHLANDIA 🔢 ══════════{C.RESET}\n")
 
         self.narrator("Portal matematyczny jest... inny.")
 
@@ -768,9 +823,9 @@ class Game:
     def matma_pitagoras(self):
         """Spotkanie z Pitagorasem"""
         self.clear()
-        print(PITAGORAS_ART)
+        cprint(PITAGORAS_ART)
 
-        print(f"\n{C.BLUE}══════════ Mathlandia ══════════{C.RESET}\n")
+        cprint(f"\n{C.BLUE}══════════ Mathlandia ══════════{C.RESET}\n")
 
         self.narrator("Starzec. Długa biała broda. Toga. Sandały. Wygląda jakby wyszedł prosto z... no, z lekcji historii starożytnej.")
 
@@ -792,37 +847,37 @@ class Game:
     def matma_puzzle(self):
         """Zagadka Matematyczna"""
         self.clear()
-        print(f"\n{C.BLUE}══════════ 🔢 ZAGADKA MATEMATYCZNA 🔢 ══════════{C.RESET}\n")
+        cprint(f"\n{C.BLUE}══════════ 🔢 ZAGADKA MATEMATYCZNA 🔢 ══════════{C.RESET}\n")
 
         self.dialog("📐 Pitagoras", "Oto moje wyzwanie. Równanie proste, ale wymagające MYŚLENIA.")
 
-        print(f"\n{C.CYAN}╔════════════════════════════════════════════╗")
-        print(f"║         Rozwiąż równanie:                  ║")
-        print(f"║                                            ║")
-        print(f"║              3x + 7 = 22                   ║")
-        print(f"║                                            ║")
-        print(f"║         Ile wynosi x?                      ║")
-        print(f"╚════════════════════════════════════════════╝{C.RESET}")
+        cprint(f"\n{C.CYAN}╔════════════════════════════════════════════╗")
+        cprint(f"║         Rozwiąż równanie:                  ║")
+        cprint(f"║                                            ║")
+        cprint(f"║              3x + 7 = 22                   ║")
+        cprint(f"║                                            ║")
+        cprint(f"║         Ile wynosi x?                      ║")
+        cprint(f"╚════════════════════════════════════════════╝{C.RESET}")
 
         hint_shown = False
 
         while True:
-            answer = input(f"\n{C.CYAN}Twoja odpowiedź (lub 'podpowiedź'): {C.RESET}").strip().lower()
+            answer = cinput(f"\n{C.CYAN}Twoja odpowiedź (lub 'podpowiedź'): {C.RESET}").strip().lower()
 
             if answer in ['podpowiedź', 'podpowiedz', 'hint', 'p']:
                 if not hint_shown:
-                    print(f"\n{C.YELLOW}💡 Podpowiedź: Najpierw odejmij 7 od obu stron równania (3x = 22 - 7), potem podziel obie strony przez 3.{C.RESET}")
+                    cprint(f"\n{C.YELLOW}💡 Podpowiedź: Najpierw odejmij 7 od obu stron równania (3x = 22 - 7), potem podziel obie strony przez 3.{C.RESET}")
                     hint_shown = True
                     self.hints_used += 1
                 else:
-                    print(f"\n{C.YELLOW}💡 3x = 15, więc x = 15 ÷ 3 = ?{C.RESET}")
+                    cprint(f"\n{C.YELLOW}💡 3x = 15, więc x = 15 ÷ 3 = ?{C.RESET}")
                 continue
 
             if answer == '5':
                 self.matma_success()
                 return
             else:
-                print(f"\n{C.RED}❌ To nie jest poprawna odpowiedź. Spróbuj jeszcze raz!{C.RESET}")
+                cprint(f"\n{C.RED}❌ To nie jest poprawna odpowiedź. Spróbuj jeszcze raz!{C.RESET}")
 
     def matma_success(self):
         """Sukces w Matmie"""
@@ -832,9 +887,9 @@ class Game:
         self.score += 100
 
         self.clear()
-        print(f"\n{C.GREEN}{'═' * 50}")
-        print(f"           ✨ BRAWO! POPRAWNA ODPOWIEDŹ! ✨")
-        print(f"{'═' * 50}{C.RESET}\n")
+        cprint(f"\n{C.GREEN}{'═' * 50}")
+        cprint(f"           ✨ BRAWO! POPRAWNA ODPOWIEDŹ! ✨")
+        cprint(f"{'═' * 50}{C.RESET}\n")
 
         self.narrator("Pitagoras klaszcze z zachwytem.")
 
@@ -848,8 +903,8 @@ class Game:
 
         self.narrator("\nJest geometrycznie idealna. Wielościan. Każda ściana pod idealnym kątem.")
 
-        print(f"\n{C.GREEN}+100 punktów!{C.RESET}")
-        print(f"{C.GOLD}🔢 Zdobyto Motywację Matematyki!{C.RESET}")
+        cprint(f"\n{C.GREEN}+100 punktów!{C.RESET}")
+        cprint(f"{C.GOLD}🔢 Zdobyto Motywację Matematyki!{C.RESET}")
 
         self.dialog("📐 Pitagoras", "Idź, młody podróżniku! I pamiętaj — w każdym równaniu jest piękno. Trzeba je tylko zobaczyć!")
 
@@ -862,7 +917,7 @@ class Game:
     def angielski_intro(self):
         """Intro do Angielskiego"""
         self.clear()
-        print(f"\n{C.RED}══════════ 🇬🇧 ANGLOLAD 🇬🇧 ══════════{C.RESET}\n")
+        cprint(f"\n{C.RED}══════════ 🇬🇧 ANGLOLAD 🇬🇧 ══════════{C.RESET}\n")
 
         self.narrator("Portal angielski jest... czerwony? I niebieski? I ma w sobie trochę bieli?")
 
@@ -872,9 +927,9 @@ class Game:
 
         self.narrator("\nPo drugiej stronie... ulica. Ale dziwna ulica. Wszystkie szyldy są w dwóch językach jednocześnie. Jakby ktoś nie mógł się zdecydować.")
 
-        print(f"\n{self.whisper('TEA SHOP / Sklep z Herbatą')}")
-        print(f"{self.whisper('FISH AND CHIPS / Ryba i Frytki')}")
-        print(f"{self.whisper('IRREGULAR VERBS REHABILITATION CENTER / Centrum Rehabilitacji Czasowników Nieregularnych')}")
+        cprint(f"\n{self.whisper('TEA SHOP / Sklep z Herbatą')}")
+        cprint(f"{self.whisper('FISH AND CHIPS / Ryba i Frytki')}")
+        cprint(f"{self.whisper('IRREGULAR VERBS REHABILITATION CENTER / Centrum Rehabilitacji Czasowników Nieregularnych')}")
 
         self.narrator("\n...to ostatnie brzmi niepokojąco.")
 
@@ -886,9 +941,9 @@ class Game:
     def angielski_zosia(self):
         """Spotkanie z Zosią"""
         self.clear()
-        print(ZOSIA_ART)
+        cprint(ZOSIA_ART)
 
-        print(f"\n{C.RED}══════════ Anglolad - Slang Street ══════════{C.RESET}\n")
+        cprint(f"\n{C.RED}══════════ Anglolad - Slang Street ══════════{C.RESET}\n")
 
         self.narrator("Dziewczyna podnosi wzrok znad telefona. Zdejmuje jedną słuchawkę.")
 
@@ -910,9 +965,9 @@ class Game:
     def angielski_shakespeare(self):
         """Spotkanie z Shakespeare'm"""
         self.clear()
-        print(SHAKESPEARE_ART)
+        cprint(SHAKESPEARE_ART)
 
-        print(f"\n{C.RED}══════════ Town of Tenses ══════════{C.RESET}\n")
+        cprint(f"\n{C.RED}══════════ Town of Tenses ══════════{C.RESET}\n")
 
         self.narrator("Przy ogromnym posągu litery \"A\" stoi mężczyzna. Elizabetański strój. Pióro w ręce. Dramatyczna poza.")
 
@@ -932,40 +987,40 @@ class Game:
     def angielski_puzzle(self):
         """Zagadka Angielskiego"""
         self.clear()
-        print(f"\n{C.RED}══════════ 🇬🇧 ENGLISH RIDDLE 🇬🇧 ══════════{C.RESET}\n")
+        cprint(f"\n{C.RED}══════════ 🇬🇧 ENGLISH RIDDLE 🇬🇧 ══════════{C.RESET}\n")
 
         self.dialog("🎭 Shakespeare", "Behold! The question of grammar most vital!", C.RED)
 
-        print(f"\n{C.CYAN}╔════════════════════════════════════════════════════╗")
-        print(f"║       Choose the CORRECT sentence:                 ║")
-        print(f"╚════════════════════════════════════════════════════╝{C.RESET}")
+        cprint(f"\n{C.CYAN}╔════════════════════════════════════════════════════╗")
+        cprint(f"║       Choose the CORRECT sentence:                 ║")
+        cprint(f"╚════════════════════════════════════════════════════╝{C.RESET}")
 
-        print(f"\n  {C.GREEN}[A]{C.RESET} She don't like apples.")
-        print(f"  {C.GREEN}[B]{C.RESET} She doesn't likes apples.")
-        print(f"  {C.GREEN}[C]{C.RESET} She doesn't like apples.")
-        print(f"  {C.GREEN}[D]{C.RESET} She not like apples.")
+        cprint(f"\n  {C.GREEN}[A]{C.RESET} She don't like apples.")
+        cprint(f"  {C.GREEN}[B]{C.RESET} She doesn't likes apples.")
+        cprint(f"  {C.GREEN}[C]{C.RESET} She doesn't like apples.")
+        cprint(f"  {C.GREEN}[D]{C.RESET} She not like apples.")
 
         hint_shown = False
 
         while True:
-            answer = input(f"\n{C.CYAN}Your answer (A/B/C/D or 'hint'): {C.RESET}").strip().lower()
+            answer = cinput(f"\n{C.CYAN}Your answer (A/B/C/D or 'hint'): {C.RESET}").strip().lower()
 
             if answer in ['podpowiedź', 'podpowiedz', 'hint', 'p']:
                 if not hint_shown:
-                    print(f"\n{C.YELLOW}💡 Hint: Remember: \"she\" uses \"doesn't\" (does not), and after \"doesn't\" we use the BASE form of the verb.{C.RESET}")
+                    cprint(f"\n{C.YELLOW}💡 Hint: Remember: \"she\" uses \"doesn't\" (does not), and after \"doesn't\" we use the BASE form of the verb.{C.RESET}")
                     hint_shown = True
                     self.hints_used += 1
                 else:
-                    print(f"\n{C.YELLOW}💡 After \"doesn't\" the verb stays in base form: like → like, NOT likes{C.RESET}")
+                    cprint(f"\n{C.YELLOW}💡 After \"doesn't\" the verb stays in base form: like → like, NOT likes{C.RESET}")
                 continue
 
             if answer in ['c', '3']:
                 self.angielski_success()
                 return
             elif answer in ['a', 'b', 'd', '1', '2', '4']:
-                print(f"\n{C.RED}❌ Wrong! Try again!{C.RESET}")
+                cprint(f"\n{C.RED}❌ Wrong! Try again!{C.RESET}")
             else:
-                print(f"{C.DIM}Type A, B, C or D{C.RESET}")
+                cprint(f"{C.DIM}Type A, B, C or D{C.RESET}")
 
     def angielski_success(self):
         """Sukces w Angielskim"""
@@ -975,9 +1030,9 @@ class Game:
         self.score += 100
 
         self.clear()
-        print(f"\n{C.GREEN}{'═' * 50}")
-        print(f"           ✨ CORRECT! WELL DONE! ✨")
-        print(f"{'═' * 50}{C.RESET}\n")
+        cprint(f"\n{C.GREEN}{'═' * 50}")
+        cprint(f"           ✨ CORRECT! WELL DONE! ✨")
+        cprint(f"{'═' * 50}{C.RESET}\n")
 
         self.narrator("Shakespeare klaszcze z zachwytem i robi ukłon.")
 
@@ -989,12 +1044,12 @@ class Game:
 
         self.narrator("\nKryształ jest lekki. Przezroczysty. W środku widzisz wirujące litery — A, B, C, D...")
 
-        print(f"\n{C.GREEN}+100 punktów!{C.RESET}")
-        print(f"{C.GOLD}🇬🇧 Zdobyto Motywację Angielskiego!{C.RESET}")
+        cprint(f"\n{C.GREEN}+100 punktów!{C.RESET}")
+        cprint(f"{C.GOLD}🇬🇧 Zdobyto Motywację Angielskiego!{C.RESET}")
 
         self.dialog("🎭 Shakespeare", "Now go! Return to the Book! Complete your quest! And remember — 'All the world's a stage, and all the men and women merely players!'", C.RED)
 
-        print(f"\n{self.loud('WSZYSTKIE TRZY MOTYWACJE ZEBRANE!')}")
+        cprint(f"\n{self.loud('WSZYSTKIE TRZY MOTYWACJE ZEBRANE!')}")
         self.narrator(f"\n{self.emphasis('Czas wrócić do Księgi!')}")
 
         self.pause()
@@ -1004,7 +1059,7 @@ class Game:
     def finale(self):
         """Finał gry"""
         self.clear()
-        print(f"\n{C.GOLD}══════════ Powrót do Księgi ══════════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}══════════ Powrót do Księgi ══════════{C.RESET}\n")
 
         self.narrator("Wracasz przez portal do Bibliotecznego Limbo.")
 
@@ -1026,16 +1081,16 @@ class Game:
 
         # Animacja łączenia
         self.clear()
-        print(MOTIVATION_MERGE_ART)
+        cprint(MOTIVATION_MERGE_ART)
 
-        print(f"\n{self.loud('ŚWIAAAATŁO!')}")
+        cprint(f"\n{self.loud('ŚWIAAAATŁO!')}")
         time.sleep(1)
 
         self.narrator("\nTrzy kryształy zaczynają świecić. Wirować. Łączyć się.")
 
         self.narrator("\nKolory mieszają się — złoty polskiego, niebieski matematyki, czerwony angielskiego...")
 
-        print(f"\n{self.loud('FLASH!')}")
+        cprint(f"\n{self.loud('FLASH!')}")
         time.sleep(0.5)
 
         self.narrator(f"\nKiedy otwierasz oczy, nad Księgą unosi się jeden, wielki, {self.emphasis('tęczowy kryształ')}.")
@@ -1054,7 +1109,7 @@ class Game:
     def epilogue(self):
         """Epilog"""
         self.clear()
-        print(f"\n{C.GOLD}══════════ Pożegnanie ══════════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}══════════ Pożegnanie ══════════{C.RESET}\n")
 
         self.dialog("📚 Księga", "Teraz... wracasz do domu. Twoja misja się skończyła. Uratowałeś Paradoksję.")
 
@@ -1066,7 +1121,7 @@ class Game:
 
         self.dialog("📚 Księga", "A teraz — WRACAJ! Zanim pani Kowalska zauważy, że zniknąłeś!")
 
-        print(f"\n{self.loud('SZUUUUUM!')}")
+        cprint(f"\n{self.loud('SZUUUUUM!')}")
 
         self.narrator("\nI znowu wirowanie. Lecenie. Kartki. Litery. Cyfry.")
 
@@ -1076,7 +1131,7 @@ class Game:
 
         # Powrót do szkoły
         self.clear()
-        print(f"\n{C.GOLD}══════════ Epilog ══════════{C.RESET}\n")
+        cprint(f"\n{C.GOLD}══════════ Epilog ══════════{C.RESET}\n")
 
         self.narrator("Stoisz w pokoju nauczycielskim.")
 
@@ -1086,7 +1141,7 @@ class Game:
 
         self.narrator("\nPatrzysz na zegarek. 16:35.")
 
-        print(f"\n{self.thought('Pięć minut? Byłem tam tylko pięć minut?')}")
+        cprint(f"\n{self.thought('Pięć minut? Byłem tam tylko pięć minut?')}")
 
         self.narrator("\nA może... to był tylko sen? Może się zdrzemnąłeś i...")
 
@@ -1096,7 +1151,7 @@ class Game:
 
         self.narrator("\nWyciągasz. To mały, świecący kamyczek. Wygląda jak... miniaturowy kryształ. Tęczowy.")
 
-        print(f"\n{self.emphasis('To się naprawdę wydarzyło.')}")
+        cprint(f"\n{self.emphasis('To się naprawdę wydarzyło.')}")
 
         self.narrator("\nUśmiechasz się. Chowasz kamyczek do kieszeni.")
 
@@ -1110,26 +1165,26 @@ class Game:
     def victory_screen(self):
         """Ekran zwycięstwa"""
         self.clear()
-        print(VICTORY_ART)
+        cprint(VICTORY_ART)
 
         # Statystyki
         elapsed = time.time() - self.start_time
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
 
-        print(f"\n{C.CYAN}═══════════════ STATYSTYKI ═══════════════{C.RESET}")
-        print(f"\n  ⏱️  Czas gry: {minutes}:{seconds:02d}")
-        print(f"  ⭐ Punkty: {self.score}")
-        print(f"  🧩 Zagadki rozwiązane: {len(self.puzzles_solved)}/3")
-        print(f"  💡 Użyte podpowiedzi: {self.hints_used}")
+        cprint(f"\n{C.CYAN}═══════════════ STATYSTYKI ═══════════════{C.RESET}")
+        cprint(f"\n  ⏱️  Czas gry: {minutes}:{seconds:02d}")
+        cprint(f"  ⭐ Punkty: {self.score}")
+        cprint(f"  🧩 Zagadki rozwiązane: {len(self.puzzles_solved)}/3")
+        cprint(f"  💡 Użyte podpowiedzi: {self.hints_used}")
 
-        print(f"\n{C.DIM}═════════════════════════════════════════════{C.RESET}")
+        cprint(f"\n{C.DIM}═════════════════════════════════════════════{C.RESET}")
 
-        print(f"\n{self.whisper('A może... kiedyś będzie CZĘŚĆ DRUGA?')}")
-        print(f"{self.whisper('Kto wie, jakie przygody czekają w innych Krainach Przedmiotów...')}")
-        print(f"\n{self.meta('🔮 Historia? Biologia? Fizyka? Muzyka?')}")
+        cprint(f"\n{self.whisper('A może... kiedyś będzie CZĘŚĆ DRUGA?')}")
+        cprint(f"{self.whisper('Kto wie, jakie przygody czekają w innych Krainach Przedmiotów...')}")
+        cprint(f"\n{self.meta('🔮 Historia? Biologia? Fizyka? Muzyka?')}")
 
-        print(f"\n{C.GOLD}Dziękujemy za grę w PARADOKSJĘ!{C.RESET}")
+        cprint(f"\n{C.GOLD}Dziękujemy za grę w PARADOKSJĘ!{C.RESET}")
 
         input(f"\n{C.DIM}[Naciśnij ENTER aby zakończyć...]{C.RESET}")
         self.running = False
@@ -1160,25 +1215,25 @@ class Game:
         while self.running:
             self.show_hub()
 
-            choice = input(f"\n{C.CYAN}Wybór (1/2/3/q): {C.RESET}").strip().lower()
+            choice = cinput(f"\n{C.CYAN}Wybór (1/2/3/q): {C.RESET}").strip().lower()
 
             if choice == '1':
                 if 'polski' not in self.puzzles_solved:
                     self.polski_intro()
                 else:
-                    print(f"{C.DIM}Już zdobyłeś Motywację Polskiego!{C.RESET}")
+                    cprint(f"{C.DIM}Już zdobyłeś Motywację Polskiego!{C.RESET}")
                     self.pause()
             elif choice == '2':
                 if 'matematyka' not in self.puzzles_solved:
                     self.matma_intro()
                 else:
-                    print(f"{C.DIM}Już zdobyłeś Motywację Matematyki!{C.RESET}")
+                    cprint(f"{C.DIM}Już zdobyłeś Motywację Matematyki!{C.RESET}")
                     self.pause()
             elif choice == '3':
                 if 'angielski' not in self.puzzles_solved:
                     self.angielski_intro()
                 else:
-                    print(f"{C.DIM}Już zdobyłeś Motywację Angielskiego!{C.RESET}")
+                    cprint(f"{C.DIM}Już zdobyłeś Motywację Angielskiego!{C.RESET}")
                     self.pause()
             elif choice == '4' and len(self.puzzles_solved) == 3:
                 self.finale()
@@ -1201,6 +1256,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n\nDo zobaczenia!")
     except Exception as e:
-        print(f"\n❌ Błąd: {e}")
+        cprint(f"\n❌ Błąd: {e}")
         print("Jeśli problem się powtarza, zgłoś go nauczycielowi.")
         input("\n[Naciśnij ENTER aby zamknąć...]")
