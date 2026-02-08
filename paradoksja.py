@@ -3,1119 +3,1191 @@
 """
 PARADOKSJA: Część I - Uciekająca Motywacja
 Edukacyjna gra tekstowa dla uczniów klas 5-6
+Wersja z pełną narracją literacką
+
 Autor: Claude AI
-Wersja: 1.0
+Wersja: 2.0
 """
 
 import os
 import sys
 import time
-from typing import Dict, List, Optional, Callable
+import textwrap
+from typing import Dict, List, Optional
 
 # ============================================================================
 # KONFIGURACJA
 # ============================================================================
 
-WIDTH = 60  # Szerokość tekstu
-DELAY_CHAR = 0.02  # Opóźnienie przy pisaniu (efekt maszyny do pisania)
-DELAY_FAST = 0.01
-DELAY_SLOW = 0.04
+WIDTH = 60
+NARRATOR_DELAY = 0.025
+FAST_DELAY = 0.015
+SLOW_DELAY = 0.045
 
-# Kolory ANSI (opcjonalne - działają w większości terminali)
-class Colors:
+# Kolory ANSI
+class C:
     RESET = '\033[0m'
     BOLD = '\033[1m'
+    DIM = '\033[2m'
+    ITALIC = '\033[3m'
     RED = '\033[91m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     BLUE = '\033[94m'
     MAGENTA = '\033[95m'
     CYAN = '\033[96m'
+    GOLD = '\033[93m'  # Same as yellow but semantically different
 
-    @staticmethod
-    def disable():
-        """Wyłącz kolory jeśli terminal nie wspiera"""
-        Colors.RESET = ''
-        Colors.BOLD = ''
-        Colors.RED = ''
-        Colors.GREEN = ''
-        Colors.YELLOW = ''
-        Colors.BLUE = ''
-        Colors.MAGENTA = ''
-        Colors.CYAN = ''
-
-# Sprawdź czy terminal wspiera kolory
-if os.name == 'nt':  # Windows
+# Windows compatibility
+if os.name == 'nt':
     try:
         os.system('color')
     except:
-        Colors.disable()
+        for attr in dir(C):
+            if not attr.startswith('_'):
+                setattr(C, attr, '')
 
 # ============================================================================
 # ASCII ART
 # ============================================================================
 
-ASCII_TITLE = """
-╔══════════════════════════════════════════════════════════╗
-║                                                          ║
-║   ██████╗  █████╗ ██████╗  █████╗ ██████╗  ██████╗      ║
-║   ██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔═══██╗     ║
-║   ██████╔╝███████║██████╔╝███████║██║  ██║██║   ██║     ║
-║   ██╔═══╝ ██╔══██║██╔══██╗██╔══██║██║  ██║██║   ██║     ║
-║   ██║     ██║  ██║██║  ██║██║  ██║██████╔╝╚██████╔╝     ║
-║   ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝      ║
-║                    K S J A                               ║
-║                                                          ║
-║        ~ Część I: Uciekająca Motywacja ~                 ║
-║                                                          ║
-║   ╭─────────────────────────────────────────────────╮    ║
-║   │  Gra edukacyjna dla uczniów klas 5-6           │    ║
-║   │  Polski • Matematyka • Angielski                │    ║
-║   ╰─────────────────────────────────────────────────╯    ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
-"""
+TITLE_ART = f"""
+{C.GOLD}
+    ╔═══════════════════════════════════════════════════════╗
+    ║                                                       ║
+    ║     ██████╗  █████╗ ██████╗  █████╗ ██████╗  ██████╗  ║
+    ║     ██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔═══██╗ ║
+    ║     ██████╔╝███████║██████╔╝███████║██║  ██║██║   ██║ ║
+    ║     ██╔═══╝ ██╔══██║██╔══██╗██╔══██║██║  ██║██║   ██║ ║
+    ║     ██║     ██║  ██║██║  ██║██║  ██║██████╔╝╚██████╔╝ ║
+    ║     ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝  ║
+    ║                      K S J A                          ║
+    ║                                                       ║
+    ║          ~ Przygoda w Krainie Wiedzy ~                ║
+    ║                                                       ║
+    ╚═══════════════════════════════════════════════════════╝
+{C.RESET}"""
 
-ASCII_BOOK = """
-        ___________
-       /          /|
-      /  KSIĘGA  / |
-     /  WIEDZY  /  |
-    /__________/   |
-    |   ~~~~   |   |
-    |  ~~~~~~  |   /
-    |   ~~~~   |  /
-    |__________|/
-"""
+BOOK_ART = f"""
+{C.CYAN}
+              ⚡ ✨ KSIĘGA ✨ ⚡
+                   ___________
+                  /           \\
+                 /  _________  \\
+                /  /         \\  \\
+               |  | ◉     ◉ |  |
+               |  |    ▼    |  |
+               |  |  \\___/  |  |
+                \\  \\_______/  /
+                 \\___________/
+                ╱╱╱╱╱╱╱╱╱╱╱╱╱
+               Świeci. Wibruje.
+{C.RESET}"""
 
-ASCII_HUB = """
-    ·  ✦  ·    ·  ✦  ·    ·  ✦  ·
-         ╭──────────────╮
-    ·    │  BIBLIOTECZNY │    ·
-  ✦      │     LIMBO     │      ✦
-         ╰──────────────╯
-    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·
+HUB_ART = f"""
+{C.BLUE}
+         ✨  📚    📖    📚  ✨
+       🗂️                      🗂️
+            [ BIBLIOTECZNY ]
+            [    LIMBO     ]
+       📋                      📋
+         ✨  📚    📖    📚  ✨
+{C.RESET}"""
 
-   [1]           [2]           [3]
-  ┌───┐        ┌───┐        ┌───┐
-  │ P │        │ M │        │ A │
-  │ O │        │ A │        │ N │
-  │ L │        │ T │        │ G │
-  └───┘        └───┘        └───┘
-"""
+PORTAL_ART = f"""
+{C.CYAN}
+    ╔═════════════════════════════════════════════╗
+    ║              PORTALE DO KRAIN               ║
+    ╠═════════════════════════════════════════════╣
+    ║                                             ║
+    ║   🪶 [1] POLSZCZYZNA PRZEKLĘTA    ⭐       ║
+    ║       "Tam, gdzie przecinki rosną..."      ║
+    ║                                             ║
+    ║   🔢 [2] MATHLANDIA               ⭐⭐     ║
+    ║       "Kraina, gdzie 2+2=5..."             ║
+    ║                                             ║
+    ║   🇬🇧 [3] ANGLOLAD                 ⭐⭐⭐   ║
+    ║       "Where everything is możliwe..."     ║
+    ║                                             ║
+    ╚═════════════════════════════════════════════╝
+{C.RESET}"""
 
-ASCII_NOTKA = """
-   ┌─────┐
-   │ ^_^ │  ← Notka
-   │     │
-   └──┬──┘
-      │
-"""
+NOTKA_ART = f"""
+{C.YELLOW}
+            📄
+           (• ‿ •)
+             / \\
+          ~ NOTKA ~
+{C.RESET}"""
 
-ASCII_LAS = """
-    🌲    ,🌲,   🌲    ,🌲
-  ,  🌲  🌲  ,🌲,  🌲  ,
-    ,🌲,    🌲    ,🌲,  🌲
-  🌲    🌲,    ,🌲    🌲
-  ════════════════════════
-      LAS PRZECINKOWY
-"""
+GERALT_ART = f"""
+{C.CYAN}
+            ⚔️
+           /|\\
+          / | \\
+            |
+           / \\
+    ~ GERALT z POLSZCZYZNY ~
+{C.RESET}"""
 
-ASCII_GERALT = """
-       ⚔️
-      (·_·)   ← Geralt z Ortografii
-      /|█|\\
-       / \\
-"""
+PITAGORAS_ART = f"""
+{C.BLUE}
+            📐
+           /|\\
+          △ | △
+            |
+           / \\
+       ~ PITAGORAS ~
+{C.RESET}"""
 
-ASCII_JASKINIA = """
-      /\\     /\\
-     /  \\___/  \\
-    /           \\
-   |   JASKINIA  |
-   |  ORTOGRAFII |
-    \\___________/
-"""
+ZOSIA_ART = f"""
+{C.MAGENTA}
+            🎧
+          (◕‿◕)
+          /|📱|\\
+            ||
+           / \\
+      ~ ZOSIA GEN Z ~
+{C.RESET}"""
 
-ASCII_YENNEFER = """
-       ✨✨
-      (◠‿◠)  ← Yennefer
-      /|█|\\
-       / \\
-"""
+SHAKESPEARE_ART = f"""
+{C.RED}
+            🎭
+          /|\\
+         / | \\
+        📜 | 🪶
+           / \\
+      ~ SHAKESPEARE ~
+{C.RESET}"""
 
-ASCII_ROWNINA = """
-    x + y = ?     2x = 10
-         \\  /
-    ══════════════════════
-    ░░░░░░░░░░░░░░░░░░░░░░
-    RÓWNINA RÓWNAŃ
-"""
+VICTORY_ART = f"""
+{C.GOLD}
+    ╔═══════════════════════════════════════════════════════╗
+    ║                                                       ║
+    ║                    🏆 ZWYCIĘSTWO! 🏆                  ║
+    ║                                                       ║
+    ║         Ukończyłeś PARADOKSJĘ: Część I                ║
+    ║                                                       ║
+    ║   ═══════════════════════════════════════════════     ║
+    ║                                                       ║
+    ║         ⭐ MOTYWACJA ODZYSKANA! ⭐                    ║
+    ║                                                       ║
+    ║         📚 Polski:      ✓ ZDOBYTY                     ║
+    ║         🔢 Matematyka:  ✓ ZDOBYTA                     ║
+    ║         🇬🇧 Angielski:   ✓ ZDOBYTY                     ║
+    ║                                                       ║
+    ╚═══════════════════════════════════════════════════════╝
+{C.RESET}"""
 
-ASCII_PITAGORAS = """
-       💪💪
-      (ಠ益ಠ)  ← Pitagoras Maximus
-      /|█|\\
-      _/ \\_
-"""
-
-ASCII_PIRAMIDA = """
-          /\\
-         /  \\
-        / a² \\
-       /──────\\
-      / b² + c²\\
-     /──────────\\
-    PIRAMIDA PITAGORASA
-"""
-
-ASCII_ZERO = """
-      (╥_╥)   ← Zero Bohater
-      /(0)\\
-       / \\
-"""
-
-ASCII_SLANG = """
-   ╔═══════════════════╗
-   ║  S L A N G   ST  ║
-   ╠═══════════════════╣
-   ║ COOL! AWESOME!   ║
-   ║  DOPE! SICK!     ║
-   ╚═══════════════════╝
-"""
-
-ASCII_ZOSIA = """
-       📱
-      (^◡^)  ← Zosia ze Słownika
-      /|█|\\
-       / \\
-"""
-
-ASCII_TENSES = """
-   PAST ←── NOW ──→ FUTURE
-     │       │        │
-    was    is/am    will be
-   ═══════════════════════
-      TOWN OF TENSES
-"""
-
-ASCII_SHAKESPEARE = """
-       🎭
-      (˵ ͡° ͜ʖ ͡°˵)  ← Sir Shakespire
-      /|█|\\
-       / \\
-"""
-
-ASCII_VICTORY = """
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║                    🎉 GRATULACJE! 🎉                       ║
-║                                                            ║
-║         Ukończyłeś PARADOKSJĘ: Część I                     ║
-║                                                            ║
-║   ════════════════════════════════════════════════════     ║
-║                                                            ║
-║         ⭐ MOTYWACJA ODZYSKANA! ⭐                         ║
-║                                                            ║
-║         🪶 Polski:      ✓ ZALICZONY                        ║
-║         🔢 Matematyka:  ✓ ZALICZONA                        ║
-║         🏴 Angielski:   ✓ ZALICZONY                        ║
-║                                                            ║
-║   ════════════════════════════════════════════════════     ║
-║                                                            ║
-║         Kolejna część wkrótce...                           ║
-║         (Geografia, Fizyka, Informatyka)                   ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-"""
-
-ASCII_MOTIVATION = """
-        ✨  ✨  ✨
-
-    🪶  +  🔢  +  🏴
-         ║
-         ▼
-    ╔═══════════╗
-    ║ MOTYWACJA ║
-    ║  ⭐⭐⭐   ║
-    ╚═══════════╝
-"""
+MOTIVATION_MERGE_ART = f"""
+{C.GOLD}
+              ✨  ✨  ✨
+           📚  🔢  🇬🇧
+              \\  |  /
+               \\ | /
+                \\|/
+             ⚡💎⚡
+                |
+             📖📖📖
+           MOTYWACJA!
+{C.RESET}"""
 
 # ============================================================================
-# KLASY GRY
+# KLASA GRY
 # ============================================================================
-
-class Puzzle:
-    """Reprezentuje zagadkę w grze"""
-
-    def __init__(self, question: str, options: List[str], correct: int,
-                 hints: List[str], points: int = 10):
-        self.question = question
-        self.options = options  # Lista opcji lub None dla odpowiedzi otwartej
-        self.correct = correct  # Indeks poprawnej odpowiedzi lub string
-        self.hints = hints
-        self.points = points
-        self.attempts = 0
-        self.solved = False
-
-    def check_answer(self, answer: str) -> bool:
-        """Sprawdź odpowiedź"""
-        self.attempts += 1
-
-        if isinstance(self.correct, int):
-            # Odpowiedź wielokrotnego wyboru
-            try:
-                choice = answer.lower().strip()
-                if choice in ['a', '1']:
-                    return self.correct == 0
-                elif choice in ['b', '2']:
-                    return self.correct == 1
-                elif choice in ['c', '3']:
-                    return self.correct == 2
-                elif choice in ['d', '4']:
-                    return self.correct == 3
-            except:
-                return False
-        else:
-            # Odpowiedź otwarta
-            return answer.lower().strip() == str(self.correct).lower().strip()
-
-        return False
-
-    def get_hint(self) -> str:
-        """Pobierz wskazówkę na podstawie liczby prób"""
-        if self.attempts <= len(self.hints):
-            return self.hints[self.attempts - 1]
-        return self.hints[-1]
-
-
-class NPC:
-    """Reprezentuje postać niezależną"""
-
-    def __init__(self, name: str, ascii_art: str, dialogues: List[str],
-                 puzzle: Optional[Puzzle] = None):
-        self.name = name
-        self.ascii_art = ascii_art
-        self.dialogues = dialogues
-        self.puzzle = puzzle
-        self.dialogue_index = 0
-        self.talked = False
-
-    def talk(self) -> str:
-        """Zwróć następną linię dialogu"""
-        if self.dialogue_index < len(self.dialogues):
-            text = self.dialogues[self.dialogue_index]
-            self.dialogue_index += 1
-            self.talked = True
-            return text
-        return self.dialogues[-1] if self.dialogues else ""
-
-    def reset_dialogue(self):
-        """Zresetuj dialog"""
-        self.dialogue_index = 0
-
-
-class Location:
-    """Reprezentuje lokację w grze"""
-
-    def __init__(self, name: str, description: str, ascii_art: str,
-                 npcs: List[NPC] = None, exits: Dict[str, str] = None):
-        self.name = name
-        self.description = description
-        self.ascii_art = ascii_art
-        self.npcs = npcs or []
-        self.exits = exits or {}
-        self.visited = False
-        self.completed = False
-
-    def get_npc(self, name: str) -> Optional[NPC]:
-        """Znajdź NPC po nazwie"""
-        name_lower = name.lower()
-        for npc in self.npcs:
-            if name_lower in npc.name.lower():
-                return npc
-        return None
-
-
-class Player:
-    """Reprezentuje gracza"""
-
-    def __init__(self):
-        self.inventory: List[str] = []
-        self.motivations: Dict[str, bool] = {
-            'polski': False,
-            'matematyka': False,
-            'angielski': False
-        }
-        self.score: int = 0
-        self.start_time: float = 0
-
-    def add_item(self, item: str):
-        """Dodaj przedmiot do ekwipunku"""
-        self.inventory.append(item)
-
-    def has_item(self, item: str) -> bool:
-        """Sprawdź czy gracz ma przedmiot"""
-        return item.lower() in [i.lower() for i in self.inventory]
-
-    def get_motivation(self, subject: str):
-        """Zdobądź motywację z przedmiotu"""
-        self.motivations[subject.lower()] = True
-
-    def motivation_count(self) -> int:
-        """Policz zdobyte motywacje"""
-        return sum(1 for v in self.motivations.values() if v)
-
 
 class Game:
-    """Główna klasa gry"""
-
     def __init__(self):
-        self.player = Player()
-        self.locations: Dict[str, Location] = {}
-        self.current_location: Optional[Location] = None
         self.running = True
-        self.game_started = False
+        self.score = 0
+        self.motivations = []
+        self.inventory = []
+        self.hints_used = 0
+        self.puzzles_solved = []
+        self.current_location = 'hub'
+        self.start_time = 0
 
-        self._setup_world()
+    # ======================== WYŚWIETLANIE ========================
 
-    def _setup_world(self):
-        """Utwórz świat gry"""
-
-        # ==================== HUB ====================
-        notka = NPC(
-            name="Notka",
-            ascii_art=ASCII_NOTKA,
-            dialogues=[
-                "Hej! Jestem Notka, asystentka Księgi Wiedzy!",
-                "Widzę, że jesteś nowy tutaj. Ok, no to tl;dr:",
-                "Musisz odzyskać kawałki MOTYWACJI z trzech krain.",
-                "Każda kraina = jeden przedmiot szkolny.",
-                "Zaczynaj od POLSKIEGO [1], to najłatwiejsze!",
-                "Potem MATMA [2], a na końcu ANGIELSKI [3].",
-                "Wpisz 'idź 1', 'idź 2' lub 'idź 3' żeby wybrać krainę.",
-                "Powodzenia, bestie! No cap, dasz radę! 💪"
-            ]
-        )
-
-        hub = Location(
-            name="Biblioteczny Limbo",
-            description="Przestrzeń między stronami Księgi Wiedzy. "
-                       "Wokół unoszą się kartki, litery i cyfry. "
-                       "Widzisz trzy portale do różnych krain.",
-            ascii_art=ASCII_HUB,
-            npcs=[notka],
-            exits={'1': 'las_przecinkowy', '2': 'rownina_rownan', '3': 'slang_street',
-                   'polski': 'las_przecinkowy', 'matma': 'rownina_rownan',
-                   'angielski': 'slang_street'}
-        )
-
-        # ==================== POLSKI ====================
-        geralt_puzzle = Puzzle(
-            question='Gdzie wstawić przecinek?\n"Ala ma kota psa i papugę"',
-            options=[
-                'a) Ala ma, kota psa i papugę',
-                'b) Ala ma kota, psa i papugę',
-                'c) Ala ma kota psa, i papugę'
-            ],
-            correct=1,  # odpowiedź B
-            hints=[
-                "Hmm, pomyśl o wyliczeniu. Co Ala ma?",
-                "Przecinek oddziela elementy wyliczenia: kota, psa, papugę",
-                "Poprawna odpowiedź to B - 'Ala ma kota, psa i papugę'"
-            ]
-        )
-
-        geralt = NPC(
-            name="Geralt z Ortografii",
-            ascii_art=ASCII_GERALT,
-            dialogues=[
-                "Witaj, wędrowcze. Jestem Geralt z Ortografii.",
-                "Widzę, że szukasz Motywacji. Cóż, najpierw pomóż mi.",
-                "Te drzewa rosną przecinki, ale nie każdy jest na miejscu.",
-                "Rozwiąż zagadkę, a przepuszczę cię dalej.",
-                "Wpisz 'rozwiąż' aby zobaczyć zadanie."
-            ],
-            puzzle=geralt_puzzle
-        )
-
-        las = Location(
-            name="Las Przecinkowy",
-            description="Lekko creepy las. Z drzew zwisają... przecinki? "
-                       "Tak, dosłownie znaki interpunkcyjne rosną na gałęziach.",
-            ascii_art=ASCII_LAS,
-            npcs=[geralt],
-            exits={'hub': 'hub', 'powrót': 'hub', 'dalej': 'jaskinia_ortografii'}
-        )
-
-        # Zagadki Yennefer
-        yen_puzzle1 = Puzzle(
-            question='Które słowo jest napisane POPRAWNIE?',
-            options=[
-                'a) wogule',
-                'b) w ogule',
-                'c) w ogóle'
-            ],
-            correct=2,  # odpowiedź C
-            hints=[
-                "To słowo pisze się rozłącznie...",
-                "Zwróć uwagę na 'ó' - to nie jest 'u'!",
-                "Poprawna odpowiedź to C - 'w ogóle'"
-            ]
-        )
-
-        yen_puzzle2 = Puzzle(
-            question='Wstaw RZ lub Ż w słowach:\np_ecinki, mo_e, _aba\n\n'
-                    'Wpisz odpowiedzi oddzielone przecinkami (np: rz,ż,rz)',
-            options=None,  # odpowiedź otwarta
-            correct='rz,rz,ż',
-            hints=[
-                "Pierwsza: pRZecinki - po 'p' często jest 'rz'",
-                "Druga: moRZe - morze to duży zbiornik wody",
-                "Trzecia: Żaba - żaba to zwierzę, zaczyna się od Ż"
-            ]
-        )
-
-        yennefer = NPC(
-            name="Yennefer",
-            ascii_art=ASCII_YENNEFER,
-            dialogues=[
-                "Witajże, młodzieńcze. Jestem Yennefer, strażniczka ortografii.",
-                "Widzę, że pokonałeś Geralta. Impressive!",
-                "Lecz by zdobyć Motywację z Polskiego, musisz pokonać MNIE.",
-                "Mam dla ciebie DWA wyzwania. Gotowy?",
-                "Wpisz 'rozwiąż' aby rozpocząć."
-            ],
-            puzzle=yen_puzzle1  # Pierwsza zagadka
-        )
-        yennefer.puzzle2 = yen_puzzle2  # Druga zagadka
-        yennefer.current_puzzle = 1
-
-        jaskinia = Location(
-            name="Jaskinia Ortografii",
-            description="Ciemna jaskinia. Na ścianach świecą napisy - niektóre "
-                       "błyszczą zielono (poprawne), inne czerwono (błędy).",
-            ascii_art=ASCII_JASKINIA,
-            npcs=[yennefer],
-            exits={'powrót': 'las_przecinkowy', 'hub': 'hub'}
-        )
-
-        # ==================== MATEMATYKA ====================
-        pita_puzzle = Puzzle(
-            question='Rozwiąż równanie:\nx + 5 = 12\n\nx = ?',
-            options=None,
-            correct='7',
-            hints=[
-                "Zastanów się: co plus 5 daje 12?",
-                "Przenieś 5 na drugą stronę: x = 12 - 5",
-                "Odpowiedź to 7 (bo 7 + 5 = 12)"
-            ]
-        )
-
-        pitagoras = NPC(
-            name="Pitagoras Maximus",
-            ascii_art=ASCII_PITAGORAS,
-            dialogues=[
-                "WITAJ, WOJOWNIKU LICZB! 💪",
-                "Jestem Pitagoras Maximus, strażnik Mathlandu!",
-                "Tu rządzą RÓWNANIA! Aby przejść dalej...",
-                "...musisz pokonać Równanie Strażnika!",
-                "Wpisz 'rozwiąż' i pokaż co potrafisz!"
-            ],
-            puzzle=pita_puzzle
-        )
-
-        rownina = Location(
-            name="Równina Równań",
-            description="Rozległa równina. Wszędzie latają cyfry i znaki "
-                       "matematyczne. Gigantyczne równania wiszą w powietrzu.",
-            ascii_art=ASCII_ROWNINA,
-            npcs=[pitagoras],
-            exits={'hub': 'hub', 'powrót': 'hub', 'dalej': 'piramida'}
-        )
-
-        zero_puzzle = Puzzle(
-            question='Twierdzenie Pitagorasa:\na² + b² = c²\n\n'
-                    'Jeśli a = 3 i b = 4, ile wynosi c?\n'
-                    '(Podpowiedź: 3² = 9, 4² = 16)',
-            options=None,
-            correct='5',
-            hints=[
-                "Podstaw do wzoru: 3² + 4² = c²",
-                "Oblicz: 9 + 16 = 25 = c²",
-                "c² = 25, więc c = √25 = 5"
-            ]
-        )
-
-        zero = NPC(
-            name="Zero Bohater",
-            ascii_art=ASCII_ZERO,
-            dialogues=[
-                "Hej... jestem Zero. Nic nie znaczę... dosłownie.",
-                "*wzdycha* Ale może pomogę ci, jeśli...",
-                "...jeśli udowodnisz, że matematyka ma sens?",
-                "Oto trójkąt prostokątny. Znasz twierdzenie Pitagorasa?",
-                "Wpisz 'rozwiąż' i oblicz przeciwprostokątną!"
-            ],
-            puzzle=zero_puzzle
-        )
-
-        piramida = Location(
-            name="Piramida Pitagorasa",
-            description="Gigantyczna piramida zbudowana z trójkątów prostokątnych. "
-                       "Na wejściu wielki napis: 'a² + b² = c²'",
-            ascii_art=ASCII_PIRAMIDA,
-            npcs=[zero],
-            exits={'powrót': 'rownina_rownan', 'hub': 'hub'}
-        )
-
-        # ==================== ANGIELSKI ====================
-        zosia_puzzle = Puzzle(
-            question='Przetłumacz na polski:\n"I have a cat and a dog."',
-            options=[
-                'a) Mam kota i pies',
-                'b) Ja mam kot i psa',
-                'c) Mam kota i psa'
-            ],
-            correct=2,  # odpowiedź C
-            hints=[
-                "Pamiętaj o poprawnej odmianie w języku polskim!",
-                "'have' = 'mam', 'cat' = 'kot', 'dog' = 'pies'",
-                "Poprawna odpowiedź to C - 'Mam kota i psa'"
-            ]
-        )
-
-        zosia = NPC(
-            name="Zosia ze Słownika",
-            ascii_art=ASCII_ZOSIA,
-            dialogues=[
-                "Yo, bestie! Widzę, że jesteś new here! 📱",
-                "This quest is giving main character energy, no cap fr fr!",
-                "Ale żeby przejść dalej, musisz rozumieć English.",
-                "It's not that hard, trust me!",
-                "Wpisz 'rozwiąż' and let's gooo! 🚀"
-            ],
-            puzzle=zosia_puzzle
-        )
-
-        slang = Location(
-            name="Slang Street",
-            description="Ulica pełna neonów z angielskimi napisami. "
-                       "Wszędzie słychać 'COOL!', 'AWESOME!', 'NO CAP!'",
-            ascii_art=ASCII_SLANG,
-            npcs=[zosia],
-            exits={'hub': 'hub', 'powrót': 'hub', 'dalej': 'town_of_tenses'}
-        )
-
-        shakespeare_puzzle = Puzzle(
-            question='Uzupełnij czasownik "to be" w czasie teraźniejszym:\n\n'
-                    'I ___\nYou ___\nHe/She ___\n\n'
-                    'Wpisz odpowiedzi oddzielone przecinkami (np: am,are,is)',
-            options=None,
-            correct='am,are,is',
-            hints=[
-                "I AM, You ARE, He/She IS - pamiętasz?",
-                "AM dla 'I', ARE dla 'You', IS dla 'He/She/It'",
-                "Odpowiedź: am,are,is"
-            ]
-        )
-
-        shakespeare = NPC(
-            name="Sir Shakespire",
-            ascii_art=ASCII_SHAKESPEARE,
-            dialogues=[
-                "To learn or not to learn, that IS the question! 🎭",
-                "Welcome, young scholar! I am Sir Shakespire!",
-                "Thou must prove thy knowledge of English grammar!",
-                "The verb 'to be' - the foundation of all!",
-                "Type 'rozwiąż' and show me what you know!"
-            ],
-            puzzle=shakespeare_puzzle
-        )
-
-        tenses = Location(
-            name="Town of Tenses",
-            description="Miasto podzielone na strefy czasowe: PAST, NOW, FUTURE. "
-                       "Ludzie chodzą między nimi zmieniając formy czasowników.",
-            ascii_art=ASCII_TENSES,
-            npcs=[shakespeare],
-            exits={'powrót': 'slang_street', 'hub': 'hub'}
-        )
-
-        # Dodaj wszystkie lokacje do gry
-        self.locations = {
-            'hub': hub,
-            'las_przecinkowy': las,
-            'jaskinia_ortografii': jaskinia,
-            'rownina_rownan': rownina,
-            'piramida': piramida,
-            'slang_street': slang,
-            'town_of_tenses': tenses
-        }
-
-    # ==================== WYŚWIETLANIE ====================
-
-    def clear_screen(self):
+    def clear(self):
         """Wyczyść ekran"""
         os.system('cls' if os.name == 'nt' else 'clear')
 
-    def slow_print(self, text: str, delay: float = DELAY_CHAR):
-        """Drukuj tekst z efektem maszyny do pisania"""
-        for char in text:
-            print(char, end='', flush=True)
-            time.sleep(delay)
-        print()
+    def pause(self, prompt="[Naciśnij ENTER aby kontynuować...]"):
+        """Czekaj na ENTER"""
+        input(f"\n{C.DIM}{prompt}{C.RESET}")
 
-    def print_separator(self):
-        """Drukuj separator"""
-        print(Colors.CYAN + "═" * WIDTH + Colors.RESET)
+    def divider(self, char="═", length=WIDTH):
+        """Wyświetl separator"""
+        print(f"{C.GOLD}{char * length}{C.RESET}")
 
-    def print_box(self, text: str, color: str = Colors.YELLOW):
-        """Drukuj tekst w ramce"""
-        lines = text.split('\n')
-        max_len = max(len(line) for line in lines)
-        print(color + "╭" + "─" * (max_len + 2) + "╮" + Colors.RESET)
-        for line in lines:
-            print(color + "│ " + line.ljust(max_len) + " │" + Colors.RESET)
-        print(color + "╰" + "─" * (max_len + 2) + "╯" + Colors.RESET)
-
-    def print_ascii(self, art: str):
-        """Drukuj ASCII art"""
-        print(Colors.CYAN + art + Colors.RESET)
-
-    def print_dialogue(self, speaker: str, text: str):
-        """Drukuj dialog"""
-        print(f"\n{Colors.YELLOW}{speaker}:{Colors.RESET}")
-        self.slow_print(f'  "{text}"', DELAY_FAST)
-
-    def print_location(self):
-        """Wyświetl aktualną lokację"""
-        loc = self.current_location
-        self.clear_screen()
-        self.print_separator()
-        print(f"{Colors.BOLD}{Colors.GREEN}📍 {loc.name}{Colors.RESET}")
-        self.print_separator()
-        print()
-        self.print_ascii(loc.ascii_art)
-        print()
-        self.slow_print(loc.description, DELAY_FAST)
-        print()
-
-        if loc.npcs:
-            npcs_names = [npc.name for npc in loc.npcs]
-            print(f"{Colors.MAGENTA}Widzisz: {', '.join(npcs_names)}{Colors.RESET}")
-
-        if loc.exits:
-            exits_str = ', '.join(loc.exits.keys())
-            print(f"{Colors.BLUE}Wyjścia: {exits_str}{Colors.RESET}")
-
-        print()
-
-    # ==================== KOMENDY ====================
-
-    def show_help(self):
-        """Pokaż pomoc"""
-        help_text = """
-╔══════════════════════════════════════════════════════════╗
-║                    📖 POMOC                              ║
-╠══════════════════════════════════════════════════════════╣
-║  idź [kierunek]    - idź w podanym kierunku             ║
-║  rozmawiaj [kto]   - porozmawiaj z postacią             ║
-║  rozwiąż           - rozwiąż zagadkę                     ║
-║  plecak            - zobacz ekwipunek                    ║
-║  mapa              - pokaż mapę świata                   ║
-║  pomoc             - ta pomoc                            ║
-║  wyjdź             - zakończ grę                         ║
-╚══════════════════════════════════════════════════════════╝
-        """
-        print(Colors.CYAN + help_text + Colors.RESET)
-
-    def show_map(self):
-        """Pokaż mapę"""
-        print(Colors.CYAN + """
-╔══════════════════════════════════════════════════════════╗
-║                    🗺️  MAPA ŚWIATA                       ║
-╠══════════════════════════════════════════════════════════╣
-║                                                          ║
-║                  ┌─────────────────┐                     ║
-║                  │ BIBLIOTECZNY    │                     ║
-║                  │     LIMBO       │                     ║
-║                  └────────┬────────┘                     ║
-║           ┌───────────────┼───────────────┐              ║
-║           │               │               │              ║
-║           ▼               ▼               ▼              ║
-║    ┌────────────┐  ┌────────────┐  ┌────────────┐        ║
-║    │ POLSZCZYZNA│  │  MATHLAND  │  │  ANGLOLAD  │        ║
-║    │  PRZEKLĘTA │  │            │  │            │        ║
-║    │    ⭐      │  │    ⭐⭐    │  │   ⭐⭐⭐   │        ║
-║    └─────┬──────┘  └─────┬──────┘  └─────┬──────┘        ║
-║          │               │               │               ║
-║          ▼               ▼               ▼               ║
-║    ┌──────────┐    ┌──────────┐    ┌──────────┐          ║
-║    │   Las    │    │ Równina  │    │  Slang   │          ║
-║    │Przecink. │    │ Równań   │    │  Street  │          ║
-║    └────┬─────┘    └────┬─────┘    └────┬─────┘          ║
-║         │               │               │                ║
-║         ▼               ▼               ▼                ║
-║    ┌──────────┐    ┌──────────┐    ┌──────────┐          ║
-║    │ Jaskinia │    │ Piramida │    │  Town of │          ║
-║    │Ortografii│    │Pitagorasa│    │  Tenses  │          ║
-║    └──────────┘    └──────────┘    └──────────┘          ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
-        """ + Colors.RESET)
-
-        # Pokaż status motywacji
-        print("\n📊 Status Motywacji:")
-        for subject, obtained in self.player.motivations.items():
-            status = "✅" if obtained else "❌"
-            print(f"  {status} {subject.capitalize()}")
-
-    def show_inventory(self):
-        """Pokaż ekwipunek"""
-        print(f"\n{Colors.YELLOW}🎒 PLECAK:{Colors.RESET}")
-        if self.player.inventory:
-            for item in self.player.inventory:
-                print(f"  • {item}")
-        else:
-            print("  (pusty)")
-
-        print(f"\n{Colors.GREEN}⭐ MOTYWACJE:{Colors.RESET}")
-        for subject, obtained in self.player.motivations.items():
-            status = "✅" if obtained else "⬜"
-            print(f"  {status} {subject.capitalize()}")
-
-        print(f"\n{Colors.CYAN}💰 Punkty: {self.player.score}{Colors.RESET}")
-
-    def go_to(self, direction: str):
-        """Idź do innej lokacji"""
-        if not direction:
-            print("Gdzie chcesz iść? Wpisz 'idź [kierunek]'")
-            return
-
-        direction = direction.lower().strip()
-        exits = self.current_location.exits
-
-        if direction in exits:
-            next_loc_id = exits[direction]
-
-            # Sprawdź czy można przejść (czy rozwiązano zagadki)
-            if self.current_location.name == "Las Przecinkowy" and direction == 'dalej':
-                geralt = self.current_location.get_npc("Geralt")
-                if geralt and geralt.puzzle and not geralt.puzzle.solved:
-                    print("\n⚠️ Geralt blokuje przejście! Najpierw rozwiąż jego zagadkę.")
-                    return
-
-            if self.current_location.name == "Równina Równań" and direction == 'dalej':
-                pita = self.current_location.get_npc("Pitagoras")
-                if pita and pita.puzzle and not pita.puzzle.solved:
-                    print("\n⚠️ Pitagoras nie przepuści cię bez rozwiązania równania!")
-                    return
-
-            if self.current_location.name == "Slang Street" and direction == 'dalej':
-                zosia = self.current_location.get_npc("Zosia")
-                if zosia and zosia.puzzle and not zosia.puzzle.solved:
-                    print("\n⚠️ Zosia chce najpierw sprawdzić twój angielski!")
-                    return
-
-            self.current_location = self.locations[next_loc_id]
-            self.print_location()
-        else:
-            print(f"Nie możesz tam iść. Dostępne kierunki: {', '.join(exits.keys())}")
-
-    def talk_to(self, npc_name: str):
-        """Porozmawiaj z NPC"""
-        if not npc_name:
-            if self.current_location.npcs:
-                npc = self.current_location.npcs[0]
+    def narrator(self, text: str, delay: float = NARRATOR_DELAY):
+        """Narracja z efektem maszyny do pisania"""
+        # Wrap text to width
+        lines = []
+        for paragraph in text.split('\n'):
+            if paragraph.strip():
+                wrapped = textwrap.wrap(paragraph.strip(), width=WIDTH-4)
+                lines.extend(wrapped)
+                lines.append('')  # Empty line between paragraphs
             else:
-                print("Z kim chcesz rozmawiać?")
-                return
-        else:
-            npc = self.current_location.get_npc(npc_name)
+                lines.append('')
 
-        if not npc:
-            print(f"Nie widzisz tutaj nikogo o imieniu '{npc_name}'")
-            return
-
-        self.print_ascii(npc.ascii_art)
-        dialogue = npc.talk()
-        self.print_dialogue(npc.name, dialogue)
-
-        # Kontynuuj dialog jeśli jest więcej
-        while npc.dialogue_index < len(npc.dialogues):
-            input(f"\n{Colors.CYAN}[Naciśnij ENTER aby kontynuować...]{Colors.RESET}")
-            dialogue = npc.talk()
-            self.print_dialogue(npc.name, dialogue)
-
-    def solve_puzzle(self):
-        """Rozwiąż zagadkę"""
-        # Znajdź NPC z zagadką
-        puzzle_npc = None
-        for npc in self.current_location.npcs:
-            if npc.puzzle and not npc.puzzle.solved:
-                puzzle_npc = npc
-                break
-            # Sprawdź drugą zagadkę Yennefer
-            if hasattr(npc, 'puzzle2') and hasattr(npc, 'current_puzzle'):
-                if npc.current_puzzle == 2 and not npc.puzzle2.solved:
-                    puzzle_npc = npc
-                    break
-
-        if not puzzle_npc:
-            print("Nie ma tu żadnej zagadki do rozwiązania.")
-            return
-
-        # Pobierz aktualną zagadkę
-        if hasattr(puzzle_npc, 'current_puzzle') and puzzle_npc.current_puzzle == 2:
-            puzzle = puzzle_npc.puzzle2
-        else:
-            puzzle = puzzle_npc.puzzle
-
-        print(f"\n{Colors.YELLOW}{'═' * 50}{Colors.RESET}")
-        print(f"{Colors.BOLD}🧩 ZAGADKA od {puzzle_npc.name}:{Colors.RESET}")
-        print(f"\n{puzzle.question}\n")
-
-        if puzzle.options:
-            for opt in puzzle.options:
-                print(f"  {opt}")
+        for line in lines:
+            for char in line:
+                print(char, end='', flush=True)
+                # Variable speed for punctuation
+                if char in '.!?':
+                    time.sleep(delay * 6)
+                elif char in ',;:':
+                    time.sleep(delay * 3)
+                else:
+                    time.sleep(delay)
             print()
 
-        answer = input(f"{Colors.GREEN}Twoja odpowiedź: {Colors.RESET}").strip()
+    def fast_print(self, text: str):
+        """Szybkie wyświetlanie"""
+        self.narrator(text, FAST_DELAY)
 
-        if puzzle.check_answer(answer):
-            print(f"\n{Colors.GREEN}✅ BRAWO! Poprawna odpowiedź!{Colors.RESET}")
-            puzzle.solved = True
-            self.player.score += puzzle.points
+    def dialog(self, speaker: str, text: str, color: str = C.YELLOW):
+        """Wyświetl dialog postaci"""
+        print(f"\n{color}╭─ {speaker} ─╮{C.RESET}")
+        wrapped = textwrap.wrap(text, width=WIDTH-4)
+        for line in wrapped:
+            print(f'{color}│{C.RESET} {C.ITALIC}"{line}"{C.RESET}')
+        print(f"{color}╰{'─' * (len(speaker) + 4)}╯{C.RESET}")
 
-            # Specjalna logika dla Yennefer (2 zagadki)
-            if hasattr(puzzle_npc, 'current_puzzle'):
-                if puzzle_npc.current_puzzle == 1:
-                    print(f"\n{Colors.YELLOW}{puzzle_npc.name}:{Colors.RESET} Świetnie! Ale to nie koniec...")
-                    puzzle_npc.current_puzzle = 2
-                    print("Mam jeszcze jedno zadanie! Wpisz 'rozwiąż' ponownie.")
-                    return
+    def action(self, text: str):
+        """Wyświetl akcję/komentarz gracza"""
+        print(f"\n{C.DIM}[{text}]{C.RESET}")
 
-            # Sprawdź czy to była ostatnia zagadka w krainie
-            self._check_realm_complete()
+    def emphasis(self, text: str) -> str:
+        """Tekst wyróżniony"""
+        return f"{C.GOLD}{text}{C.RESET}"
+
+    def loud(self, text: str) -> str:
+        """Tekst głośny/krzyk"""
+        return f"{C.RED}{C.BOLD}{text}{C.RESET}"
+
+    def whisper(self, text: str) -> str:
+        """Tekst szeptany"""
+        return f"{C.DIM}{C.ITALIC}{text}{C.RESET}"
+
+    def meta(self, text: str) -> str:
+        """Komentarz meta-narracyjny"""
+        return f"{C.MAGENTA}{text}{C.RESET}"
+
+    def thought(self, text: str) -> str:
+        """Myśl gracza"""
+        return f"{C.BLUE}{C.ITALIC}{text}{C.RESET}"
+
+    # ======================== INTRO ========================
+
+    def show_title(self):
+        """Ekran tytułowy"""
+        self.clear()
+        print(TITLE_ART)
+        print(f"\n{C.DIM}        Gra edukacyjna dla uczniów klas 5-6{C.RESET}")
+        print(f"{C.DIM}          Polski • Matematyka • Angielski{C.RESET}")
+        self.pause("\n        [Naciśnij ENTER aby rozpocząć...]")
+
+    def intro_school(self):
+        """Prolog - pusta szkoła"""
+        self.clear()
+        print(f"\n{C.DIM}╔══════════════════════════════════════════════════════╗{C.RESET}")
+        print(f"{C.GOLD}                        PROLOG{C.RESET}")
+        print(f"{C.DIM}╚══════════════════════════════════════════════════════╝{C.RESET}")
+        print()
+
+        self.narrator("Piątek. 16:30.")
+        time.sleep(0.5)
+
+        self.narrator(f"\nSzkoła Podstawowa nr 7 jest pusta. Prawie.")
+        time.sleep(0.3)
+
+        self.narrator(f"\n{self.emphasis('Ty')} jesteś tutaj. Oczywiście. Bo przecież kto normalny wychodzi ze szkoły o normalnej porze, prawda?")
+
+        self.narrator(f"\nPoprawka ze sprawdzianu z polskiego. Pani Kowalska powiedziała, że {self.thought('to dla twojego dobra')}. Pewnie. Dla dobra. Jak praktycznie wszystko, co dorośli każą ci robić w piątek po lekcjach.")
+
+        self.narrator(f"\nIdziesz korytarzem. Twoje kroki odbijają się echem. Gdzieś kapie woda. Lampy migają.")
+
+        self.narrator(f"\n{self.meta('Normalka. Szkoła po godzinach zawsze przypomina film grozy, tylko zamiast zombi są sterty zeszytów i plakaty o higienie.')}")
+
+        self.pause()
+
+    def intro_door(self):
+        """Odkrycie drzwi"""
+        self.clear()
+        print(f"\n{C.DIM}═══════════════════════════════════════════════════════{C.RESET}")
+        print(f"{C.GOLD}              Korytarz - Drugie piętro{C.RESET}")
+        print(f"{C.DIM}═══════════════════════════════════════════════════════{C.RESET}\n")
+
+        self.narrator("Masz znaleźć salę 217. Ale... czekaj. Nie było sali 217 na drugim piętrze? Jesteś pewien, że była 217, a nie 207...?")
+
+        self.narrator(f"\nBłądzisz. {self.meta('Oczywiście. Bo dlaczego miałoby być łatwo.')}")
+
+        self.narrator("\nI wtedy to widzisz.")
+        time.sleep(0.5)
+
+        self.narrator(f"\nDrzwi do {self.emphasis('pokoju nauczycielskiego')} są uchylone.")
+
+        self.narrator(f"\nNigdy nie są uchylone. {self.loud('NIGDY.')}")
+
+        self.narrator(f"\n{self.meta('To jest jak Strefa 51 tej szkoły — wchodzisz tam tylko, jeśli masz przesłuchanie albo jesteś w NAPRAWDĘ dużych tarapatach.')}")
+
+        self.narrator(f"\nAle przez szparę sączy się... {self.emphasis('światło')}. Niebieskie. Pulsujące. Jak ekran telefonu w nocy, tylko... jaśniejsze. Dziwniejsze.")
+
+        self.narrator("\nPodchodzisz.")
+
+        self.narrator(f"\n{self.meta('Oczywiście, że podchodzisz. Bo jesteś ciekawy. Albo głupi. Albo jedno i drugie.')}")
+
+        self.narrator("\nPchniesz drzwi.")
+        time.sleep(0.3)
+        self.narrator("\nI zamierasz.")
+
+        self.pause()
+
+    def intro_book(self):
+        """Odkrycie Księgi"""
+        self.clear()
+        print(BOOK_ART)
+
+        self.narrator("Na biurku leży książka. Ale nie zwykła książka.")
+
+        self.narrator(f"\nTo jest... no, powiedzmy sobie szczerze — to jest {self.loud('GRUBA')} księga. Z tych, które ważą tyle co twój plecak w poniedziałek. Oprawa ze skóry {self.whisper('(przynajmniej masz nadzieję, że to skóra)')}. Złote okucia. Dziwne runy na okładce.")
+
+        self.narrator(f"\nI {self.emphasis('świeci')}. Jasnym, niebieskim światłem.")
+
+        self.narrator("\nPodchodzisz bliżej. Księga... drży? Wibruje jak telefon na wibracji? Co do—")
+
+        time.sleep(0.5)
+        self.narrator(f"\nI nagle się {self.loud('OTWIERA')}.")
+
+        print(f"\n{C.RED}{C.BOLD}BACH!{C.RESET}")
+        time.sleep(0.3)
+
+        self.narrator("\nKartki same się przewracają. Szybko. Coraz szybciej. Litery zlatują ze stron. Dosłownie. Unoszą się w powietrzu.")
+
+        self.narrator(f"\nA potem słyszysz {self.emphasis('GŁOS')}.")
+
+        self.narrator(f"\nNie ma nikogo w pokoju. Ale głos jest. Młody. Męski. Lekko... {self.whisper('znudzony?')}")
+
+        self.pause()
+
+    def intro_dialog(self):
+        """Rozmowa z Księgą"""
+        self.clear()
+        print(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
+
+        self.dialog("📚 Księga", "Wreszcie. WRESZCIE ktoś przyszedł. Myślałem, że tu zgnuję w tym pokoju pełnym kubków z niedopitą kawą i stosów kartkówek do sprawdzenia.")
+
+        self.action("Milczysz. Bo co masz powiedzieć MÓWIĄCEJ KSIĄŻCE?")
+
+        self.dialog("📚 Księga", "Ok, widzę, że jesteś w szoku. Rozumiem. Mówiąca księga, to niecodzienny widok, wiem. Ale nie mamy czasu na panikę, kolego. Mam problem. DUŻY problem.")
+
+        self.action("Wciąż milczysz. Ale już nie uciekasz. To dobry znak.")
+
+        self.dialog("📚 Księga", "Jestem Wielka Księga Wiedzy. Tak, brzmi pretensjonalnie, wiem. Mieszkam tutaj od... ee... nie pamiętam. Kilkadziesiąt lat? Może więcej? Czas w pokoju nauczycielskim płynie dziwnie.")
+
+        self.pause()
+
+        self.clear()
+        print(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
+
+        self.dialog("📚 Księga", "Moja rola? Przechowuję wiedzę. Całą. No, prawie całą. Od historii dinozaurów po to, dlaczego 'rz' brzmi jak 'ż', ale pisze się inaczej.")
+
+        self.action("Kiwasz głową. Bo pytanie o 'rz' i 'ż' zadajesz sobie od klasy trzeciej.")
+
+        self.dialog("📚 Księga", "Ale jest haczyk. Wiedza bez MOTYWACJI jest bezużyteczna. Możesz mieć w głowie wszystkie wzory i daty, ale jeśli nie masz motywacji do nauki... to co z tego?")
+
+        self.dialog("📚 Księga", "I tu dochodzimy do sedna sprawy. Moja Motywacja... UCIEKŁA.")
+
+        self.action("Mrugasz. Czekaj, CO?")
+
+        self.dialog("📚 Księga", "Tak, UCIEKŁA. Rozpierzchła się po Krainie Przedmiotów. Podzieliła się na kawałki. Polski, Matematyka, Angielski... wszystkie się rozłaziły.")
+
+        self.dialog("📚 Księga", "Bez nich jestem tylko... zbiorem suchych faktów. Nudnych dat. Nijakiej wiedzy, którą i tak wszyscy scrollują na Wikipedii.")
+
+        self.action("Patrzysz na księgę. Ona... wygląda na smutną? Czy księga może być smutna?")
+
+        self.pause()
+
+    def intro_choice(self):
+        """Wybór gracza"""
+        self.clear()
+        print(f"\n{C.GOLD}══════════════ Pokój nauczycielski ══════════════{C.RESET}\n")
+
+        self.dialog("📚 Księga", "Potrzebuję pomocy. Twojej pomocy. Musisz wejść do mojego świata — do Paradoksji — i odzyskać kawałki Motywacji.")
+
+        self.dialog("📚 Księga", "Masz może... 40 minut? Zanim tu wpadnie pani Kowalska i zobaczy cię gadającego z książką. A wtedy to dopiero będzie POPRAWKA.")
+
+        self.action("Zastanawiasz się. To brzmi absurdalnie. Ale...")
+
+        self.dialog("📚 Księga", "No to co? Wchodzisz, czy ślisz się na poprawkę?")
+
+        print(f"\n{C.GOLD}════════════════ TWÓJ WYBÓR ════════════════{C.RESET}")
+        print(f"\n  {C.GREEN}[1]{C.RESET} \"Wchodzę.\" {self.whisper('(bo czemu nie)')}")
+        print(f"  {C.RED}[2]{C.RESET} \"Uciekam stąd!\" {self.whisper('(game over)')}")
+
+        while True:
+            choice = input(f"\n{C.CYAN}Twój wybór (1/2): {C.RESET}").strip()
+            if choice == '1':
+                return True
+            elif choice == '2':
+                self.game_over_escape()
+                return False
+            else:
+                print("Wpisz 1 lub 2")
+
+    def game_over_escape(self):
+        """Game over - ucieczka"""
+        self.clear()
+        print(f"\n{C.RED}══════════════ GAME OVER ══════════════{C.RESET}\n")
+
+        self.narrator("Uciekasz.")
+
+        self.narrator(f"\n{self.meta('Oczywiście, że uciekasz. To rozsądne. Mówiąca księga? Magiczne światy? Kto by w to wchodził?')}")
+
+        self.narrator("\nWracasz do sali 207 (bo jednak była 207, nie 217). Piszesz poprawkę. Dostajesz trójkę z minusem.")
+
+        self.narrator("\nWracasz do domu. Jesz kolację. Grasz w telefon. Idziesz spać.")
+
+        self.narrator("\nI nigdy, przenigdy nie dowiesz się, co by było, gdybyś jednak wszedł do tej księgi.")
+
+        print(f"\n{self.emphasis('Koniec.')}")
+
+        print(f"\n{self.whisper('(No dobra, to był głupi wybór. Uruchom grę jeszcze raz, żeby spróbować mądrzej.)')}")
+
+        input(f"\n{C.DIM}[Naciśnij ENTER aby zakończyć...]{C.RESET}")
+        self.running = False
+
+    def intro_transport(self):
+        """Transport do Paradoksji"""
+        self.clear()
+        print(f"\n{C.GOLD}══════════════ Między światami ══════════════{C.RESET}\n")
+
+        self.narrator("Wybierasz \"wchodzę\".")
+
+        self.narrator(f"\n{self.meta('Oczywiście, że wybierasz.')}")
+
+        self.narrator(f"\nKsięga uśmiecha się. Tak, {self.emphasis('UŚMIECHA SIĘ')}. Rysunki na okładce układają się w coś przypominającego uśmiech.")
+
+        self.dialog("📚 Księga", "Wiedziałem, że nie jesteś frajerem. Trzymaj się!")
+
+        self.narrator("\nI nagle—")
+
+        print(f"\n{C.RED}{C.BOLD}SZUUUUUUUUUM!{C.RESET}")
+        time.sleep(0.5)
+
+        self.narrator(f"\nŚwiat się {self.loud('KRĘCI')}.")
+
+        self.narrator("\nPokój nauczycielski wiruje jak bęben pralki. Ściany się rozmazują. Podłoga znika pod stopami.")
+
+        self.narrator(f"\n{self.emphasis('Lecisz.')}")
+
+        self.narrator("\nPrzez... kartki? Latające kartki? Litery przelatują obok twojej głowy. Przecinki świszczą jak pociski. Cyfry wirują jak liście w wichurze.")
+
+        self.narrator("\nI nagle...")
+
+        print(f"\n{C.RED}{C.BOLD}ŁUBUDU!{C.RESET}")
+        time.sleep(0.3)
+
+        self.narrator("\nLądowanie. Twarde. Na tyłku.")
+
+        print(f"\n{self.thought('Auć.')}")
+
+        self.narrator("\nWstajesz. Otrzepujesz spodnie. I rozglądasz się.")
+
+        self.pause()
+
+    # ======================== HUB ========================
+
+    def hub_arrival(self):
+        """Przybycie do Hubu"""
+        self.clear()
+        print(HUB_ART)
+
+        print(f"\n{C.GOLD}═══════ ✨ BIBLIOTECZNY LIMBO ✨ ═══════{C.RESET}\n")
+
+        self.narrator("Jesteś w... przestrzeni.")
+
+        self.narrator("\nNie jest to pokój. Nie jest to korytarz. To jest... no, trudno powiedzieć.")
+
+        self.narrator("\nWiszysz jakby w powietrzu. Pod tobą — biel. Nad tobą — biel. Wokół unoszą się kartki. Powoli. Leniwie. Jak ryby w akwarium.")
+
+        self.narrator(f"\nNiektóre kartki mają notatki: {self.whisper('Sprawdzian - matematyka')}, {self.whisper('Zadanie domowe - angielski')}, {self.whisper('Wypracowanie - 3+')}.")
+
+        self.narrator("\nCzujesz zapach... papieru. Starego papieru. I kurzu. I kredy.")
+
+        self.narrator(f"\n{self.meta('To pachnie jak szkoła. Ale jakoś... inaczej.')}")
+
+        self.narrator(f"\nI wtedy widzisz {self.emphasis('JĄ')}.")
+
+        self.pause()
+        self.notka_intro()
+
+    def notka_intro(self):
+        """Spotkanie z Notką"""
+        self.clear()
+        print(NOTKA_ART)
+
+        print(f"\n{C.GOLD}═══════ Biblioteczny Limbo ═══════{C.RESET}\n")
+
+        self.narrator("To jest... kartka papieru. Z narysowaną buźką. I mówi do ciebie.")
+
+        self.dialog("📄 Notka", "Hej! Ty! Nowy!")
+
+        self.action("Patrzysz na kartkę. Ok. Najpierw mówiąca księga. Teraz mówiąca kartka. Piątek po lekcjach robi się coraz dziwniejszy.")
+
+        self.dialog("📄 Notka", "Jestem Notka. Asystentka Księgi. Prowadzę tutaj interesy, gdy szef śpi. A śpi DUŻO, bo ma już swoje lata.")
+
+        self.dialog("📄 Notka", "Widzę, że jesteś nowy w Paradoksji. No to tl;dr sytuacji:")
+
+        self.action("Notka zaczyna mówić szybciej, jak influenserka nagrywająca TikToka:")
+
+        self.dialog("📄 Notka", "Jesteś w Bibliotecznym Limbo. To jest hub. Central. Baza. Stąd prowadzą portale do różnych Krain Przedmiotów.")
+
+        self.pause()
+
+        self.clear()
+        print(PORTAL_ART)
+
+        self.dialog("📄 Notka", "Twoja misja: odzyskać kawałki Motywacji. Są trzy:")
+
+        print(f"\n  🪶 {self.emphasis('Polszczyzna Przeklęta')} — poziom easy, dla rozgrzewki.")
+        print(f"  🔢 {self.emphasis('Mathlandia')} — poziom medium, tu już musisz myśleć.")
+        print(f"  🇬🇧 {self.emphasis('Anglolad')} — poziom hard, bo angielski zawsze hard.")
+
+        self.dialog("📄 Notka", "Radzę iść po kolei. Bo jeśli wpadniesz do Angloladu bez przygotowania, to się pogubisz jak ja w tablicy Excela.")
+
+        self.action("Kiwasz głową.")
+
+        self.dialog("📄 Notka", "Każda kraina ma swojego bossa — NPC, który pilnuje Motywacji. Musisz rozwiązać zagadki, żeby ją dostać. Easy, prawda?")
+
+        self.action("Nie jest easy. Ale kiwasz głową.")
+
+        self.dialog("📄 Notka", "I jeszcze jedno. Uważaj na język. Tutaj język jest... dosłowny. Jeśli coś powiesz, może się spełnić. Jeśli popełnisz błąd ortograficzny... cóż, lepiej nie popełniaj.")
+
+        self.dialog("📄 Notka", "No to powodzenia, bestie! Widzimy się po drugiej stronie!")
+
+        self.action("Notka macha ci na pożegnanie i znika w stosie kartek.")
+
+        self.pause()
+
+    def show_hub(self):
+        """Pokaż hub z portalami"""
+        self.clear()
+        print(PORTAL_ART)
+
+        # Status motywacji
+        print(f"\n{C.GOLD}══════════ Status Motywacji ══════════{C.RESET}")
+
+        statuses = {
+            'polski': '📚 Polski',
+            'matematyka': '🔢 Matematyka',
+            'angielski': '🇬🇧 Angielski'
+        }
+
+        for key, name in statuses.items():
+            status = f"{C.GREEN}✓ ZDOBYTA{C.RESET}" if key in self.puzzles_solved else f"{C.DIM}○ Brak{C.RESET}"
+            print(f"  {name}: {status}")
+
+        print(f"\n  {C.GOLD}⭐ Punkty: {self.score}{C.RESET}")
+
+        if len(self.puzzles_solved) == 3:
+            print(f"\n{C.GREEN}{C.BOLD}Wszystkie Motywacje zebrane! Wpisz 'powrót' aby wrócić do Księgi!{C.RESET}")
+
+        # Menu wyboru
+        print(f"\n{C.CYAN}Dokąd wchodzisz?{C.RESET}")
+
+        if 'polski' not in self.puzzles_solved:
+            print(f"  {C.GREEN}[1]{C.RESET} Polszczyzna Przeklęta")
         else:
-            hint = puzzle.get_hint()
-            print(f"\n{Colors.RED}❌ Niestety, to nie jest poprawna odpowiedź.{Colors.RESET}")
-            print(f"{Colors.YELLOW}💡 Wskazówka: {hint}{Colors.RESET}")
+            print(f"  {C.DIM}[1] Polszczyzna Przeklęta ✓{C.RESET}")
 
-            if puzzle.attempts >= 3:
-                print(f"\n{Colors.MAGENTA}Nie poddawaj się! Spróbuj jeszcze raz.{Colors.RESET}")
+        if 'matematyka' not in self.puzzles_solved:
+            print(f"  {C.GREEN}[2]{C.RESET} Mathlandia")
+        else:
+            print(f"  {C.DIM}[2] Mathlandia ✓{C.RESET}")
 
-    def _check_realm_complete(self):
-        """Sprawdź czy ukończono krainę"""
-        loc_name = self.current_location.name
+        if 'angielski' not in self.puzzles_solved:
+            print(f"  {C.GREEN}[3]{C.RESET} Anglolad")
+        else:
+            print(f"  {C.DIM}[3] Anglolad ✓{C.RESET}")
 
-        # Polski - Jaskinia Ortografii
-        if loc_name == "Jaskinia Ortografii":
-            yen = self.current_location.get_npc("Yennefer")
-            if yen and yen.puzzle.solved and hasattr(yen, 'puzzle2') and yen.puzzle2.solved:
-                if not self.player.motivations['polski']:
-                    self.player.motivations['polski'] = True
-                    self.player.add_item("🪶 Motywacja Polskiego")
-                    print(f"\n{Colors.GREEN}{'═' * 50}{Colors.RESET}")
-                    print(f"{Colors.BOLD}🎉 ZDOBYŁEŚ MOTYWACJĘ Z POLSKIEGO! 🪶{Colors.RESET}")
-                    print(f"{Colors.GREEN}{'═' * 50}{Colors.RESET}")
-                    self._check_victory()
+        if len(self.puzzles_solved) == 3:
+            print(f"  {C.GOLD}[4]{C.RESET} Wróć do Księgi (zakończ)")
 
-        # Matematyka - Piramida
-        elif loc_name == "Piramida Pitagorasa":
-            zero = self.current_location.get_npc("Zero")
-            if zero and zero.puzzle.solved:
-                if not self.player.motivations['matematyka']:
-                    self.player.motivations['matematyka'] = True
-                    self.player.add_item("🔢 Motywacja Matematyki")
-                    print(f"\n{Colors.GREEN}{'═' * 50}{Colors.RESET}")
-                    print(f"{Colors.BOLD}🎉 ZDOBYŁEŚ MOTYWACJĘ Z MATEMATYKI! 🔢{Colors.RESET}")
-                    print(f"{Colors.GREEN}{'═' * 50}{Colors.RESET}")
-                    # Zero jest szczęśliwy
-                    print(f"\n{Colors.YELLOW}Zero:{Colors.RESET} Wow... matematyka NAPRAWDĘ ma sens! Dziękuję! 😊")
-                    self._check_victory()
+        print(f"  {C.RED}[q]{C.RESET} Wyjdź z gry")
 
-        # Angielski - Town of Tenses
-        elif loc_name == "Town of Tenses":
-            shakespeare = self.current_location.get_npc("Sir Shakespire")
-            if shakespeare and shakespeare.puzzle.solved:
-                if not self.player.motivations['angielski']:
-                    self.player.motivations['angielski'] = True
-                    self.player.add_item("🏴 Motywacja Angielskiego")
-                    print(f"\n{Colors.GREEN}{'═' * 50}{Colors.RESET}")
-                    print(f"{Colors.BOLD}🎉 ZDOBYŁEŚ MOTYWACJĘ Z ANGIELSKIEGO! 🏴{Colors.RESET}")
-                    print(f"{Colors.GREEN}{'═' * 50}{Colors.RESET}")
-                    print(f"\n{Colors.YELLOW}Sir Shakespire:{Colors.RESET} Excellent! Thou art a true scholar! 🎭")
-                    self._check_victory()
+    # ======================== POLSZCZYZNA ========================
 
-    def _check_victory(self):
-        """Sprawdź czy gracz wygrał"""
-        if self.player.motivation_count() == 3:
-            self._show_ending()
+    def polski_intro(self):
+        """Intro do Polszczyzny"""
+        self.clear()
+        print(f"\n{C.GREEN}══════════ 🪶 POLSZCZYZNA PRZEKLĘTA 🪶 ══════════{C.RESET}\n")
 
-    def _show_ending(self):
-        """Pokaż zakończenie gry"""
-        input(f"\n{Colors.CYAN}[Naciśnij ENTER aby kontynuować...]{Colors.RESET}")
-        self.clear_screen()
+        self.narrator("Wchodzisz w portal.")
 
-        print(Colors.YELLOW + ASCII_MOTIVATION + Colors.RESET)
-        time.sleep(2)
+        self.narrator("\nŚwiat się zmienia. Kolory. Zapachy. Dźwięki.")
 
-        print(f"\n{Colors.BOLD}Księga Wiedzy:{Colors.RESET}")
-        self.slow_print('"YOOO! Masz wszystkie trzy kawałki! Poskładajmy je!"')
+        self.narrator(f"\nLas wita cię szmerem, który brzmi jak... {self.emphasis('szelest kartek w podręczniku do gramatyki')}.")
+
+        self.narrator(f"\nDrzewa są {self.emphasis('DZIWNE')}. Na gałęziach zamiast liści wiszą {self.emphasis('przecinki')}. Tak, dosłownie znaki interpunkcyjne. Małe. Czarne. Zwisające jak dziwne owoce.")
+
+        self.narrator(f"\nNiektóre spadają. Miękko. Na mech. {self.whisper('*Plum, plum, plum.*')}")
+
+        self.narrator("\nSłyszysz coś w oddali. Szczęk metalu. Ktoś tu jest.")
+
+        self.narrator(f"\nIdziesz dalej. Mech ścieszy pod stopami. Powietrze pachnie papierem i... tuszem? {self.meta('Dziwne miejsce.')}")
+
+        self.narrator(f"\nI nagle widzisz {self.emphasis('GO')}.")
+
+        self.pause()
+        self.polski_geralt()
+
+    def polski_geralt(self):
+        """Spotkanie z Geraltem"""
+        self.clear()
+        print(GERALT_ART)
+
+        print(f"\n{C.GREEN}══════════ Las Przecinkowy ══════════{C.RESET}\n")
+
+        self.narrator("Mężczyzna. Siwe włosy związane w kucyk. Miecz u boku. Zmęczona mina człowieka, który widział za dużo.")
+
+        self.action("Odwraca się. W ręku trzyma miecz. Na mieczu wygrawerowane: 'ORTOGRAFIA +5'")
+
+        self.dialog("⚔️ Geralt", "Witaj, wędrowcze.")
+
+        self.action("Mierzy cię wzrokiem. Nie wygląda na zachwyconego.")
+
+        self.dialog("⚔️ Geralt", "Widzę, że jesteś nowy w Polszczyźnie. Pozwól, że wyjaśnię zasady. Tu język jest żywy. Dosłownie. Błędy gramatyczne materializują się jako potwory.")
+
+        self.dialog("⚔️ Geralt", "Widziałeś kiedyś Błęda Ortograficznego? Nie? To dobrze. Bo wygląda jak koszmar senny polonistki.")
+
+        self.action("Geralt siada na kamieniu. Wygląda na zmęczonego.")
+
+        self.dialog("⚔️ Geralt", "Pilnuję tutaj Motywacji Polskiego. I nie oddam jej byle komu. Musisz udowodnić, że zasługujesz.")
+
+        self.pause()
+        self.polski_puzzle()
+
+    def polski_puzzle(self):
+        """Zagadka Polskiego"""
+        self.clear()
+        print(f"\n{C.GREEN}══════════ 🪶 ZAGADKA POLSKIEGO 🪶 ══════════{C.RESET}\n")
+
+        self.dialog("⚔️ Geralt", "Oto twoje wyzwanie. Znajdź błąd. I nie pomyl się. Bo w Polszczyźnie błędy... gryzą.")
+
+        print(f"\n{C.CYAN}╔════════════════════════════════════════════════════╗")
+        print(f"║  Które z poniższych zdań zawiera BŁĄD INTERPUNKCYJNY?  ║")
+        print(f"╚════════════════════════════════════════════════════╝{C.RESET}")
+
+        print(f"\n  {C.GREEN}[A]{C.RESET} Poszedłem na spacer do parku.")
+        print(f"  {C.GREEN}[B]{C.RESET} Kupiłem nową książkę w księgarni.")
+        print(f"  {C.GREEN}[C]{C.RESET} Wziąłem parasol bo padał deszcz.")
+        print(f"  {C.GREEN}[D]{C.RESET} Spotkałem się z przyjacielem.")
+
+        hint_shown = False
+
+        while True:
+            answer = input(f"\n{C.CYAN}Twoja odpowiedź (A/B/C/D lub 'podpowiedź'): {C.RESET}").strip().lower()
+
+            if answer in ['podpowiedź', 'podpowiedz', 'hint', 'p']:
+                if not hint_shown:
+                    print(f"\n{C.YELLOW}💡 Podpowiedź: Sprawdź znaki interpunkcyjne — po \"parasol\" czegoś brakuje! Przed \"bo\" powinien być...{C.RESET}")
+                    hint_shown = True
+                    self.hints_used += 1
+                else:
+                    print(f"\n{C.YELLOW}💡 Przed \"bo\" wprowadzającym zdanie podrzędne ZAWSZE stawiamy przecinek!{C.RESET}")
+                continue
+
+            if answer in ['c', '3']:
+                self.polski_success()
+                return
+            elif answer in ['a', 'b', 'd', '1', '2', '4']:
+                print(f"\n{C.RED}❌ Niestety, to nie jest poprawna odpowiedź. Spróbuj jeszcze raz!{C.RESET}")
+            else:
+                print(f"{C.DIM}Wpisz A, B, C lub D{C.RESET}")
+
+    def polski_success(self):
+        """Sukces w Polskim"""
+        self.puzzles_solved.append('polski')
+        self.motivations.append('📚')
+        self.inventory.append('📚 Motywacja Polskiego')
+        self.score += 100
+
+        self.clear()
+        print(f"\n{C.GREEN}{'═' * 50}")
+        print(f"           ✨ BRAWO! POPRAWNA ODPOWIEDŹ! ✨")
+        print(f"{'═' * 50}{C.RESET}\n")
+
+        self.narrator("Geralt kiwa głową. Po raz pierwszy widzisz cień uśmiechu na jego twarzy.")
+
+        self.dialog("⚔️ Geralt", "Dobrze. Przed 'bo' zawsze stawiamy przecinek, gdy wprowadza zdanie podrzędne przyczynowe. To podstawa.")
+
+        self.dialog("⚔️ Geralt", "Zasłużyłeś.")
+
+        self.narrator(f"\nGeralt wyciąga z kieszeni świecący kryształ. {self.emphasis('Motywacja Polskiego')}.")
+
+        self.narrator("\nBierzesz ją. Jest ciepła. Wibruje lekko w dłoni.")
+
+        print(f"\n{C.GREEN}+100 punktów!{C.RESET}")
+        print(f"{C.GOLD}📚 Zdobyto Motywację Polskiego!{C.RESET}")
+
+        self.dialog("⚔️ Geralt", "Idź. Czekają cię jeszcze dwie krainy. I uważaj na te przecinki... one tu dosłownie spadają z drzew.")
+
+        self.narrator(f"\n{self.emphasis('Jedna Motywacja zdobyta. Zostały dwie.')}")
+
+        self.pause()
+
+    # ======================== MATHLANDIA ========================
+
+    def matma_intro(self):
+        """Intro do Matmy"""
+        self.clear()
+        print(f"\n{C.BLUE}══════════ 🔢 MATHLANDIA 🔢 ══════════{C.RESET}\n")
+
+        self.narrator("Portal matematyczny jest... inny.")
+
+        self.narrator(f"\nKiedy przechodzisz, czujesz, jak twój mózg się {self.emphasis('rozciąga')}. Jakby ktoś próbował zmieścić w nim więcej miejsca na liczby.")
+
+        self.narrator(f"\nPo drugiej stronie... {self.loud('WOW')}.")
+
+        self.narrator(f"\nGóry. Ale nie byle jakie góry. Góry w kształcie {self.emphasis('piramid')}. Idealnych, geometrycznych piramid. Niebo jest pokryte wzorami — równania wirują jak chmury.")
+
+        self.narrator("\nŚcieżka pod stopami to linia liczbowa. Dosłownie. Widzisz na niej znaczki: -3, -2, -1, 0, 1, 2, 3...")
+
+        self.narrator(f"\nI chodzisz po niej. {self.meta('Surrealistyczne.')}")
+
+        self.narrator("\nW oddali widzisz postać. Stoi przy ogromnym kamieniu z wyrytym trójkątem.")
+
+        self.pause()
+        self.matma_pitagoras()
+
+    def matma_pitagoras(self):
+        """Spotkanie z Pitagorasem"""
+        self.clear()
+        print(PITAGORAS_ART)
+
+        print(f"\n{C.BLUE}══════════ Mathlandia ══════════{C.RESET}\n")
+
+        self.narrator("Starzec. Długa biała broda. Toga. Sandały. Wygląda jakby wyszedł prosto z... no, z lekcji historii starożytnej.")
+
+        self.narrator("\nW ręku trzyma cyrkiel i linijkę. Jak broń.")
+
+        self.dialog("📐 Pitagoras", "A, kolejny wędrowiec! Witaj w Mathlandii, krainie, gdzie liczby są prawdą, a prawda jest liczbą!")
+
+        self.action("Jest zdecydowanie bardziej entuzjastyczny niż Geralt. Co może być dobre. Lub złe.")
+
+        self.dialog("📐 Pitagoras", "Szukasz Motywacji Matematyki? Ach, oczywiście! Każdy jej szuka! Bo bez motywacji, matematyka jest tylko... torturą. Z motywacją, to MUZYKA WSZECHŚWIATA!")
+
+        self.action("Robi dramatyczny gest ręką. Trochę teatralny ten Pitagoras.")
+
+        self.dialog("📐 Pitagoras", "Ale! Żeby ją zdobyć, musisz udowodnić, że rozumiesz podstawy. Rozwiąż moje równanie. Proste. Eleganckie. Piękne.")
+
+        self.pause()
+        self.matma_puzzle()
+
+    def matma_puzzle(self):
+        """Zagadka Matematyczna"""
+        self.clear()
+        print(f"\n{C.BLUE}══════════ 🔢 ZAGADKA MATEMATYCZNA 🔢 ══════════{C.RESET}\n")
+
+        self.dialog("📐 Pitagoras", "Oto moje wyzwanie. Równanie proste, ale wymagające MYŚLENIA.")
+
+        print(f"\n{C.CYAN}╔════════════════════════════════════════════╗")
+        print(f"║         Rozwiąż równanie:                  ║")
+        print(f"║                                            ║")
+        print(f"║              3x + 7 = 22                   ║")
+        print(f"║                                            ║")
+        print(f"║         Ile wynosi x?                      ║")
+        print(f"╚════════════════════════════════════════════╝{C.RESET}")
+
+        hint_shown = False
+
+        while True:
+            answer = input(f"\n{C.CYAN}Twoja odpowiedź (lub 'podpowiedź'): {C.RESET}").strip().lower()
+
+            if answer in ['podpowiedź', 'podpowiedz', 'hint', 'p']:
+                if not hint_shown:
+                    print(f"\n{C.YELLOW}💡 Podpowiedź: Najpierw odejmij 7 od obu stron równania (3x = 22 - 7), potem podziel obie strony przez 3.{C.RESET}")
+                    hint_shown = True
+                    self.hints_used += 1
+                else:
+                    print(f"\n{C.YELLOW}💡 3x = 15, więc x = 15 ÷ 3 = ?{C.RESET}")
+                continue
+
+            if answer == '5':
+                self.matma_success()
+                return
+            else:
+                print(f"\n{C.RED}❌ To nie jest poprawna odpowiedź. Spróbuj jeszcze raz!{C.RESET}")
+
+    def matma_success(self):
+        """Sukces w Matmie"""
+        self.puzzles_solved.append('matematyka')
+        self.motivations.append('🔢')
+        self.inventory.append('🔢 Motywacja Matematyki')
+        self.score += 100
+
+        self.clear()
+        print(f"\n{C.GREEN}{'═' * 50}")
+        print(f"           ✨ BRAWO! POPRAWNA ODPOWIEDŹ! ✨")
+        print(f"{'═' * 50}{C.RESET}\n")
+
+        self.narrator("Pitagoras klaszcze z zachwytem.")
+
+        self.dialog("📐 Pitagoras", "WSPANIALE! 3x + 7 = 22, więc 3x = 15, więc x = 5! PERFEKCJA!")
+
+        self.action("Podskakuje z radości. Trochę dziwnie wygląda skaczący staruszek w todze, ale ok.")
+
+        self.dialog("📐 Pitagoras", "Widzę, że rozumiesz podstawy algebry. Zasłużyłeś na nagrodę!")
+
+        self.narrator(f"\nPitagoras wyciąga z fałdów togi świecący kryształ. {self.emphasis('Motywacja Matematyki')}.")
+
+        self.narrator("\nJest geometrycznie idealna. Wielościan. Każda ściana pod idealnym kątem.")
+
+        print(f"\n{C.GREEN}+100 punktów!{C.RESET}")
+        print(f"{C.GOLD}🔢 Zdobyto Motywację Matematyki!{C.RESET}")
+
+        self.dialog("📐 Pitagoras", "Idź, młody podróżniku! I pamiętaj — w każdym równaniu jest piękno. Trzeba je tylko zobaczyć!")
+
+        self.narrator(f"\n{self.emphasis('Dwie Motywacje zdobyte. Została jedna.')}")
+
+        self.pause()
+
+    # ======================== ANGLOLAD ========================
+
+    def angielski_intro(self):
+        """Intro do Angielskiego"""
+        self.clear()
+        print(f"\n{C.RED}══════════ 🇬🇧 ANGLOLAD 🇬🇧 ══════════{C.RESET}\n")
+
+        self.narrator("Portal angielski jest... czerwony? I niebieski? I ma w sobie trochę bieli?")
+
+        self.narrator(f"\n{self.meta('Ach. Jak flaga. Oczywiście.')}")
+
+        self.narrator("\nPrzechodzisz.")
+
+        self.narrator("\nPo drugiej stronie... ulica. Ale dziwna ulica. Wszystkie szyldy są w dwóch językach jednocześnie. Jakby ktoś nie mógł się zdecydować.")
+
+        print(f"\n{self.whisper('TEA SHOP / Sklep z Herbatą')}")
+        print(f"{self.whisper('FISH AND CHIPS / Ryba i Frytki')}")
+        print(f"{self.whisper('IRREGULAR VERBS REHABILITATION CENTER / Centrum Rehabilitacji Czasowników Nieregularnych')}")
+
+        self.narrator("\n...to ostatnie brzmi niepokojąco.")
+
+        self.narrator("\nPrzy latarni stoi postać. Młoda dziewczyna. Słuchawki. Telefon w ręce. Żuje gumę.")
+
+        self.pause()
+        self.angielski_zosia()
+
+    def angielski_zosia(self):
+        """Spotkanie z Zosią"""
+        self.clear()
+        print(ZOSIA_ART)
+
+        print(f"\n{C.RED}══════════ Anglolad - Slang Street ══════════{C.RESET}\n")
+
+        self.narrator("Dziewczyna podnosi wzrok znad telefona. Zdejmuje jedną słuchawkę.")
+
+        self.dialog("🎧 Zosia", "Oh, hej. Nowy? Nice. Literally nikt tu nie przychodzi, it's kinda dead here, tbh.", C.MAGENTA)
+
+        self.action("Mówi dziwnym mixem polskiego i angielskiego. Każde drugie słowo w innym języku.")
+
+        self.dialog("🎧 Zosia", "Jestem Zosia. Local guide. Basically siedzę tu i scrolluję TikToka, ale jak ktoś needs help, to pomagam. It's whatever.", C.MAGENTA)
+
+        self.action("Wzrusza ramionami.")
+
+        self.dialog("🎧 Zosia", "Szukasz Motywacji? Ugh, everyone does. It's guarded przez Shakespeare'a. Old guy, bardzo dramatic, mówi w these weird verses. Ale fair warning — his riddles są hard.", C.MAGENTA)
+
+        self.dialog("🎧 Zosia", "Ale spoko, I believe in you. Go talk to him. He's over there, przy the big statue. Good luck, bestie!", C.MAGENTA)
+
+        self.pause()
+        self.angielski_shakespeare()
+
+    def angielski_shakespeare(self):
+        """Spotkanie z Shakespeare'm"""
+        self.clear()
+        print(SHAKESPEARE_ART)
+
+        print(f"\n{C.RED}══════════ Town of Tenses ══════════{C.RESET}\n")
+
+        self.narrator("Przy ogromnym posągu litery \"A\" stoi mężczyzna. Elizabetański strój. Pióro w ręce. Dramatyczna poza.")
+
+        self.dialog("🎭 Shakespeare", "To be or not to be... a challenger! Hark! A young traveler approacheth!", C.RED)
+
+        self.action("Odwraca się dramatycznie. Wszystko co robi jest dramatyczne.")
+
+        self.dialog("🎭 Shakespeare", "Welcome, young soul, to Anglolad! Land of verbs irregular and grammar most peculiar!", C.RED)
+
+        self.dialog("🎭 Shakespeare", "Thou must prove thy knowledge of English grammar! The verb 'to be' - the foundation of all!", C.RED)
+
+        self.action("Robi przerwę dla efektu dramatycznego. Naprawdę lubi dramat ten gość.")
+
+        self.pause()
+        self.angielski_puzzle()
+
+    def angielski_puzzle(self):
+        """Zagadka Angielskiego"""
+        self.clear()
+        print(f"\n{C.RED}══════════ 🇬🇧 ENGLISH RIDDLE 🇬🇧 ══════════{C.RESET}\n")
+
+        self.dialog("🎭 Shakespeare", "Behold! The question of grammar most vital!", C.RED)
+
+        print(f"\n{C.CYAN}╔════════════════════════════════════════════════════╗")
+        print(f"║       Choose the CORRECT sentence:                 ║")
+        print(f"╚════════════════════════════════════════════════════╝{C.RESET}")
+
+        print(f"\n  {C.GREEN}[A]{C.RESET} She don't like apples.")
+        print(f"  {C.GREEN}[B]{C.RESET} She doesn't likes apples.")
+        print(f"  {C.GREEN}[C]{C.RESET} She doesn't like apples.")
+        print(f"  {C.GREEN}[D]{C.RESET} She not like apples.")
+
+        hint_shown = False
+
+        while True:
+            answer = input(f"\n{C.CYAN}Your answer (A/B/C/D or 'hint'): {C.RESET}").strip().lower()
+
+            if answer in ['podpowiedź', 'podpowiedz', 'hint', 'p']:
+                if not hint_shown:
+                    print(f"\n{C.YELLOW}💡 Hint: Remember: \"she\" uses \"doesn't\" (does not), and after \"doesn't\" we use the BASE form of the verb.{C.RESET}")
+                    hint_shown = True
+                    self.hints_used += 1
+                else:
+                    print(f"\n{C.YELLOW}💡 After \"doesn't\" the verb stays in base form: like → like, NOT likes{C.RESET}")
+                continue
+
+            if answer in ['c', '3']:
+                self.angielski_success()
+                return
+            elif answer in ['a', 'b', 'd', '1', '2', '4']:
+                print(f"\n{C.RED}❌ Wrong! Try again!{C.RESET}")
+            else:
+                print(f"{C.DIM}Type A, B, C or D{C.RESET}")
+
+    def angielski_success(self):
+        """Sukces w Angielskim"""
+        self.puzzles_solved.append('angielski')
+        self.motivations.append('🇬🇧')
+        self.inventory.append('🇬🇧 Motywacja Angielskiego')
+        self.score += 100
+
+        self.clear()
+        print(f"\n{C.GREEN}{'═' * 50}")
+        print(f"           ✨ CORRECT! WELL DONE! ✨")
+        print(f"{'═' * 50}{C.RESET}\n")
+
+        self.narrator("Shakespeare klaszcze z zachwytem i robi ukłon.")
+
+        self.dialog("🎭 Shakespeare", "BRAVO! MAGNIFICO! 'She doesn't like' — the verb returns to its base form after 'doesn't'! You understand the grammar of mine mother tongue!", C.RED)
+
+        self.action("Wyciąga zza pleców świecący kryształ. Ostatnią Motywację.")
+
+        self.dialog("🎭 Shakespeare", "Take it, young hero! The Motivation of English is yours!", C.RED)
+
+        self.narrator("\nKryształ jest lekki. Przezroczysty. W środku widzisz wirujące litery — A, B, C, D...")
+
+        print(f"\n{C.GREEN}+100 punktów!{C.RESET}")
+        print(f"{C.GOLD}🇬🇧 Zdobyto Motywację Angielskiego!{C.RESET}")
+
+        self.dialog("🎭 Shakespeare", "Now go! Return to the Book! Complete your quest! And remember — 'All the world's a stage, and all the men and women merely players!'", C.RED)
+
+        print(f"\n{self.loud('WSZYSTKIE TRZY MOTYWACJE ZEBRANE!')}")
+        self.narrator(f"\n{self.emphasis('Czas wrócić do Księgi!')}")
+
+        self.pause()
+
+    # ======================== FINAŁ ========================
+
+    def finale(self):
+        """Finał gry"""
+        self.clear()
+        print(f"\n{C.GOLD}══════════ Powrót do Księgi ══════════{C.RESET}\n")
+
+        self.narrator("Wracasz przez portal do Bibliotecznego Limbo.")
+
+        self.narrator(f"\nI natychmiast widzisz {self.emphasis('Księgę')}. Unosi się w powietrzu. Świeci jaśniej niż wcześniej.")
+
+        self.dialog("📚 Księga", "WRÓCIŁEŚ! I... czuję to! MOTYWACJE! Masz je wszystkie!")
+
+        self.action("Księga drży z ekscytacji. Kartki trzepoczą jak skrzydła.")
+
+        self.dialog("📚 Księga", "Szybko! Połóż je na moich stronach! Musimy je połączyć!")
+
+        self.narrator("\nWyciągasz trzy kryształy z plecaka. 📚 🔢 🇬🇧")
+
+        self.narrator("\nKładziesz je na otwartych stronach Księgi.")
+
+        self.narrator("\nI wtedy...")
+
+        self.pause()
+
+        # Animacja łączenia
+        self.clear()
+        print(MOTIVATION_MERGE_ART)
+
+        print(f"\n{self.loud('ŚWIAAAATŁO!')}")
         time.sleep(1)
 
-        print("\n⭐ Składanie Motywacji... ⭐\n")
-        for i in range(3):
-            time.sleep(0.5)
-            print("▓" * ((i + 1) * 15))
+        self.narrator("\nTrzy kryształy zaczynają świecić. Wirować. Łączyć się.")
 
-        time.sleep(1)
-        self.clear_screen()
-        print(Colors.GREEN + ASCII_VICTORY + Colors.RESET)
+        self.narrator("\nKolory mieszają się — złoty polskiego, niebieski matematyki, czerwony angielskiego...")
+
+        print(f"\n{self.loud('FLASH!')}")
+        time.sleep(0.5)
+
+        self.narrator(f"\nKiedy otwierasz oczy, nad Księgą unosi się jeden, wielki, {self.emphasis('tęczowy kryształ')}.")
+
+        self.narrator(f"\n{self.emphasis('MOTYWACJA')}. Kompletna. Cała.")
+
+        self.narrator("\nKryształ opada na strony Księgi i... wchłania się. Znika w papierze.")
+
+        self.dialog("📚 Księga", "TAK! CZUJĘ TO! Motywacja wróciła! Jestem znowu... KOMPLETNA!")
+
+        self.action("Księga świeci ciepłym, złotym światłem. Wygląda na... szczęśliwą?")
+
+        self.pause()
+        self.epilogue()
+
+    def epilogue(self):
+        """Epilog"""
+        self.clear()
+        print(f"\n{C.GOLD}══════════ Pożegnanie ══════════{C.RESET}\n")
+
+        self.dialog("📚 Księga", "Teraz... wracasz do domu. Twoja misja się skończyła. Uratowałeś Paradoksję.")
+
+        self.action("Czujesz ukłucie smutku. To była... fajna przygoda.")
+
+        self.dialog("📚 Księga", "Ale hej! To nie koniec. Wiedza i Motywacja zostają z tobą. Zawsze. I... kto wie? Może jeszcze się spotkamy.")
+
+        self.action("Księga mruga. Czy księga może mrugać?")
+
+        self.dialog("📚 Księga", "A teraz — WRACAJ! Zanim pani Kowalska zauważy, że zniknąłeś!")
+
+        print(f"\n{self.loud('SZUUUUUM!')}")
+
+        self.narrator("\nI znowu wirowanie. Lecenie. Kartki. Litery. Cyfry.")
+
+        self.narrator("\nA potem...")
+
+        self.pause()
+
+        # Powrót do szkoły
+        self.clear()
+        print(f"\n{C.GOLD}══════════ Epilog ══════════{C.RESET}\n")
+
+        self.narrator("Stoisz w pokoju nauczycielskim.")
+
+        self.narrator("\nWszystko wygląda normalnie. Biurka. Kubki z kawą. Stosy kartkówek.")
+
+        self.narrator("\nNa biurku leży Księga. Zamknięta. Nie świeci.")
+
+        self.narrator("\nPatrzysz na zegarek. 16:35.")
+
+        print(f"\n{self.thought('Pięć minut? Byłem tam tylko pięć minut?')}")
+
+        self.narrator("\nA może... to był tylko sen? Może się zdrzemnąłeś i...")
+
+        self.narrator("\nNie. Sprawdzasz kieszeń.")
+
+        self.narrator("\nJest tam coś małego. Ciepłego.")
+
+        self.narrator("\nWyciągasz. To mały, świecący kamyczek. Wygląda jak... miniaturowy kryształ. Tęczowy.")
+
+        print(f"\n{self.emphasis('To się naprawdę wydarzyło.')}")
+
+        self.narrator("\nUśmiechasz się. Chowasz kamyczek do kieszeni.")
+
+        self.narrator("\nI idziesz na poprawkę do sali 207.")
+
+        self.narrator(f"\n{self.meta('Tym razem nie błądzisz.')}")
+
+        self.pause()
+        self.victory_screen()
+
+    def victory_screen(self):
+        """Ekran zwycięstwa"""
+        self.clear()
+        print(VICTORY_ART)
 
         # Statystyki
-        elapsed = time.time() - self.player.start_time
+        elapsed = time.time() - self.start_time
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
 
-        print(f"\n{Colors.CYAN}📊 STATYSTYKI:{Colors.RESET}")
-        print(f"  ⏱️  Czas gry: {minutes}:{seconds:02d}")
-        print(f"  💰 Punkty: {self.player.score}")
-        print(f"  🎒 Przedmioty: {len(self.player.inventory)}")
+        print(f"\n{C.CYAN}═══════════════ STATYSTYKI ═══════════════{C.RESET}")
+        print(f"\n  ⏱️  Czas gry: {minutes}:{seconds:02d}")
+        print(f"  ⭐ Punkty: {self.score}")
+        print(f"  🧩 Zagadki rozwiązane: {len(self.puzzles_solved)}/3")
+        print(f"  💡 Użyte podpowiedzi: {self.hints_used}")
 
-        print(f"\n{Colors.YELLOW}Księga Wiedzy:{Colors.RESET}")
-        self.slow_print('"Dzięki, ziomek! Motywacja wraca! Czuję się jak nowo narodzony!"')
-        self.slow_print('"Ale to dopiero początek. Są jeszcze inne przedmioty..."')
-        self.slow_print('"Geografia, Fizyka, Informatyka... TO BE CONTINUED!"')
+        print(f"\n{C.DIM}═════════════════════════════════════════════{C.RESET}")
 
-        print(f"\n{Colors.MAGENTA}{'═' * 50}{Colors.RESET}")
-        print(f"{Colors.BOLD}Dziękujemy za grę w PARADOKSJĘ!{Colors.RESET}")
-        print(f"{Colors.MAGENTA}{'═' * 50}{Colors.RESET}")
+        print(f"\n{self.whisper('A może... kiedyś będzie CZĘŚĆ DRUGA?')}")
+        print(f"{self.whisper('Kto wie, jakie przygody czekają w innych Krainach Przedmiotów...')}")
+        print(f"\n{self.meta('🔮 Historia? Biologia? Fizyka? Muzyka?')}")
 
-        input("\n[Naciśnij ENTER aby zakończyć...]")
+        print(f"\n{C.GOLD}Dziękujemy za grę w PARADOKSJĘ!{C.RESET}")
+
+        input(f"\n{C.DIM}[Naciśnij ENTER aby zakończyć...]{C.RESET}")
         self.running = False
 
-    # ==================== PĘTLA GRY ====================
-
-    def parse_command(self, command: str):
-        """Parsuj komendę gracza"""
-        parts = command.lower().strip().split(maxsplit=1)
-        if not parts:
-            return
-
-        cmd = parts[0]
-        arg = parts[1] if len(parts) > 1 else ""
-
-        if cmd in ['pomoc', 'help', '?']:
-            self.show_help()
-        elif cmd in ['mapa', 'map']:
-            self.show_map()
-        elif cmd in ['plecak', 'ekwipunek', 'inventory', 'i']:
-            self.show_inventory()
-        elif cmd in ['idź', 'idz', 'go', 'id']:
-            self.go_to(arg)
-        elif cmd in ['rozmawiaj', 'talk', 'gadaj', 'r']:
-            self.talk_to(arg)
-        elif cmd in ['rozwiąż', 'rozwiaz', 'solve', 'zagadka']:
-            self.solve_puzzle()
-        elif cmd in ['patrz', 'look', 'l', 'rozejrzyj']:
-            self.print_location()
-        elif cmd in ['wyjdź', 'wyjdz', 'quit', 'exit', 'q']:
-            if input("Czy na pewno chcesz wyjść? (t/n): ").lower() in ['t', 'tak', 'y', 'yes']:
-                self.running = False
-        else:
-            print(f"Nie rozumiem komendy '{cmd}'. Wpisz 'pomoc' aby zobaczyć listę komend.")
-
-    def show_intro(self):
-        """Pokaż intro gry"""
-        self.clear_screen()
-        print(Colors.YELLOW + ASCII_TITLE + Colors.RESET)
-
-        print(f"\n{Colors.CYAN}Naciśnij ENTER aby rozpocząć przygodę...{Colors.RESET}")
-        input()
-
-        self.clear_screen()
-        print(f"\n{Colors.BOLD}📍 Szkoła, godzina 16:30{Colors.RESET}")
-        print("═" * 40)
-
-        self.slow_print("\nJesteś sam w pustej szkole po lekcjach.")
-        time.sleep(0.5)
-        self.slow_print("Masz napisać poprawkę z polskiego, ale...")
-        time.sleep(0.5)
-        self.slow_print("...nie możesz znaleźć właściwej sali.")
-        time.sleep(0.5)
-
-        self.slow_print("\nBłądzisz korytarzami gdy nagle...")
-        time.sleep(0.5)
-        self.slow_print("...zauważasz dziwne światło z pokoju nauczycielskiego.")
-
-        input(f"\n{Colors.CYAN}[ENTER aby zajrzeć do środka...]{Colors.RESET}")
-
-        self.clear_screen()
-        print(Colors.MAGENTA + ASCII_BOOK + Colors.RESET)
-
-        self.slow_print("\nNa stole leży WIELKA KSIĘGA WIEDZY.")
-        self.slow_print("Świeci neonowym światłem jak telefon w nocy.")
-        self.slow_print("Księga otwiera się sama...")
-
-        time.sleep(1)
-        print(f"\n{Colors.YELLOW}{'═' * 50}{Colors.RESET}")
-        print(f"{Colors.BOLD}Księga Wiedzy:{Colors.RESET}")
-        self.slow_print('"LOL, w końcu ktoś przyszedł!"')
-        self.slow_print('"Mam problem, mordo. Uciekła mi MOTYWACJA."')
-        self.slow_print('"Rozpierzchła się po trzech Krainach Przedmiotów."')
-        self.slow_print('"Bez niej wiedza to dead content, rozumiesz?"')
-        self.slow_print('"Masz 40 minut, zanim zjawi się pani od polskiego."')
-        print(f"{Colors.YELLOW}{'═' * 50}{Colors.RESET}")
-
-        while True:
-            choice = input(f"\n{Colors.GREEN}Pomożesz Księdze? (tak/nie): {Colors.RESET}").lower()
-            if choice in ['tak', 't', 'yes', 'y']:
-                break
-            elif choice in ['nie', 'n', 'no']:
-                print("\nKsięga: 'No dobra, to idź na tę poprawkę... boring.'")
-                print("(Ale tak naprawdę musisz pomóc, to gra edukacyjna! 😉)")
-            else:
-                print("Wpisz 'tak' lub 'nie'")
-
-        self.slow_print("\nKsięga: 'Wiedziałem! No to jedziemy z tym koksem!'")
-        self.slow_print("*Świat wiruje... wciąga cię do środka księgi...*")
-
-        time.sleep(1)
-        self.game_started = True
-        self.player.start_time = time.time()
+    # ======================== GŁÓWNA PĘTLA ========================
 
     def run(self):
         """Główna pętla gry"""
-        self.show_intro()
+        # Ekran tytułowy
+        self.show_title()
 
-        if not self.game_started:
+        # Intro
+        self.intro_school()
+        self.intro_door()
+        self.intro_book()
+        self.intro_dialog()
+
+        if not self.intro_choice():
             return
 
-        # Rozpocznij w Hubie
-        self.current_location = self.locations['hub']
-        self.print_location()
+        self.intro_transport()
+        self.start_time = time.time()
 
-        # Automatyczna rozmowa z Notką na start
-        notka = self.current_location.get_npc("Notka")
-        if notka:
-            print(f"\n{Colors.MAGENTA}Ktoś do ciebie podchodzi...{Colors.RESET}")
-            time.sleep(1)
-            self.talk_to("Notka")
+        # Hub
+        self.hub_arrival()
 
         # Główna pętla
         while self.running:
-            try:
-                command = input(f"\n{Colors.GREEN}> {Colors.RESET}").strip()
-                if command:
-                    self.parse_command(command)
-            except KeyboardInterrupt:
-                print("\n\nDo zobaczenia!")
-                break
-            except EOFError:
-                break
+            self.show_hub()
+
+            choice = input(f"\n{C.CYAN}Wybór (1/2/3/q): {C.RESET}").strip().lower()
+
+            if choice == '1':
+                if 'polski' not in self.puzzles_solved:
+                    self.polski_intro()
+                else:
+                    print(f"{C.DIM}Już zdobyłeś Motywację Polskiego!{C.RESET}")
+                    self.pause()
+            elif choice == '2':
+                if 'matematyka' not in self.puzzles_solved:
+                    self.matma_intro()
+                else:
+                    print(f"{C.DIM}Już zdobyłeś Motywację Matematyki!{C.RESET}")
+                    self.pause()
+            elif choice == '3':
+                if 'angielski' not in self.puzzles_solved:
+                    self.angielski_intro()
+                else:
+                    print(f"{C.DIM}Już zdobyłeś Motywację Angielskiego!{C.RESET}")
+                    self.pause()
+            elif choice == '4' and len(self.puzzles_solved) == 3:
+                self.finale()
+            elif choice in ['q', 'quit', 'exit', 'wyjdź']:
+                if input(f"\n{C.RED}Czy na pewno chcesz wyjść? (t/n): {C.RESET}").lower() in ['t', 'tak', 'y']:
+                    print("\nDo zobaczenia!")
+                    self.running = False
+            elif choice in ['powrót', 'powrot', '4'] and len(self.puzzles_solved) == 3:
+                self.finale()
 
 
 # ============================================================================
@@ -1126,6 +1198,8 @@ if __name__ == "__main__":
     try:
         game = Game()
         game.run()
+    except KeyboardInterrupt:
+        print("\n\nDo zobaczenia!")
     except Exception as e:
         print(f"\n❌ Błąd: {e}")
         print("Jeśli problem się powtarza, zgłoś go nauczycielowi.")
