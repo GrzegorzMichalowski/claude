@@ -26,6 +26,20 @@ NARRATOR_DELAY = 0.025
 FAST_DELAY = 0.015
 SLOW_DELAY = 0.045
 
+# Dźwięk maszyny do pisania (macOS)
+TYPEWRITER_SOUND = True  # Ustaw False aby wyłączyć dźwięk
+SOUND_FREQUENCY = 3  # Co ile znaków odtwarzać dźwięk (1 = każdy znak)
+
+def play_tick():
+    """Odtwórz krótki dźwięk kliknięcia (macOS)"""
+    if not TYPEWRITER_SOUND:
+        return
+    try:
+        # Użyj systemowego dźwięku macOS (cichy tick)
+        os.system('afplay /System/Library/Sounds/Tink.aiff -v 0.1 &>/dev/null &')
+    except:
+        pass  # Ignoruj błędy na innych systemach
+
 # ============================================================================
 # CENTROWANIE
 # ============================================================================
@@ -295,6 +309,7 @@ class Game:
 
             # Efekt maszyny do pisania (pomijamy kody ANSI w opóźnieniu)
             i = 0
+            char_count = 0  # Licznik dla dźwięku
             while i < len(line):
                 # Sprawdź czy to początek kodu ANSI
                 if line[i:i+2] == '\033[':
@@ -307,6 +322,13 @@ class Game:
 
                 char = line[i]
                 print(char, end='', flush=True)
+
+                # Dźwięk maszyny do pisania (tylko dla widocznych znaków)
+                if char.strip():  # Nie dla spacji
+                    char_count += 1
+                    if char_count % SOUND_FREQUENCY == 0:
+                        play_tick()
+
                 if char in '.!?':
                     time.sleep(delay * 6)
                 elif char in ',;:':
@@ -393,7 +415,7 @@ class Game:
         cprint(f"{C.GOLD}Korytarz - Drugie piętro{C.RESET}")
         cprint(f"{C.DIM}═══════════════════════════════════════════════════════{C.RESET}\n")
 
-        self.narrator("Masz znaleźć salę 217. Ale... czekaj. Nie było sali 217 na drugim piętrze? Jesteś pewien, że była 217, a nie 207...?")
+        self.narrator("Masz znaleźć salę 217. Ale... czekaj. Czy na pewno 217? A może jednak 207? Drugie piętro, sala dwieście... coś tam. Która to była?")
 
         self.narrator(f"\nBłądzisz. {self.meta('Oczywiście. Bo dlaczego miałoby być łatwo.')}")
 
