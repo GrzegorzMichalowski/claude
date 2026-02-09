@@ -1374,6 +1374,63 @@ KATEGORIA: Nazwa kategorii 2
                         ]
                     }
                 ]
+            },
+            {
+                id: 'dbi-bezpieczny-internet-zaawansowany',
+                name: '🛡️ Bezpieczny Internet - Zaawansowany',
+                description: 'Poziom trudniejszy: phishing, RODO, cyfrowy ślad, weryfikacja informacji',
+                categories: [
+                    {
+                        name: 'Phishing i oszustwa',
+                        questions: [
+                            { points: 100, question: 'Jak nazywa się atak polegający na podszywaniu się pod zaufaną instytucję w celu wyłudzenia danych?', answer: 'Phishing' },
+                            { points: 200, question: 'Co powinno wzbudzić Twoją czujność w e-mailu od "banku" z prośbą o pilne podanie hasła?', answer: 'Banki nigdy nie proszą o hasła przez e-mail; pilność i presja czasowa to typowe cechy phishingu' },
+                            { points: 300, question: 'Czym różni się phishing od spear phishingu?', answer: 'Spear phishing jest ukierunkowany na konkretną osobę/organizację i wykorzystuje spersonalizowane informacje, zwykły phishing jest masowy' },
+                            { points: 400, question: 'Co oznacza "https://" na początku adresu strony i dlaczego to ważne?', answer: 'Oznacza szyfrowane połączenie (certyfikat SSL); dane są chronione podczas przesyłania, ale nie gwarantuje to, że strona jest bezpieczna' },
+                            { points: 500, question: 'Opisz trzy sygnały ostrzegawcze fałszywej strony internetowej banku lub sklepu.', answer: 'Literówki w adresie URL, brak https lub nieprawidłowy certyfikat, błędy językowe, dziwny wygląd, prośba o nietypowe dane, podejrzana domena' }
+                        ]
+                    },
+                    {
+                        name: 'Cyfrowy ślad i RODO',
+                        questions: [
+                            { points: 100, question: 'Co to jest "cyfrowy ślad"?', answer: 'Wszystkie informacje i dane, które zostawiamy w internecie poprzez nasze działania online' },
+                            { points: 200, question: 'Co oznacza skrót RODO i czego dotyczy?', answer: 'Rozporządzenie o Ochronie Danych Osobowych - przepisy chroniące prywatność i dane osobowe obywateli UE' },
+                            { points: 300, question: 'Jakie prawa daje Ci RODO w odniesieniu do Twoich danych osobowych?', answer: 'Prawo dostępu do danych, ich poprawiania, usunięcia ("prawo do bycia zapomnianym"), przenoszenia i sprzeciwu wobec przetwarzania' },
+                            { points: 400, question: 'Dlaczego przyszły pracodawca może sprawdzić Twoje profile w mediach społecznościowych i jak to może wpłynąć na Twoją karierę?', answer: 'Cyfrowy ślad jest trwały; nieodpowiednie treści mogą negatywnie wpłynąć na decyzję o zatrudnieniu nawet wiele lat później' },
+                            { points: 500, question: 'Co to są ciasteczka (cookies) i jakie są różnice między ciasteczkami niezbędnymi a śledzącymi?', answer: 'Cookies to małe pliki zapisywane przez strony; niezbędne są konieczne do działania strony, śledzące zbierają dane o zachowaniach użytkownika w celach reklamowych' }
+                        ]
+                    },
+                    {
+                        name: 'Fake news i dezinformacja',
+                        questions: [
+                            { points: 100, question: 'Co to jest "fake news"?', answer: 'Fałszywe informacje rozpowszechniane jako prawdziwe wiadomości, często w celu manipulacji lub wprowadzenia w błąd' },
+                            { points: 200, question: 'Wymień trzy sposoby weryfikacji prawdziwości informacji znalezionej w internecie.', answer: 'Sprawdzenie źródła, szukanie tej samej informacji w innych wiarygodnych źródłach, sprawdzenie daty publikacji, użycie serwisów fact-checkingowych' },
+                            { points: 300, question: 'Co to jest "bańka informacyjna" (filter bubble) i jak algorytmy mediów społecznościowych ją tworzą?', answer: 'Algorytmy pokazują treści zgodne z naszymi przekonaniami, izolując nas od innych punktów widzenia i wzmacniając nasze poglądy' },
+                            { points: 400, question: 'Czym jest deepfake i dlaczego stanowi zagrożenie?', answer: 'Technologia AI tworząca fałszywe, realistyczne nagrania wideo/audio osób; może służyć do oszustw, szantażu, dezinformacji politycznej' },
+                            { points: 500, question: 'Jakie są różnice między dezinformacją a misinformacją i podaj przykłady każdej z nich?', answer: 'Dezinformacja to celowe rozpowszechnianie fałszu (propaganda), misinformacja to nieświadome dzielenie się błędnymi informacjami (np. przesłanie fake newsa w dobrej wierze)' }
+                        ]
+                    },
+                    {
+                        name: 'Bezpieczeństwo kont',
+                        questions: [
+                            { points: 100, question: 'Co to jest uwierzytelnianie dwuskładnikowe (2FA)?', answer: 'Dodatkowa warstwa zabezpieczeń wymagająca drugiego potwierdzenia tożsamości oprócz hasła (np. kod SMS, aplikacja)' },
+                            { points: 200, question: 'Dlaczego menedżer haseł jest bezpieczniejszy niż zapisywanie haseł w przeglądarce?', answer: 'Menedżer szyfruje hasła, pozwala na unikalne silne hasła dla każdej strony, jest chroniony głównym hasłem i często oferuje 2FA' },
+                            { points: 300, question: 'Co to jest atak brute force i jak się przed nim chronić?', answer: 'Próba odgadnięcia hasła przez testowanie wszystkich kombinacji; ochrona: długie hasła, blokada konta po nieudanych próbach, 2FA' },
+                            { points: 400, question: 'Czym jest "credential stuffing" i dlaczego używanie tego samego hasła wszędzie jest niebezpieczne?', answer: 'Atak wykorzystujący skradzione dane logowania z jednego serwisu do włamań na inne konta; wyciek z jednego serwisu = dostęp do wszystkich' },
+                            { points: 500, question: 'Opisz, jak działa atak "man-in-the-middle" i jak VPN może przed nim chronić.', answer: 'Atakujący przechwytuje komunikację między użytkownikiem a serwerem; VPN szyfruje całą komunikację, uniemożliwiając odczyt przechwyconych danych' }
+                        ]
+                    },
+                    {
+                        name: 'Prawo i etyka online',
+                        questions: [
+                            { points: 100, question: 'Czy udostępnianie cudzych zdjęć bez zgody jest legalne?', answer: 'Nie - narusza prawo do wizerunku i prywatności; może skutkować konsekwencjami prawnymi' },
+                            { points: 200, question: 'Co grozi za cyberstalking (nękanie w internecie) według polskiego prawa?', answer: 'Kara pozbawienia wolności do 3 lat; jeśli ofiara targnie się na życie - do 10 lat' },
+                            { points: 300, question: 'Co to jest prawo autorskie i jak dotyczy treści w internecie (np. muzyki, zdjęć, tekstów)?', answer: 'Chroni twórców przed nieuprawnionym kopiowaniem; korzystanie bez licencji lub zgody autora jest nielegalne (nawet "znalezione w internecie")' },
+                            { points: 400, question: 'Czym jest doxing i jakie może mieć konsekwencje prawne i społeczne?', answer: 'Publiczne ujawnianie prywatnych danych osoby bez zgody; może prowadzić do nękania, gróźb, utraty pracy; jest karalne jako naruszenie prywatności' },
+                            { points: 500, question: 'Jaka jest różnica między wolnością słowa a mową nienawiści w internecie? Podaj przykład granicy.', answer: 'Wolność słowa chroni wyrażanie opinii, mowa nienawiści to nawoływanie do przemocy/dyskryminacji wobec grup; krytyka polityka OK, nawoływanie do przemocy wobec grupy etnicznej - przestępstwo' }
+                        ]
+                    }
+                ]
             }
         ];
 
