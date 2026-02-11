@@ -617,10 +617,15 @@
                             drawnNumbers = drawnNumbers.slice(-HISTORY_LIMIT);
                         }
 
-                        // WAŻNE: najpierw ustaw isSpinning na false, potem updateDisplay
+                        // Zakończ animację i odblokuj przycisk
                         isSpinning = false;
                         updateHistory();
                         updateDisplay();
+
+                        // Jawne odblokowanie przycisku (backup)
+                        if (elements.spinBtn && getAvailableNumbers().length > 0) {
+                            elements.spinBtn.disabled = false;
+                        }
                     }
                 }, 100 + slowSpins * 30);
             }, 1000);
