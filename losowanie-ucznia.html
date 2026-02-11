@@ -617,10 +617,10 @@
                             drawnNumbers = drawnNumbers.slice(-HISTORY_LIMIT);
                         }
 
+                        // WAŻNE: najpierw ustaw isSpinning na false, potem updateDisplay
+                        isSpinning = false;
                         updateHistory();
                         updateDisplay();
-
-                        isSpinning = false;
                     }
                 }, 100 + slowSpins * 30);
             }, 1000);
