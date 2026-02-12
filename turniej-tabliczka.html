@@ -864,19 +864,6 @@
             }
         }
 
-        /* Lightweight mode (Edge stability) */
-        body.lightweight * {
-            animation: none !important;
-            transition: none !important;
-        }
-
-        body.lightweight .panel {
-            backdrop-filter: none !important;
-        }
-
-        body.lightweight .round-announcement {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
@@ -1015,6 +1002,7 @@
             <div class="match-list" id="groupMatchList"></div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentGroups" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateGroups" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
 
@@ -1032,6 +1020,7 @@
             <div id="leagueProgress" style="margin-top: 20px; text-align: center;"></div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentLeague" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateLeague" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
 
@@ -1045,6 +1034,7 @@
             <div id="finalControls" style="text-align: center;"></div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentFinal" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="simulatePendingMatches(1)" id="simulateFinal" style="display: none;">Symuluj finał</button>
             </div>
         </div>
 
@@ -1057,6 +1047,7 @@
             </div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentKnockout" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateKnockout" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
 
@@ -1101,6 +1092,11 @@
             <div class="help-box">
                 <h3>4. Kontrola prowadzącego</h3>
                 <div>Przycisk „Zakończ turniej” kończy bieżący turniej i zapisuje go w historii jako „Przerwany”.</div>
+            </div>
+
+            <div class="help-box">
+                <h3>5. Testy bez grania</h3>
+                <div>W fazie grup, ligi i pucharu prowadzący może użyć „Symuluj 3 mecze”, aby szybko sprawdzić przepływ turnieju.</div>
             </div>
 
             <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
@@ -1223,7 +1219,6 @@
         let isProcessing = false; // Blokada podczas przetwarzania odpowiedzi
         const SESSION_KEY = 'turniej_tabliczka_session_v1';
         let tournamentListener = null;
-        const isEdgeBrowser = /Edg\//.test(navigator.userAgent);
 
         function saveSession(sessionPatch = {}) {
             try {
@@ -1373,10 +1368,6 @@
         function showHelp() {
             hideAllPanels();
             document.getElementById('helpPanel').classList.remove('hidden');
-        }
-
-        if (isEdgeBrowser) {
-            document.body.classList.add('lightweight');
         }
 
         // Generate tournament code
@@ -1877,7 +1868,9 @@
             document.getElementById('groupStagePanel').classList.remove('hidden');
             document.getElementById('groupStageTitle').textContent = currentTournament.name;
             const endBtn = document.getElementById('endTournamentGroups');
+            const simBtn = document.getElementById('simulateGroups');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
+            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderGroups();
             renderGroupMatches();
@@ -2047,7 +2040,9 @@
             document.getElementById('leagueStagePanel').classList.remove('hidden');
             document.getElementById('leagueStageTitle').textContent = currentTournament.name;
             const endBtn = document.getElementById('endTournamentLeague');
+            const simBtn = document.getElementById('simulateLeague');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
+            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderLeagueStandings();
             renderLeagueMatches();
@@ -2255,7 +2250,9 @@
             hideAllPanels();
             document.getElementById('leagueFinalPanel').classList.remove('hidden');
             const endBtn = document.getElementById('endTournamentFinal');
+            const simBtn = document.getElementById('simulateFinal');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
+            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             const finalMatch = currentTournament.leagueFinal;
             if (!finalMatch) return;
@@ -2318,9 +2315,240 @@
             document.getElementById('knockoutPhaseIndicator').textContent =
                 currentTournament.mode === 'groups' ? 'Faza pucharowa - najlepsi z grup' : 'Faza pucharowa';
             const endBtn = document.getElementById('endTournamentKnockout');
+            const simBtn = document.getElementById('simulateKnockout');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
+            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderBracket(currentTournament.bracket);
+        }
+
+        function createSimulatedResult(pointsToWin) {
+            const winnerFirst = Math.random() < 0.5;
+            const winnerScore = pointsToWin;
+            const loserScore = Math.floor(Math.random() * pointsToWin);
+            return winnerFirst
+                ? { score1: winnerScore, score2: loserScore, winnerIndex: 1 }
+                : { score1: loserScore, score2: winnerScore, winnerIndex: 2 };
+        }
+
+        function calculateLeagueStandings(matches) {
+            const players = {};
+            matches.forEach(m => {
+                if (m.player1 && !players[m.player1.id]) players[m.player1.id] = { ...m.player1, points: 0, wins: 0, played: 0 };
+                if (m.player2 && !players[m.player2.id]) players[m.player2.id] = { ...m.player2, points: 0, wins: 0, played: 0 };
+            });
+            matches.filter(m => m.status === 'completed').forEach(m => {
+                if (players[m.player1.id]) players[m.player1.id].played++;
+                if (players[m.player2.id]) players[m.player2.id].played++;
+                if (m.winner === m.player1.id && players[m.player1.id]) {
+                    players[m.player1.id].points += 3;
+                    players[m.player1.id].wins++;
+                } else if (m.winner === m.player2.id && players[m.player2.id]) {
+                    players[m.player2.id].points += 3;
+                    players[m.player2.id].wins++;
+                }
+            });
+            return Object.values(players).sort((a, b) => b.points - a.points || b.wins - a.wins);
+        }
+
+        function calculateGroupRankings(groups, matches) {
+            return groups.map((group, gi) => {
+                const players = (group.players || []).map(p => ({ ...p, points: 0, wins: 0, played: 0 }));
+                matches.filter(m => m.groupIndex === gi && m.status === 'completed').forEach(m => {
+                    const p1 = players.find(p => p.id === m.player1.id);
+                    const p2 = players.find(p => p.id === m.player2.id);
+                    if (p1 && p2) {
+                        p1.played++;
+                        p2.played++;
+                        if (m.winner === m.player1.id) {
+                            p1.points += 3;
+                            p1.wins++;
+                        } else if (m.winner === m.player2.id) {
+                            p2.points += 3;
+                            p2.wins++;
+                        }
+                    }
+                });
+                players.sort((a, b) => b.points - a.points || b.wins - a.wins);
+                return { ...group, players };
+            });
+        }
+
+        async function simulatePendingMatches(count = 1) {
+            if (!isHost || !currentTournament?.code) return;
+            if (isModalOpen) {
+                alert('Najpierw zamknij aktywny mecz.');
+                return;
+            }
+
+            let simulated = 0;
+            for (let i = 0; i < count; i++) {
+                const snapshot = await db.ref('tournaments/' + currentTournament.code).once('value');
+                if (!snapshot.exists()) break;
+                const tournament = snapshot.val();
+                if (tournament.status === 'finished') break;
+                const didSimulate = await simulateOneMatch(tournament);
+                if (!didSimulate) break;
+                simulated++;
+            }
+
+            if (simulated === 0) {
+                alert('Brak meczów do symulacji w tej fazie.');
+            }
+        }
+
+        async function simulateOneMatch(tournament) {
+            const pointsToWin = tournament.pointsToWin || 1;
+
+            if (tournament.status === 'groups') {
+                const matches = [...(tournament.groupMatches || [])];
+                const pending = matches.find(m => m.status !== 'completed' && m.player1 && m.player2);
+                if (!pending) return false;
+                const sim = createSimulatedResult(pointsToWin);
+                const idx = matches.findIndex(m => m.id === pending.id);
+                matches[idx] = {
+                    ...matches[idx],
+                    score1: sim.score1,
+                    score2: sim.score2,
+                    winner: sim.winnerIndex === 1 ? pending.player1.id : pending.player2.id,
+                    status: 'completed'
+                };
+                const stillPending = matches.some(m => m.status !== 'completed');
+                if (stillPending) {
+                    await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
+                } else {
+                    const rankedGroups = calculateGroupRankings(tournament.groups || [], matches);
+                    const qualifiers = [];
+                    rankedGroups.forEach(group => {
+                        if (group.players[0]) qualifiers.push(group.players[0]);
+                        if (group.players[1]) qualifiers.push(group.players[1]);
+                    });
+                    for (let i = qualifiers.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [qualifiers[i], qualifiers[j]] = [qualifiers[j], qualifiers[i]];
+                    }
+                    const bracket = createBracket(qualifiers);
+                    await db.ref('tournaments/' + currentTournament.code).update({
+                        status: 'knockout',
+                        groupMatches: matches,
+                        groups: rankedGroups,
+                        bracket
+                    });
+                }
+                return true;
+            }
+
+            if (tournament.status === 'league') {
+                const matches = [...(tournament.leagueMatches || [])];
+                const pending = matches.find(m => m.status !== 'completed' && m.player1 && m.player2);
+                if (!pending) return false;
+                const sim = createSimulatedResult(pointsToWin);
+                const idx = matches.findIndex(m => m.id === pending.id);
+                matches[idx] = {
+                    ...matches[idx],
+                    score1: sim.score1,
+                    score2: sim.score2,
+                    winner: sim.winnerIndex === 1 ? pending.player1.id : pending.player2.id,
+                    status: 'completed'
+                };
+                const stillPending = matches.some(m => m.status !== 'completed');
+                if (stillPending) {
+                    await db.ref('tournaments/' + currentTournament.code + '/leagueMatches').set(matches);
+                } else {
+                    const standings = calculateLeagueStandings(matches);
+                    if (standings.length < 2) return false;
+                    await db.ref('tournaments/' + currentTournament.code).update({
+                        status: 'leagueFinal',
+                        leagueMatches: matches,
+                        leagueFinal: {
+                            id: 'final',
+                            player1: standings[0],
+                            player2: standings[1],
+                            score1: 0,
+                            score2: 0,
+                            winner: null,
+                            status: 'pending'
+                        }
+                    });
+                }
+                return true;
+            }
+
+            if (tournament.status === 'leagueFinal') {
+                const finalMatch = tournament.leagueFinal;
+                if (!finalMatch || finalMatch.status === 'completed') return false;
+                const sim = createSimulatedResult(pointsToWin);
+                const winnerName = sim.winnerIndex === 1 ? finalMatch.player1.name : finalMatch.player2.name;
+                const winnerId = sim.winnerIndex === 1 ? finalMatch.player1.id : finalMatch.player2.id;
+                await db.ref('tournaments/' + currentTournament.code).update({
+                    status: 'finished',
+                    champion: winnerName,
+                    leagueFinal: {
+                        ...finalMatch,
+                        score1: sim.score1,
+                        score2: sim.score2,
+                        winner: winnerId,
+                        status: 'completed'
+                    }
+                });
+                await db.ref('tournamentHistory').push({
+                    name: tournament.name,
+                    champion: winnerName,
+                    level: tournament.level,
+                    mode: 'league',
+                    participantCount: Object.keys(tournament.participants || {}).length,
+                    finishedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                return true;
+            }
+
+            if (tournament.status === 'knockout') {
+                const bracket = JSON.parse(JSON.stringify(tournament.bracket || []));
+                let roundIndex = -1;
+                let matchIndex = -1;
+                for (let r = 0; r < bracket.length; r++) {
+                    const idx = bracket[r].findIndex(m => m.status === 'ready' && m.player1 && m.player2);
+                    if (idx !== -1) {
+                        roundIndex = r;
+                        matchIndex = idx;
+                        break;
+                    }
+                }
+                if (roundIndex === -1) return false;
+                const match = bracket[roundIndex][matchIndex];
+                const sim = createSimulatedResult(pointsToWin);
+                const winner = sim.winnerIndex === 1 ? match.player1 : match.player2;
+                match.score1 = sim.score1;
+                match.score2 = sim.score2;
+                match.winner = winner.id;
+                match.status = 'completed';
+
+                if (roundIndex < bracket.length - 1) {
+                    const nextMatchIndex = Math.floor(matchIndex / 2);
+                    const nextMatch = bracket[roundIndex + 1][nextMatchIndex];
+                    if (matchIndex % 2 === 0) nextMatch.player1 = winner;
+                    else nextMatch.player2 = winner;
+                    if (nextMatch.player1 && nextMatch.player2) nextMatch.status = 'ready';
+                    await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
+                } else {
+                    await db.ref('tournaments/' + currentTournament.code).update({
+                        status: 'finished',
+                        champion: winner.name,
+                        bracket
+                    });
+                    await db.ref('tournamentHistory').push({
+                        name: tournament.name,
+                        champion: winner.name,
+                        level: tournament.level,
+                        mode: tournament.mode,
+                        participantCount: Object.keys(tournament.participants || {}).length,
+                        finishedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+                return true;
+            }
+
+            return false;
         }
 
         function renderBracket(rounds) {
@@ -2503,7 +2731,7 @@
             if (matchResult) matchResult.classList.add('hidden');
             if (gameBoard) gameBoard.style.display = 'grid';
 
-            if (showAnnouncement && currentMatch?.player1?.name && !document.body.classList.contains('lightweight')) {
+            if (showAnnouncement && currentMatch?.player1?.name && !document.body.classList.contains('edge-lite')) {
                 showTournamentAnnouncement('X', currentMatch.player1.name, () => {
                     if (gameState) gameState.boardActive = true;
                 });
