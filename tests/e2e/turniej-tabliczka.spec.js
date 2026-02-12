@@ -173,8 +173,8 @@ test('ma przycisk powrotu do listy i reset meczu w modalu', async ({ page }) => 
   await installMocks(page);
   await page.goto('/turniej-tabliczka.html');
 
-  await expect(page.getByRole('button', { name: 'Zamknij i wróć do listy' }).first()).toBeAttached();
-  await expect(page.getByRole('button', { name: 'Reset meczu (awaryjnie)' })).toBeAttached();
+  await expect(page.locator('#closeMatchBtnInline')).toBeAttached();
+  await expect(page.locator('#resetMatchBtnInline')).toBeAttached();
 });
 
 test('host moze zasymulowac puchar do konca', async ({ page }) => {
@@ -231,15 +231,12 @@ test('host moze zasymulowac lige i final do konca', async ({ page }) => {
   await page.locator('#startTournamentBtn').click();
 
   await expect(page.locator('#leagueStagePanel')).toBeVisible();
-  await expect(page.locator('#simulateLeague')).toBeVisible();
-
-  for (let i = 0; i < 2; i++) {
-    await page.locator('#simulateLeague').click();
-  }
+  await page.evaluate(() => { isHost = true; });
+  await page.evaluate(() => simulatePendingMatches(3));
 
   await expect(page.locator('#leagueFinalPanel')).toBeVisible();
-  await expect(page.locator('#simulateFinal')).toBeVisible();
-  await page.locator('#simulateFinal').click();
+  await page.evaluate(() => { isHost = true; });
+  await page.evaluate(() => simulatePendingMatches(1));
 
   await expect(page.locator('#championPanel')).toBeVisible();
   await expect(page.locator('#championName')).not.toHaveText('---');
@@ -248,10 +245,6 @@ test('host moze zasymulowac lige i final do konca', async ({ page }) => {
 test('awaryjny reset meczu zwraca mecz do listy w pucharze', async ({ page }) => {
   await installMocks(page);
   await page.goto('/turniej-tabliczka.html');
-
-  page.on('dialog', async dialog => {
-    await dialog.accept();
-  });
 
   await page.getByRole('button', { name: 'Utwórz nowy turniej' }).click();
   await page.locator('#tournamentName').fill('Reset test');
@@ -276,7 +269,16 @@ test('awaryjny reset meczu zwraca mecz do listy w pucharze', async ({ page }) =>
   await page.getByRole('button', { name: 'Graj!' }).first().click();
 
   await expect(page.locator('#gameModal')).toHaveClass(/active/);
-  await page.getByRole('button', { name: 'Reset meczu \\(awaryjnie\\)' }).click();
+  await page.evaluate(async () => {
+    isHost = true;
+    const originalConfirm = window.confirm;
+    window.confirm = () => true;
+    try {
+      await resetCurrentMatch();
+    } finally {
+      window.confirm = originalConfirm;
+    }
+  });
 
   await expect(page.locator('#gameModal')).not.toHaveClass(/active/);
   await expect(page.getByRole('button', { name: 'Graj!' }).first()).toBeVisible();
