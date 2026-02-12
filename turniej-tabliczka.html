@@ -709,6 +709,20 @@
             color: #ffd700;
         }
 
+        .help-box {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .help-box h3 {
+            color: #ffd700;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
         /* Phase indicator */
         .phase-indicator {
             text-align: center;
@@ -887,6 +901,10 @@
                 <span class="icon">📜</span>
                 <span>Historia turniejów</span>
             </button>
+            <button class="start-btn" onclick="showHelp()" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white;">
+                <span class="icon">ℹ️</span>
+                <span>Pomoc i instrukcja</span>
+            </button>
         </div>
 
         <!-- Create Tournament Panel -->
@@ -1061,6 +1079,33 @@
             <button class="btn btn-secondary" onclick="showStartScreen()" style="margin-top: 15px;">Powrót</button>
         </div>
 
+        <!-- Help Panel -->
+        <div id="helpPanel" class="panel hidden">
+            <h2>Pomoc i instrukcja</h2>
+
+            <div class="help-box">
+                <h3>1. Jak rozpocząć</h3>
+                <div>Wybierz „Utwórz nowy turniej”, podaj uczniom kod i uruchom rozgrywkę po dołączeniu graczy.</div>
+            </div>
+
+            <div class="help-box">
+                <h3>2. Gdy mecz się zawiesi</h3>
+                <div>W oknie meczu kliknij „Reset meczu (awaryjnie)”. Mecz wróci do listy i można go rozegrać na innym komputerze.</div>
+            </div>
+
+            <div class="help-box">
+                <h3>3. Bez utraty turnieju</h3>
+                <div>W oknie meczu użyj „Zamknij i wróć do listy”, jeśli chcesz tylko wyjść z meczu bez resetu wyniku.</div>
+            </div>
+
+            <div class="help-box">
+                <h3>4. Kontrola prowadzącego</h3>
+                <div>Przycisk „Zakończ turniej” kończy bieżący turniej i zapisuje go w historii jako „Przerwany”.</div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+        </div>
+
         <div class="footer-link">
             <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki odwiedzin</a>
         </div>
@@ -1105,6 +1150,7 @@
             </div>
 
             <div id="matchControls" style="text-align: center; margin-top: 10px;">
+                <button class="btn btn-primary" onclick="closeGame()">Zamknij i wróć do listy</button>
                 <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtnInline" style="display: none;">Reset meczu (awaryjnie)</button>
             </div>
 
@@ -1118,7 +1164,7 @@
                 <div style="font-size: 1.5rem; color: #ffd700;" id="matchResultText"></div>
                 <div id="finalBoardDisplay" style="margin: 15px 0;"></div>
                 <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="closeGame()">Zamknij</button>
+                    <button class="btn btn-primary" onclick="closeGame()">Zamknij i wróć do listy</button>
                     <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtn" style="display: none;">Reset meczu</button>
                 </div>
             </div>
@@ -1305,7 +1351,7 @@
         }
 
         function hideAllPanels() {
-            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'groupStagePanel', 'leagueStagePanel', 'leagueFinalPanel', 'tournamentPanel', 'championPanel', 'historyPanel'].forEach(id => {
+            ['startScreen', 'createPanel', 'joinPanel', 'lobbyPanel', 'groupStagePanel', 'leagueStagePanel', 'leagueFinalPanel', 'tournamentPanel', 'championPanel', 'historyPanel', 'helpPanel'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
         }
@@ -1322,6 +1368,11 @@
             document.getElementById('joinCode').value = '';
             document.getElementById('playerName').value = '';
             document.getElementById('joinPanel').classList.remove('hidden');
+        }
+
+        function showHelp() {
+            hideAllPanels();
+            document.getElementById('helpPanel').classList.remove('hidden');
         }
 
         if (isEdgeBrowser) {
