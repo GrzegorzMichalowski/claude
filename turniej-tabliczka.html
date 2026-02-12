@@ -178,6 +178,14 @@
             cursor: not-allowed;
             transform: none;
         }
+        /* Edge lightweight mode */
+        body.edge-lite * {
+            animation: none !important;
+            transition: none !important;
+        }
+        body.edge-lite .panel {
+            backdrop-filter: none;
+        }
 
         /* Tournament Code Display */
         .tournament-code {
@@ -841,6 +849,20 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Lightweight mode (Edge stability) */
+        body.lightweight * {
+            animation: none !important;
+            transition: none !important;
+        }
+
+        body.lightweight .panel {
+            backdrop-filter: none !important;
+        }
+
+        body.lightweight .round-announcement {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -955,6 +977,7 @@
                 <button class="btn btn-primary" onclick="startTournament()" id="startTournamentBtn" disabled>
                     Rozpocznij turniej (min. 2 graczy)
                 </button>
+                <button class="btn btn-secondary" onclick="endTournament()">Zakończ turniej</button>
                 <button class="btn btn-secondary" onclick="cancelTournament()">Anuluj turniej</button>
             </div>
 
@@ -972,6 +995,9 @@
 
             <h3 style="color: #ffd700; margin: 20px 0 10px;">Mecze do rozegrania:</h3>
             <div class="match-list" id="groupMatchList"></div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentGroups" style="display: none;">Zakończ turniej</button>
+            </div>
         </div>
 
         <!-- League Stage Panel -->
@@ -986,6 +1012,9 @@
             <div id="leagueMatchList" class="match-list"></div>
 
             <div id="leagueProgress" style="margin-top: 20px; text-align: center;"></div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentLeague" style="display: none;">Zakończ turniej</button>
+            </div>
         </div>
 
         <!-- League Final Panel -->
@@ -996,6 +1025,9 @@
             <div id="finalMatchup" style="margin: 20px 0;"></div>
 
             <div id="finalControls" style="text-align: center;"></div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentFinal" style="display: none;">Zakończ turniej</button>
+            </div>
         </div>
 
         <!-- Knockout Stage Panel -->
@@ -1004,6 +1036,9 @@
             <div class="phase-indicator" id="knockoutPhaseIndicator">Faza pucharowa</div>
             <div class="bracket-container">
                 <div class="bracket" id="bracketContainer"></div>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentKnockout" style="display: none;">Zakończ turniej</button>
             </div>
         </div>
 
@@ -1069,6 +1104,10 @@
                 <div class="answers-grid" id="answersContainer"></div>
             </div>
 
+            <div id="matchControls" style="text-align: center; margin-top: 10px;">
+                <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtnInline" style="display: none;">Reset meczu (awaryjnie)</button>
+            </div>
+
             <div id="roundResult" class="hidden" style="padding: 20px; text-align: center;">
                 <div style="font-size: 1.5rem; margin-bottom: 10px;" id="roundResultText"></div>
                 <button class="btn btn-primary" onclick="nextRound()">Następna runda</button>
@@ -1078,7 +1117,10 @@
                 <div style="font-size: 2rem; margin-bottom: 10px;">🎉</div>
                 <div style="font-size: 1.5rem; color: #ffd700;" id="matchResultText"></div>
                 <div id="finalBoardDisplay" style="margin: 15px 0;"></div>
-                <button class="btn btn-primary" onclick="closeGame()">Zamknij</button>
+                <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="closeGame()">Zamknij</button>
+                    <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtn" style="display: none;">Reset meczu</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1102,6 +1144,10 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const IS_EDGE = /Edg\//.test(navigator.userAgent);
+        if (IS_EDGE) {
+            document.body.classList.add('edge-lite');
+        }
 
         // Game Constants
         const LEVELS = {
@@ -1130,6 +1176,8 @@
         let tournamentQuestionsKey = null;
         let isProcessing = false; // Blokada podczas przetwarzania odpowiedzi
         const SESSION_KEY = 'turniej_tabliczka_session_v1';
+        let tournamentListener = null;
+        const isEdgeBrowser = /Edg\//.test(navigator.userAgent);
 
         function saveSession(sessionPatch = {}) {
             try {
@@ -1274,6 +1322,10 @@
             document.getElementById('joinCode').value = '';
             document.getElementById('playerName').value = '';
             document.getElementById('joinPanel').classList.remove('hidden');
+        }
+
+        if (isEdgeBrowser) {
+            document.body.classList.add('lightweight');
         }
 
         // Generate tournament code
@@ -1473,12 +1525,16 @@
         // Listen to tournament changes
         function listenToTournament(code) {
             if (tournamentRef) {
-                tournamentRef.off('value');
+                if (tournamentListener) {
+                    tournamentRef.off('value', tournamentListener);
+                } else {
+                    tournamentRef.off('value');
+                }
             }
 
             tournamentRef = db.ref('tournaments/' + code);
 
-            tournamentRef.on('value', (snapshot) => {
+            tournamentListener = (snapshot) => {
                 if (!snapshot.exists()) {
                     alert('Turniej został anulowany');
                     clearSession();
@@ -1497,11 +1553,11 @@
                     });
                 }
 
+                // Jeśli trwa mecz, ogranicz prze-renderowania i ciężkie operacje
+                if (isModalOpen) return;
+
                 // Załaduj pytania dla tego turnieju
                 loadAskedQuestions(code, tournament.level);
-
-                // Jeśli trwa mecz, ogranicz prze-renderowania
-                if (isModalOpen) return;
 
                 // Update participants list in lobby
                 if (tournament.status === 'lobby') {
@@ -1524,7 +1580,9 @@
                 } else if (tournament.status === 'finished' && tournament.champion) {
                     showChampion(tournament.champion);
                 }
-            });
+            };
+
+            tournamentRef.on('value', tournamentListener);
         }
 
         // Update participants list
@@ -1767,6 +1825,8 @@
             hideAllPanels();
             document.getElementById('groupStagePanel').classList.remove('hidden');
             document.getElementById('groupStageTitle').textContent = currentTournament.name;
+            const endBtn = document.getElementById('endTournamentGroups');
+            if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderGroups();
             renderGroupMatches();
@@ -1855,7 +1915,10 @@
                         <span class="vs">vs</span>
                         <strong>${match.player2.name}</strong>
                     </div>
-                    <button class="match-btn" onclick="startGroupMatch('${match.id}')">Graj!</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="match-btn" onclick="startGroupMatch('${match.id}')">Graj!</button>
+                        ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetGroupMatch('${match.id}')">Reset</button>` : ''}
+                    </div>
                 </div>
             `).join('') + (completed.length > 0 ? `
                 <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
@@ -1867,6 +1930,7 @@
                                 <span class="vs">:</span>
                                 <span class="match-score">${m.score2}</span> ${m.player2.name}
                             </div>
+                            ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetGroupMatch('${m.id}')">Reset</button>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -1884,6 +1948,25 @@
 
             currentMatch = { ...match, isGroupMatch: true };
             initializeGame();
+        }
+
+        async function resetGroupMatch(matchId) {
+            if (!isHost || !currentTournament?.groupMatches) return;
+            if (!confirm('Resetować ten mecz grupowy?')) return;
+
+            const matches = [...currentTournament.groupMatches];
+            const matchIndex = matches.findIndex(m => m.id === matchId);
+            if (matchIndex === -1) return;
+
+            matches[matchIndex] = {
+                ...matches[matchIndex],
+                score1: 0,
+                score2: 0,
+                winner: null,
+                status: 'pending'
+            };
+
+            await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
         }
 
         // Start playoffs after group stage
@@ -1912,6 +1995,8 @@
             hideAllPanels();
             document.getElementById('leagueStagePanel').classList.remove('hidden');
             document.getElementById('leagueStageTitle').textContent = currentTournament.name;
+            const endBtn = document.getElementById('endTournamentLeague');
+            if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderLeagueStandings();
             renderLeagueMatches();
@@ -2001,7 +2086,10 @@
                             <span class="vs">vs</span>
                             <strong>${m.player2.name}</strong>
                         </div>
-                        <button class="match-btn" onclick="startLeagueMatch('${m.id}')">Graj!</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="match-btn" onclick="startLeagueMatch('${m.id}')">Graj!</button>
+                            ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetLeagueMatch('${m.id}')">Reset</button>` : ''}
+                        </div>
                     </div>
                 `).join('');
             }
@@ -2018,6 +2106,7 @@
                                     <span class="vs">:</span>
                                     <span class="match-score">${m.score2}</span> ${m.player2.name}
                                 </div>
+                                ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetLeagueMatch('${m.id}')">Reset</button>` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -2068,6 +2157,25 @@
             initializeGame();
         }
 
+        async function resetLeagueMatch(matchId) {
+            if (!isHost || !currentTournament?.leagueMatches) return;
+            if (!confirm('Resetować ten mecz ligowy?')) return;
+
+            const matches = [...currentTournament.leagueMatches];
+            const matchIndex = matches.findIndex(m => m.id === matchId);
+            if (matchIndex === -1) return;
+
+            matches[matchIndex] = {
+                ...matches[matchIndex],
+                score1: 0,
+                score2: 0,
+                winner: null,
+                status: 'pending'
+            };
+
+            await db.ref('tournaments/' + currentTournament.code + '/leagueMatches').set(matches);
+        }
+
         // Start the league final
         async function startLeagueFinal() {
             const standings = renderLeagueStandings();
@@ -2095,6 +2203,8 @@
         function showLeagueFinal() {
             hideAllPanels();
             document.getElementById('leagueFinalPanel').classList.remove('hidden');
+            const endBtn = document.getElementById('endTournamentFinal');
+            if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
 
             const finalMatch = currentTournament.leagueFinal;
             if (!finalMatch) return;
@@ -2156,6 +2266,8 @@
             document.getElementById('tournamentTitle').textContent = currentTournament.name;
             document.getElementById('knockoutPhaseIndicator').textContent =
                 currentTournament.mode === 'groups' ? 'Faza pucharowa - najlepsi z grup' : 'Faza pucharowa';
+            const endBtn = document.getElementById('endTournamentKnockout');
+            if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderBracket(currentTournament.bracket);
         }
@@ -2193,6 +2305,7 @@
                         ${match.status === 'completed' ? `<span>${match.score2}</span>` : ''}
                     </div>
                     ${canPlay ? `<button class="play-match-btn" onclick="startBracketMatch('${match.id}', ${roundIndex})">Graj!</button>` : ''}
+                    ${isHost ? `<button class="play-match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetBracketMatch('${match.id}', ${roundIndex})">Reset</button>` : ''}
                 </div>
             `;
         }
@@ -2211,6 +2324,45 @@
             initializeGame();
         }
 
+        async function resetBracketMatch(matchId, roundIndex) {
+            if (!isHost || !currentTournament?.bracket?.[roundIndex]) return;
+            if (!confirm('Resetować ten mecz pucharowy? Spowoduje to cofnięcie dalszych wyników.')) return;
+
+            const bracket = JSON.parse(JSON.stringify(currentTournament.bracket));
+            const round = bracket[roundIndex];
+            const matchIndex = round.findIndex(m => m.id === matchId);
+            if (matchIndex === -1) return;
+
+            const match = round[matchIndex];
+            match.score1 = 0;
+            match.score2 = 0;
+            match.winner = null;
+            match.status = (match.player1 && match.player2) ? 'ready' : 'pending';
+
+            // Cofnij ścieżkę do finału
+            let currentMatchIndex = matchIndex;
+            for (let r = roundIndex + 1; r < bracket.length; r++) {
+                const nextMatchIndex = Math.floor(currentMatchIndex / 2);
+                const nextMatch = bracket[r][nextMatchIndex];
+                if (!nextMatch) break;
+
+                if (currentMatchIndex % 2 === 0) {
+                    nextMatch.player1 = null;
+                } else {
+                    nextMatch.player2 = null;
+                }
+
+                nextMatch.score1 = 0;
+                nextMatch.score2 = 0;
+                nextMatch.winner = null;
+                nextMatch.status = (nextMatch.player1 && nextMatch.player2) ? 'ready' : 'pending';
+
+                currentMatchIndex = nextMatchIndex;
+            }
+
+            await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
+        }
+
         // Initialize Game
         function initializeGame() {
             // Zabezpieczenie przed podwójnym otwarciem
@@ -2219,6 +2371,11 @@
             clearTimer();
             isProcessing = false;
             isModalOpen = true;
+
+            // Wstrzymaj nasłuchiwanie zmian turnieju na czas meczu
+            if (tournamentRef && tournamentListener) {
+                tournamentRef.off('value', tournamentListener);
+            }
 
             gameState = {
                 board: ['', '', '', '', '', '', '', '', ''],
@@ -2240,12 +2397,16 @@
             const gameScoreO = document.getElementById('gameScoreO');
             const pointsToWinDisplay = document.getElementById('pointsToWinDisplay');
             const gameModal = document.getElementById('gameModal');
+            const resetBtn = document.getElementById('resetMatchBtn');
+            const resetBtnInline = document.getElementById('resetMatchBtnInline');
 
             if (gamePlayerX) gamePlayerX.textContent = currentMatch.player1.name;
             if (gamePlayerO) gamePlayerO.textContent = currentMatch.player2.name;
             if (gameScoreX) gameScoreX.textContent = '0';
             if (gameScoreO) gameScoreO.textContent = '0';
             if (pointsToWinDisplay) pointsToWinDisplay.textContent = currentTournament.pointsToWin;
+            if (resetBtn) resetBtn.style.display = isHost ? 'inline-block' : 'none';
+            if (resetBtnInline) resetBtnInline.style.display = isHost ? 'inline-block' : 'none';
 
             if (gameModal) gameModal.classList.add('active');
             resetBoard(true); // Show announcement
@@ -2291,7 +2452,7 @@
             if (matchResult) matchResult.classList.add('hidden');
             if (gameBoard) gameBoard.style.display = 'grid';
 
-            if (showAnnouncement && currentMatch?.player1?.name) {
+            if (showAnnouncement && currentMatch?.player1?.name && !document.body.classList.contains('lightweight')) {
                 showTournamentAnnouncement('X', currentMatch.player1.name, () => {
                     if (gameState) gameState.boardActive = true;
                 });
@@ -2720,6 +2881,37 @@
             updateMatchResult(winner);
         }
 
+        async function resetCurrentMatch() {
+            if (!isHost || !currentMatch || !currentTournament) return;
+
+            if (!confirm('Resetować ten mecz i przywrócić go do listy?')) return;
+
+            try {
+                if (currentMatch.isGroupMatch) {
+                    await resetGroupMatch(currentMatch.id);
+                } else if (currentMatch.isLeagueMatch) {
+                    await resetLeagueMatch(currentMatch.id);
+                } else if (currentMatch.isFinal) {
+                    await db.ref('tournaments/' + currentTournament.code).update({
+                        status: 'leagueFinal',
+                        leagueFinal: {
+                            ...currentTournament.leagueFinal,
+                            score1: 0,
+                            score2: 0,
+                            winner: null,
+                            status: 'pending'
+                        }
+                    });
+                } else {
+                    await resetBracketMatch(currentMatch.id, currentMatch.roundIndex);
+                }
+
+                closeGame();
+            } catch (e) {
+                console.error('Błąd resetu meczu:', e);
+            }
+        }
+
         async function updateMatchResult(winner) {
             if (!currentMatch || !currentTournament || !gameState || !winner) return;
 
@@ -2851,6 +3043,77 @@
 
             currentMatch = null;
             gameState = null;
+
+            // Wznowienie nasłuchiwania zmian po meczu
+            if (currentTournament?.code) {
+                listenToTournament(currentTournament.code);
+            }
+        }
+
+        async function emergencyResetMatch() {
+            if (!isHost || !currentTournament || !currentMatch) return;
+            if (!confirm('Zresetować mecz i oddać go do ponownego rozegrania?')) return;
+
+            try {
+                if (currentMatch.status === 'completed' || currentMatch.winner) {
+                    alert('Nie można resetować zakończonego meczu.');
+                    return;
+                }
+
+                if (currentMatch.isGroupMatch) {
+                    const matches = [...(currentTournament.groupMatches || [])];
+                    const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
+                    if (matchIndex === -1) return;
+                    matches[matchIndex] = {
+                        ...matches[matchIndex],
+                        score1: 0,
+                        score2: 0,
+                        winner: null,
+                        status: 'ready'
+                    };
+                    await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
+                } else if (currentMatch.isLeagueMatch) {
+                    const matches = [...(currentTournament.leagueMatches || [])];
+                    const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
+                    if (matchIndex === -1) return;
+                    matches[matchIndex] = {
+                        ...matches[matchIndex],
+                        score1: 0,
+                        score2: 0,
+                        winner: null,
+                        status: 'ready'
+                    };
+                    await db.ref('tournaments/' + currentTournament.code + '/leagueMatches').set(matches);
+                } else if (currentMatch.isFinal) {
+                    if (currentTournament.status === 'finished') {
+                        alert('Nie można resetować zakończonego finału.');
+                        return;
+                    }
+                    await db.ref('tournaments/' + currentTournament.code + '/leagueFinal').update({
+                        score1: 0,
+                        score2: 0,
+                        winner: null,
+                        status: 'pending'
+                    });
+                } else {
+                    const bracket = JSON.parse(JSON.stringify(currentTournament.bracket || []));
+                    const round = bracket[currentMatch.roundIndex];
+                    if (!round) return;
+                    const match = round.find(m => m.id === currentMatch.id);
+                    if (!match) return;
+
+                    match.score1 = 0;
+                    match.score2 = 0;
+                    match.winner = null;
+                    match.status = (match.player1 && match.player2) ? 'ready' : 'pending';
+
+                    await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
+                }
+
+                closeGame();
+            } catch (e) {
+                console.error('Błąd resetowania meczu:', e);
+            }
         }
 
         function showChampion(championName) {
@@ -2874,6 +3137,32 @@
                 clearSession();
                 await db.ref('tournaments/' + currentTournament.code).remove();
                 showStartScreen();
+            }
+        }
+
+        async function endTournament() {
+            if (!isHost || !currentTournament) return;
+            if (!confirm('Zakończyć turniej teraz?')) return;
+
+            try {
+                await db.ref('tournaments/' + currentTournament.code).update({
+                    status: 'finished',
+                    champion: 'Przerwany'
+                });
+
+                await db.ref('tournamentHistory').push({
+                    name: currentTournament.name,
+                    champion: 'Przerwany',
+                    level: currentTournament.level,
+                    mode: currentTournament.mode,
+                    participantCount: Object.keys(currentTournament.participants || {}).length,
+                    finishedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                clearTournamentQuestions(currentTournament.code);
+                clearSession();
+            } catch (e) {
+                console.error('Błąd zakończenia turnieju:', e);
             }
         }
 
