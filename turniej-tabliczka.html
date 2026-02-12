@@ -1129,6 +1129,39 @@
         let askedQuestions = [];
         let tournamentQuestionsKey = null;
         let isProcessing = false; // Blokada podczas przetwarzania odpowiedzi
+        const SESSION_KEY = 'turniej_tabliczka_session_v1';
+
+        function saveSession(sessionPatch = {}) {
+            try {
+                const existing = loadSession() || {};
+                const session = {
+                    ...existing,
+                    ...sessionPatch,
+                    lastUpdated: Date.now()
+                };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            } catch (e) {
+                console.warn('Nie udało się zapisać sesji turnieju', e);
+            }
+        }
+
+        function loadSession() {
+            try {
+                const raw = localStorage.getItem(SESSION_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                console.warn('Nie udało się wczytać sesji turnieju', e);
+                return null;
+            }
+        }
+
+        function clearSession() {
+            try {
+                localStorage.removeItem(SESSION_KEY);
+            } catch (e) {
+                console.warn('Nie udało się usunąć sesji turnieju', e);
+            }
+        }
 
         // Funkcje do zarządzania pytaniami na poziomie turnieju
         function getAskedQuestionsKey(tournamentCode, level) {
@@ -1164,6 +1197,7 @@
             return (range * (range + 1)) / 2;
         }
         let isModalOpen = false; // Czy modal gry jest otwarty
+        let lastTournamentStatus = null;
 
         // Bezpieczne czyszczenie timera
         function clearTimer() {
@@ -1286,6 +1320,14 @@
                 currentTournament = { ...tournament, code };
                 currentPlayer = { id: tournament.host, name: 'Prowadzący', isHost: true };
                 isHost = true;
+                saveSession({
+                    code,
+                    isHost: true,
+                    hostId: tournament.host,
+                    playerId: tournament.host,
+                    playerName: 'Prowadzący',
+                    addedPlayersFromDevice: []
+                });
 
                 showLobby(code);
                 listenToTournament(code);
@@ -1330,6 +1372,13 @@
                 });
 
                 addedPlayersFromDevice.push({ id: playerId, name: name });
+                saveSession({
+                    code,
+                    isHost: false,
+                    playerId: addedPlayersFromDevice[0]?.id || playerId,
+                    playerName: addedPlayersFromDevice[0]?.name || name,
+                    addedPlayersFromDevice
+                });
                 updateAddedPlayersList();
                 document.getElementById('playerName').value = '';
                 document.getElementById('playerName').focus();
@@ -1390,6 +1439,13 @@
                 currentTournament = { ...tournament, code };
                 currentPlayer = addedPlayersFromDevice[0];
                 isHost = false;
+                saveSession({
+                    code,
+                    isHost: false,
+                    playerId: currentPlayer?.id || null,
+                    playerName: currentPlayer?.name || null,
+                    addedPlayersFromDevice
+                });
 
                 showLobby(code);
                 listenToTournament(code);
@@ -1417,7 +1473,7 @@
         // Listen to tournament changes
         function listenToTournament(code) {
             if (tournamentRef) {
-                tournamentRef.off();
+                tournamentRef.off('value');
             }
 
             tournamentRef = db.ref('tournaments/' + code);
@@ -1425,15 +1481,27 @@
             tournamentRef.on('value', (snapshot) => {
                 if (!snapshot.exists()) {
                     alert('Turniej został anulowany');
+                    clearSession();
                     showStartScreen();
                     return;
                 }
 
                 const tournament = snapshot.val();
                 currentTournament = { ...tournament, code };
+                if (tournament.status === 'finished') {
+                    clearSession();
+                } else {
+                    saveSession({
+                        code,
+                        hostId: tournament.host
+                    });
+                }
 
                 // Załaduj pytania dla tego turnieju
                 loadAskedQuestions(code, tournament.level);
+
+                // Jeśli trwa mecz, ogranicz prze-renderowania
+                if (isModalOpen) return;
 
                 // Update participants list in lobby
                 if (tournament.status === 'lobby') {
@@ -1441,6 +1509,10 @@
                 }
 
                 // Handle different tournament phases
+                if (tournament.status !== lastTournamentStatus) {
+                    lastTournamentStatus = tournament.status;
+                }
+
                 if (tournament.status === 'groups') {
                     showGroupStage();
                 } else if (tournament.status === 'knockout') {
@@ -2178,6 +2250,13 @@
             if (gameModal) gameModal.classList.add('active');
             resetBoard(true); // Show announcement
             updateGamePlayerHighlight();
+
+            // Awaryjne odblokowanie planszy, gdyby ogłoszenie się zawiesiło
+            setTimeout(() => {
+                if (gameState && isModalOpen && !gameState.boardActive) {
+                    gameState.boardActive = true;
+                }
+            }, 2500);
         }
 
         function resetBoard(showAnnouncement = true) {
@@ -2778,6 +2857,7 @@
             hideAllPanels();
             document.getElementById('championPanel').classList.remove('hidden');
             document.getElementById('championName').textContent = championName;
+            clearSession();
 
             // Wyczyść pytania turnieju - turniej zakończony
             if (currentTournament && currentTournament.code) {
@@ -2791,6 +2871,7 @@
                 if (currentTournament && currentTournament.code) {
                     clearTournamentQuestions(currentTournament.code);
                 }
+                clearSession();
                 await db.ref('tournaments/' + currentTournament.code).remove();
                 showStartScreen();
             }
@@ -2856,6 +2937,73 @@
         }
 
         cleanupOldTournaments();
+
+        function recoverFromError(reason) {
+            console.warn('Awaryjne odblokowanie po błędzie:', reason);
+            clearTimer();
+            isProcessing = false;
+            if (gameState) {
+                gameState.isSelectingCell = false;
+                gameState.clickedCells = [];
+                gameState.boardActive = true;
+            }
+        }
+
+        window.addEventListener('error', (event) => {
+            recoverFromError(event?.message || 'error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            recoverFromError(event?.reason || 'promise rejection');
+        });
+
+        async function attemptResumeSession() {
+            const session = loadSession();
+            if (!session?.code) return;
+
+            try {
+                const snapshot = await db.ref('tournaments/' + session.code).once('value');
+                if (!snapshot.exists()) {
+                    clearSession();
+                    return;
+                }
+
+                const tournament = snapshot.val();
+                if (tournament.status === 'finished') {
+                    clearSession();
+                    return;
+                }
+
+                currentTournament = { ...tournament, code: session.code };
+                isHost = session.hostId && session.hostId === tournament.host;
+
+                addedPlayersFromDevice = Array.isArray(session.addedPlayersFromDevice)
+                    ? session.addedPlayersFromDevice
+                    : [];
+
+                if (isHost) {
+                    currentPlayer = { id: tournament.host, name: 'Prowadzący', isHost: true };
+                } else if (session.playerId && tournament.participants?.[session.playerId]) {
+                    currentPlayer = { id: session.playerId, name: tournament.participants[session.playerId].name };
+                } else if (addedPlayersFromDevice[0]) {
+                    currentPlayer = addedPlayersFromDevice[0];
+                } else {
+                    const firstParticipant = Object.entries(tournament.participants || {})[0];
+                    if (firstParticipant) {
+                        currentPlayer = { id: firstParticipant[0], name: firstParticipant[1].name };
+                    }
+                }
+
+                showLobby(session.code);
+                listenToTournament(session.code);
+            } catch (e) {
+                console.warn('Nie udało się przywrócić sesji turnieju', e);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            attemptResumeSession();
+        });
     </script>
 
     <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
