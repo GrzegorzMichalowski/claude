@@ -982,7 +982,7 @@
                 <button class="btn btn-primary" onclick="startTournament()" id="startTournamentBtn" disabled>
                     Rozpocznij turniej (min. 2 graczy)
                 </button>
-                <button class="btn btn-secondary" onclick="endTournament()">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="endTournament()">Zakończ turniej (prowadzący)</button>
                 <button class="btn btn-secondary" onclick="cancelTournament()">Anuluj turniej</button>
             </div>
 
@@ -1001,7 +1001,7 @@
             <h3 style="color: #ffd700; margin: 20px 0 10px;">Mecze do rozegrania:</h3>
             <div class="match-list" id="groupMatchList"></div>
             <div style="text-align: center; margin-top: 15px;">
-                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentGroups" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentGroups" style="display: none;">Zakończ turniej (prowadzący)</button>
                 <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateGroups" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
@@ -1019,7 +1019,7 @@
 
             <div id="leagueProgress" style="margin-top: 20px; text-align: center;"></div>
             <div style="text-align: center; margin-top: 15px;">
-                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentLeague" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentLeague" style="display: none;">Zakończ turniej (prowadzący)</button>
                 <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateLeague" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
@@ -1033,7 +1033,7 @@
 
             <div id="finalControls" style="text-align: center;"></div>
             <div style="text-align: center; margin-top: 15px;">
-                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentFinal" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentFinal" style="display: none;">Zakończ turniej (prowadzący)</button>
                 <button class="btn btn-secondary" onclick="simulatePendingMatches(1)" id="simulateFinal" style="display: none;">Symuluj finał</button>
             </div>
         </div>
@@ -1046,7 +1046,7 @@
                 <div class="bracket" id="bracketContainer"></div>
             </div>
             <div style="text-align: center; margin-top: 15px;">
-                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentKnockout" style="display: none;">Zakończ turniej</button>
+                <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentKnockout" style="display: none;">Zakończ turniej (prowadzący)</button>
                 <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateKnockout" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
@@ -1081,7 +1081,7 @@
 
             <div class="help-box">
                 <h3>2. Gdy mecz się zawiesi</h3>
-                <div>W oknie meczu kliknij „Reset meczu (awaryjnie)”. Mecz wróci do listy i można go rozegrać na innym komputerze.</div>
+                <div>W oknie meczu kliknij „Powtórz mecz (awaryjnie)”. Mecz wróci do listy i można go rozegrać na innym komputerze.</div>
             </div>
 
             <div class="help-box">
@@ -1091,7 +1091,7 @@
 
             <div class="help-box">
                 <h3>4. Kontrola prowadzącego</h3>
-                <div>Przycisk „Zakończ turniej” kończy bieżący turniej i zapisuje go w historii jako „Przerwany”.</div>
+                <div>Przycisk „Zakończ turniej (prowadzący)” kończy bieżący turniej i zapisuje go w historii jako „Przerwany”.</div>
             </div>
 
             <div class="help-box">
@@ -1147,7 +1147,7 @@
 
             <div id="matchControls" style="text-align: center; margin-top: 10px;">
                 <button class="btn btn-primary" onclick="closeGame()" id="closeMatchBtnInline">Zamknij i wróć do listy</button>
-                <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtnInline" style="display: none;">Reset meczu (awaryjnie)</button>
+                <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtnInline" style="display: none;">Powtórz mecz (awaryjnie)</button>
             </div>
 
             <div id="roundResult" class="hidden" style="padding: 20px; text-align: center;">
@@ -1161,7 +1161,7 @@
                 <div id="finalBoardDisplay" style="margin: 15px 0;"></div>
                 <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="closeGame()">Zamknij i wróć do listy</button>
-                    <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtn" style="display: none;">Reset meczu</button>
+                    <button class="btn btn-secondary" onclick="resetCurrentMatch()" id="resetMatchBtn" style="display: none;">Powtórz mecz</button>
                 </div>
             </div>
         </div>
@@ -1252,6 +1252,22 @@
             } else {
                 processingStartTime = 0;
             }
+        }
+
+        // Aktualizacja pojedynczego meczu w liście (transakcja zamiast nadpisywania całej tablicy)
+        async function updateMatchInListTransactional(listName, matchId, patch) {
+            const ref = db.ref('tournaments/' + currentTournament.code + '/' + listName);
+            await ref.transaction((current) => {
+                if (!Array.isArray(current)) return current;
+                const idx = current.findIndex(m => m && m.id === matchId);
+                if (idx === -1) return current;
+                const next = [...current];
+                next[idx] = {
+                    ...next[idx],
+                    ...patch
+                };
+                return next;
+            });
         }
 
         function saveSession(sessionPatch = {}) {
@@ -2029,7 +2045,7 @@
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <button class="match-btn" onclick="startGroupMatch('${match.id}')">Graj!</button>
-                        ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetGroupMatch('${match.id}')">Reset</button>` : ''}
+                        ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetGroupMatch('${match.id}')">Powtórz</button>` : ''}
                     </div>
                 </div>
             `).join('') + (completed.length > 0 ? `
@@ -2042,7 +2058,7 @@
                                 <span class="vs">:</span>
                                 <span class="match-score">${m.score2}</span> ${m.player2.name}
                             </div>
-                            ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetGroupMatch('${m.id}')">Reset</button>` : ''}
+                            ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetGroupMatch('${m.id}')">Powtórz</button>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -2064,21 +2080,13 @@
 
         async function resetGroupMatch(matchId) {
             if (!isHost || !currentTournament?.groupMatches) return;
-            if (!confirm('Resetować ten mecz grupowy?')) return;
-
-            const matches = [...currentTournament.groupMatches];
-            const matchIndex = matches.findIndex(m => m.id === matchId);
-            if (matchIndex === -1) return;
-
-            matches[matchIndex] = {
-                ...matches[matchIndex],
+            if (!confirm('Powtórzyć ten mecz grupowy?')) return;
+            await updateMatchInListTransactional('groupMatches', matchId, {
                 score1: 0,
                 score2: 0,
                 winner: null,
                 status: 'pending'
-            };
-
-            await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
+            });
         }
 
         // Start playoffs after group stage
@@ -2202,7 +2210,7 @@
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button class="match-btn" onclick="startLeagueMatch('${m.id}')">Graj!</button>
-                            ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetLeagueMatch('${m.id}')">Reset</button>` : ''}
+                            ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetLeagueMatch('${m.id}')">Powtórz</button>` : ''}
                         </div>
                     </div>
                 `).join('');
@@ -2220,7 +2228,7 @@
                                     <span class="vs">:</span>
                                     <span class="match-score">${m.score2}</span> ${m.player2.name}
                                 </div>
-                                ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetLeagueMatch('${m.id}')">Reset</button>` : ''}
+                                ${isHost ? `<button class="match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetLeagueMatch('${m.id}')">Powtórz</button>` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -2273,21 +2281,13 @@
 
         async function resetLeagueMatch(matchId) {
             if (!isHost || !currentTournament?.leagueMatches) return;
-            if (!confirm('Resetować ten mecz ligowy?')) return;
-
-            const matches = [...currentTournament.leagueMatches];
-            const matchIndex = matches.findIndex(m => m.id === matchId);
-            if (matchIndex === -1) return;
-
-            matches[matchIndex] = {
-                ...matches[matchIndex],
+            if (!confirm('Powtórzyć ten mecz ligowy?')) return;
+            await updateMatchInListTransactional('leagueMatches', matchId, {
                 score1: 0,
                 score2: 0,
                 winner: null,
                 status: 'pending'
-            };
-
-            await db.ref('tournaments/' + currentTournament.code + '/leagueMatches').set(matches);
+            });
         }
 
         // Start the league final
@@ -2652,7 +2652,7 @@
                         ${match.status === 'completed' ? `<span>${match.score2}</span>` : ''}
                     </div>
                     ${canPlay ? `<button class="play-match-btn" onclick="startBracketMatch('${match.id}', ${roundIndex})">Graj!</button>` : ''}
-                    ${isHost ? `<button class="play-match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetBracketMatch('${match.id}', ${roundIndex})">Reset</button>` : ''}
+                    ${isHost ? `<button class="play-match-btn" style="background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);" onclick="resetBracketMatch('${match.id}', ${roundIndex})">Powtórz</button>` : ''}
                 </div>
             `;
         }
@@ -2673,7 +2673,7 @@
 
         async function resetBracketMatch(matchId, roundIndex) {
             if (!isHost || !currentTournament?.bracket?.[roundIndex]) return;
-            if (!confirm('Resetować ten mecz pucharowy? Spowoduje to cofnięcie dalszych wyników.')) return;
+            if (!confirm('Powtórzyć ten mecz pucharowy? To cofnie kolejne wyniki w drabince.')) return;
 
             const bracket = JSON.parse(JSON.stringify(currentTournament.bracket));
             const round = bracket[roundIndex];
@@ -3266,7 +3266,7 @@
         async function resetCurrentMatch() {
             if (!isHost || !currentMatch || !currentTournament) return;
 
-            if (!confirm('Resetować ten mecz i przywrócić go do listy?')) return;
+            if (!confirm('Powtórzyć ten mecz i przywrócić go do listy?')) return;
 
             try {
                 if (currentMatch.isGroupMatch) {
@@ -3298,40 +3298,30 @@
             if (!currentMatch || !currentTournament || !gameState || !winner) return;
 
             try {
+                const latestTournamentSnap = await db.ref('tournaments/' + currentTournament.code).once('value');
+                if (!latestTournamentSnap.exists()) return;
+                const latestTournament = latestTournamentSnap.val();
+                if (latestTournament?.status === 'finished') {
+                    if (isHost) {
+                        alert('Turniej został już zakończony. Ten wynik nie zostanie zapisany.');
+                    }
+                    return;
+                }
+
                 if (currentMatch.isGroupMatch) {
-                    // Update group match
-                    if (!currentTournament.groupMatches) return;
-
-                    const matches = [...currentTournament.groupMatches];
-                    const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
-                    if (matchIndex === -1) return;
-
-                    matches[matchIndex] = {
-                        ...matches[matchIndex],
+                    await updateMatchInListTransactional('groupMatches', currentMatch.id, {
                         score1: gameState.score1,
                         score2: gameState.score2,
                         winner: winner.id,
                         status: 'completed'
-                    };
-
-                    await db.ref('tournaments/' + currentTournament.code + '/groupMatches').set(matches);
+                    });
                 } else if (currentMatch.isLeagueMatch) {
-                    // Update league match
-                    if (!currentTournament.leagueMatches) return;
-
-                    const matches = [...currentTournament.leagueMatches];
-                    const matchIndex = matches.findIndex(m => m.id === currentMatch.id);
-                    if (matchIndex === -1) return;
-
-                    matches[matchIndex] = {
-                        ...matches[matchIndex],
+                    await updateMatchInListTransactional('leagueMatches', currentMatch.id, {
                         score1: gameState.score1,
                         score2: gameState.score2,
                         winner: winner.id,
                         status: 'completed'
-                    };
-
-                    await db.ref('tournaments/' + currentTournament.code + '/leagueMatches').set(matches);
+                    });
                 } else if (currentMatch.isFinal) {
                     // Update league final
                     await db.ref('tournaments/' + currentTournament.code).update({
@@ -3409,6 +3399,9 @@
                 }
             } catch (error) {
                 console.error('Błąd aktualizacji wyniku meczu:', error);
+                if (isHost) {
+                    alert('Nie udało się zapisać wyniku meczu. Spróbuj powtórzyć mecz.');
+                }
             }
         }
 
@@ -3436,7 +3429,7 @@
 
         async function emergencyResetMatch() {
             if (!isHost || !currentTournament || !currentMatch) return;
-            if (!confirm('Zresetować mecz i oddać go do ponownego rozegrania?')) return;
+            if (!confirm('Powtórzyć mecz i oddać go do ponownego rozegrania?')) return;
 
             try {
                 if (currentMatch.status === 'completed' || currentMatch.winner) {
