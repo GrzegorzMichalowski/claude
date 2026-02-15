@@ -1219,6 +1219,40 @@
         let isProcessing = false; // Blokada podczas przetwarzania odpowiedzi
         const SESSION_KEY = 'turniej_tabliczka_session_v1';
         let tournamentListener = null;
+        let gameTimeouts = []; // Śledzenie wszystkich setTimeout w grze
+        let processingStartTime = 0; // Kiedy isProcessing zostało ustawione
+        const PROCESSING_WATCHDOG_MS = 8000; // Max czas trwania isProcessing
+
+        // Bezpieczny setTimeout z śledzeniem - automatycznie usuwa ID po wykonaniu
+        function safeGameTimeout(callback, delay) {
+            const id = setTimeout(() => {
+                gameTimeouts = gameTimeouts.filter(t => t !== id);
+                try {
+                    callback();
+                } catch (e) {
+                    console.error('Błąd w setTimeout gry:', e);
+                    recoverFromError('timeout callback: ' + (e?.message || e));
+                }
+            }, delay);
+            gameTimeouts.push(id);
+            return id;
+        }
+
+        // Wyczyść wszystkie oczekujące setTimeout gry
+        function clearAllGameTimeouts() {
+            gameTimeouts.forEach(id => clearTimeout(id));
+            gameTimeouts = [];
+        }
+
+        // Ustaw isProcessing z automatycznym watchdogiem
+        function setProcessing(value) {
+            isProcessing = value;
+            if (value) {
+                processingStartTime = Date.now();
+            } else {
+                processingStartTime = 0;
+            }
+        }
 
         function saveSession(sessionPatch = {}) {
             try {
@@ -1301,17 +1335,51 @@
             }
         }
 
+        // Watchdog - sprawdza czy gra nie utknęła
+        let watchdogInterval = null;
+        function startGameWatchdog() {
+            stopGameWatchdog();
+            watchdogInterval = setInterval(() => {
+                if (!isModalOpen || !gameState) return;
+                // Sprawdź czy isProcessing trwa za długo
+                if (isProcessing && processingStartTime > 0) {
+                    const elapsed = Date.now() - processingStartTime;
+                    if (elapsed > PROCESSING_WATCHDOG_MS) {
+                        console.warn(`Watchdog: isProcessing stuck for ${elapsed}ms, recovering`);
+                        recoverFromError('watchdog: isProcessing timeout');
+                    }
+                }
+                // Sprawdź czy isSelectingCell jest true ale questionPanel jest ukryty
+                if (gameState && gameState.isSelectingCell && !isProcessing) {
+                    const questionPanel = document.getElementById('questionPanel');
+                    if (questionPanel && questionPanel.classList.contains('hidden')) {
+                        console.warn('Watchdog: isSelectingCell stuck without question panel');
+                        gameState.isSelectingCell = false;
+                        gameState.clickedCells = [];
+                    }
+                }
+            }, 2000);
+        }
+        function stopGameWatchdog() {
+            if (watchdogInterval) {
+                clearInterval(watchdogInterval);
+                watchdogInterval = null;
+            }
+        }
+
         // Cleanup function
         function cleanup() {
             clearTimer();
-            isProcessing = false;
+            clearAllGameTimeouts();
+            stopGameWatchdog();
+            setProcessing(false);
             isModalOpen = false;
             if (tournamentRef) {
                 tournamentRef.off();
                 tournamentRef = null;
             }
-            // Usuń wszystkie ogłoszenia
-            document.querySelectorAll('.round-announcement').forEach(el => el.remove());
+            // Usuń wszystkie ogłoszenia i komunikaty
+            document.querySelectorAll('.round-announcement, .penalty-message').forEach(el => el.remove());
         }
 
         // Connection status
@@ -2648,8 +2716,10 @@
             if (isModalOpen) return;
 
             clearTimer();
-            isProcessing = false;
+            clearAllGameTimeouts();
+            setProcessing(false);
             isModalOpen = true;
+            startGameWatchdog();
 
             // Wstrzymaj nasłuchiwanie zmian turnieju na czas meczu
             if (tournamentRef && tournamentListener) {
@@ -2692,7 +2762,7 @@
             updateGamePlayerHighlight();
 
             // Awaryjne odblokowanie planszy, gdyby ogłoszenie się zawiesiło
-            setTimeout(() => {
+            safeGameTimeout(() => {
                 if (gameState && isModalOpen && !gameState.boardActive) {
                     gameState.boardActive = true;
                 }
@@ -2703,7 +2773,7 @@
             if (!gameState) return;
 
             clearTimer();
-            isProcessing = false;
+            setProcessing(false);
 
             gameState.board = ['', '', '', '', '', '', '', '', ''];
             gameState.currentPlayer = 'X';
@@ -2771,16 +2841,16 @@
             `;
             document.body.appendChild(announcement);
 
-            setTimeout(() => {
+            safeGameTimeout(() => {
                 if (announcement.parentNode) {
                     announcement.style.opacity = '0';
                     announcement.style.transition = 'opacity 0.3s';
-                    setTimeout(() => {
+                    safeGameTimeout(() => {
                         if (announcement.parentNode) {
                             announcement.remove();
                         }
                         if (callback) callback();
-                    }, 300);
+                    }, document.body.classList.contains('edge-lite') ? 10 : 300);
                 } else if (callback) {
                     callback();
                 }
@@ -2811,7 +2881,7 @@
 
         function penalizeGamePlayer() {
             if (isProcessing) return;
-            isProcessing = true;
+            setProcessing(true);
 
             clearTimer();
 
@@ -2827,7 +2897,7 @@
             // Show penalty message
             const currentName = gameState?.currentPlayer === 'X' ? currentMatch?.player1?.name : currentMatch?.player2?.name;
             if (!currentName) {
-                isProcessing = false;
+                setProcessing(false);
                 return;
             }
 
@@ -2841,13 +2911,13 @@
             document.body.appendChild(penaltyDiv);
 
             // Switch player after delay
-            setTimeout(() => {
-                penaltyDiv.remove();
+            safeGameTimeout(() => {
+                if (penaltyDiv.parentNode) penaltyDiv.remove();
                 if (gameState) {
                     gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
                     updateGamePlayerHighlight();
                 }
-                isProcessing = false;
+                setProcessing(false);
             }, 1500);
         }
 
@@ -2909,18 +2979,35 @@
         }
 
         function showGameQuestion() {
-            if (!gameState || !currentTournament) return;
+            if (!gameState || !currentTournament) {
+                // Reset stanu selekcji jeśli wyjście awaryjne
+                if (gameState) {
+                    gameState.isSelectingCell = false;
+                    gameState.clickedCells = [];
+                }
+                return;
+            }
 
             clearTimer();
 
             const level = LEVELS[currentTournament.level];
-            if (!level) return;
+            if (!level) {
+                if (gameState) {
+                    gameState.isSelectingCell = false;
+                    gameState.clickedCells = [];
+                }
+                return;
+            }
 
             let questionData;
             try {
                 questionData = generateUniqueQuestion(level);
             } catch (e) {
                 console.error('Błąd generowania pytania:', e);
+                if (gameState) {
+                    gameState.isSelectingCell = false;
+                    gameState.clickedCells = [];
+                }
                 return;
             }
 
@@ -3004,7 +3091,7 @@
         function checkGameAnswer(answer) {
             // Zabezpieczenie przed wielokrotnym wywołaniem
             if (isProcessing || !gameState) return;
-            isProcessing = true;
+            setProcessing(true);
 
             clearTimer();
 
@@ -3025,12 +3112,12 @@
                 }
             });
 
-            setTimeout(() => {
+            safeGameTimeout(() => {
                 const questionPanel = document.getElementById('questionPanel');
                 if (questionPanel) questionPanel.classList.add('hidden');
 
                 if (!gameState) {
-                    isProcessing = false;
+                    setProcessing(false);
                     return;
                 }
 
@@ -3039,51 +3126,60 @@
                 } else {
                     gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
                     updateGamePlayerHighlight();
-                    isProcessing = false;
+                    setProcessing(false);
                 }
             }, isTimeout ? 300 : 700);
         }
 
         function placeGameMarker() {
             if (!gameState) {
-                isProcessing = false;
+                setProcessing(false);
                 return;
             }
 
-            const index = gameState.selectedCell;
-            gameState.board[index] = gameState.currentPlayer;
+            try {
+                const index = gameState.selectedCell;
+                gameState.board[index] = gameState.currentPlayer;
 
-            const cell = document.querySelector(`.game-cell[data-index="${index}"]`);
-            if (cell) {
-                cell.textContent = gameState.currentPlayer;
-                cell.classList.add('taken', gameState.currentPlayer.toLowerCase());
-            }
-
-            if (checkGameWin()) {
-                highlightGameWinningCells();
-
-                if (gameState.currentPlayer === 'X') {
-                    gameState.score1++;
-                } else {
-                    gameState.score2++;
+                const cell = document.querySelector(`.game-cell[data-index="${index}"]`);
+                if (cell) {
+                    cell.textContent = gameState.currentPlayer;
+                    cell.classList.add('taken', gameState.currentPlayer.toLowerCase());
                 }
 
-                const gameScoreX = document.getElementById('gameScoreX');
-                const gameScoreO = document.getElementById('gameScoreO');
-                if (gameScoreX) gameScoreX.textContent = gameState.score1;
-                if (gameScoreO) gameScoreO.textContent = gameState.score2;
+                if (checkGameWin()) {
+                    // Dezaktywuj planszę podczas wyświetlania wyniku
+                    gameState.boardActive = false;
+                    highlightGameWinningCells();
 
-                if (gameState.score1 >= currentTournament.pointsToWin || gameState.score2 >= currentTournament.pointsToWin) {
-                    showMatchResult();
+                    if (gameState.currentPlayer === 'X') {
+                        gameState.score1++;
+                    } else {
+                        gameState.score2++;
+                    }
+
+                    const gameScoreX = document.getElementById('gameScoreX');
+                    const gameScoreO = document.getElementById('gameScoreO');
+                    if (gameScoreX) gameScoreX.textContent = gameState.score1;
+                    if (gameScoreO) gameScoreO.textContent = gameState.score2;
+
+                    if (gameState.score1 >= currentTournament.pointsToWin || gameState.score2 >= currentTournament.pointsToWin) {
+                        showMatchResult();
+                    } else {
+                        showRoundResult();
+                    }
+                } else if (gameState.board.every(c => c !== '')) {
+                    gameState.boardActive = false;
+                    showRoundResult(true);
                 } else {
-                    showRoundResult();
+                    gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
+                    updateGamePlayerHighlight();
+                    setProcessing(false);
                 }
-            } else if (gameState.board.every(c => c !== '')) {
-                showRoundResult(true);
-            } else {
-                gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
-                updateGamePlayerHighlight();
-                isProcessing = false;
+            } catch (e) {
+                console.error('Błąd w placeGameMarker:', e);
+                setProcessing(false);
+                if (gameState) gameState.boardActive = true;
             }
         }
 
@@ -3094,17 +3190,19 @@
         }
 
         function highlightGameWinningCells() {
+            if (!gameState) return;
             WIN_PATTERNS.forEach(pattern => {
                 if (pattern.every(index => gameState.board[index] === gameState.currentPlayer)) {
                     pattern.forEach(index => {
-                        document.querySelector(`.game-cell[data-index="${index}"]`).classList.add('winning');
+                        const cell = document.querySelector(`.game-cell[data-index="${index}"]`);
+                        if (cell) cell.classList.add('winning');
                     });
                 }
             });
         }
 
         function showRoundResult(isDraw = false) {
-            isProcessing = false; // Odblokuj po zakończeniu rundy
+            setProcessing(false); // Odblokuj po zakończeniu rundy
 
             const textEl = document.getElementById('roundResultText');
             const roundResult = document.getElementById('roundResult');
@@ -3122,14 +3220,17 @@
         }
 
         function nextRound() {
-            isProcessing = false;
+            setProcessing(false);
             resetBoard();
         }
 
         function showMatchResult() {
-            isProcessing = false; // Odblokuj po zakończeniu meczu
+            setProcessing(false); // Odblokuj po zakończeniu meczu
 
             if (!gameState || !currentTournament || !currentMatch) return;
+
+            // Dezaktywuj planszę
+            if (gameState) gameState.boardActive = false;
 
             const winner = gameState.score1 >= currentTournament.pointsToWin ? currentMatch.player1 : currentMatch.player2;
 
@@ -3157,7 +3258,9 @@
             if (gameBoard) gameBoard.style.display = 'none';
             if (matchResult) matchResult.classList.remove('hidden');
 
-            updateMatchResult(winner);
+            updateMatchResult(winner).catch(e => {
+                console.error('Błąd zapisu wyniku meczu:', e);
+            });
         }
 
         async function resetCurrentMatch() {
@@ -3311,7 +3414,9 @@
 
         function closeGame() {
             clearTimer();
-            isProcessing = false;
+            clearAllGameTimeouts();
+            stopGameWatchdog();
+            setProcessing(false);
             isModalOpen = false;
 
             // Usuń ogłoszenia i komunikaty kar
@@ -3509,12 +3614,19 @@
         function recoverFromError(reason) {
             console.warn('Awaryjne odblokowanie po błędzie:', reason);
             clearTimer();
-            isProcessing = false;
+            setProcessing(false);
             if (gameState) {
                 gameState.isSelectingCell = false;
                 gameState.clickedCells = [];
                 gameState.boardActive = true;
             }
+            // Ukryj panel pytania jeśli utknął w widocznym stanie
+            const questionPanel = document.getElementById('questionPanel');
+            if (questionPanel && !questionPanel.classList.contains('hidden')) {
+                questionPanel.classList.add('hidden');
+            }
+            // Usuń utknięte komunikaty kar
+            document.querySelectorAll('.penalty-message').forEach(el => el.remove());
         }
 
         window.addEventListener('error', (event) => {
@@ -3523,6 +3635,37 @@
 
         window.addEventListener('unhandledrejection', (event) => {
             recoverFromError(event?.reason || 'promise rejection');
+        });
+
+        // Edge tab throttling recovery - gdy użytkownik wraca do karty,
+        // sprawdź czy gra nie utknęła z powodu wstrzymanych timerów
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && isModalOpen && gameState) {
+                // Timer mógł zostać wstrzymany przez Edge - sprawdź stan
+                if (isProcessing && processingStartTime > 0) {
+                    const elapsed = Date.now() - processingStartTime;
+                    if (elapsed > PROCESSING_WATCHDOG_MS) {
+                        console.warn('Visibility change: recovering from stale processing state');
+                        recoverFromError('tab-resume: stale processing');
+                    }
+                }
+                // Ukryj utknięte elementy (ogłoszenia, kary)
+                document.querySelectorAll('.round-announcement').forEach(el => {
+                    if (el.parentNode) el.remove();
+                });
+                // Upewnij się, że plansza jest odblokowana jeśli nie trwa pytanie
+                const questionPanel = document.getElementById('questionPanel');
+                const questionVisible = questionPanel && !questionPanel.classList.contains('hidden');
+                if (!isProcessing && !questionVisible && gameState && !gameState.boardActive) {
+                    const roundResult = document.getElementById('roundResult');
+                    const matchResult = document.getElementById('matchResult');
+                    const roundShown = roundResult && !roundResult.classList.contains('hidden');
+                    const matchShown = matchResult && !matchResult.classList.contains('hidden');
+                    if (!roundShown && !matchShown) {
+                        gameState.boardActive = true;
+                    }
+                }
+            }
         });
 
         async function attemptResumeSession() {
