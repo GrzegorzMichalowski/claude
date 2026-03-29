@@ -1270,6 +1270,41 @@
             });
         }
 
+        // Aktualizacja meczu w drabince pucharowej (transakcja na całym turnieju)
+        async function updateBracketMatchTransactional(matchId, roundIndex, patch, winner) {
+            const ref = db.ref('tournaments/' + currentTournament.code);
+            let isFinalRound = false;
+
+            await ref.transaction((current) => {
+                if (!current || !Array.isArray(current.bracket?.[roundIndex])) return current;
+
+                const bracket = JSON.parse(JSON.stringify(current.bracket));
+                const matchIndex = bracket[roundIndex].findIndex(m => m && m.id === matchId);
+                if (matchIndex === -1) return current;
+
+                Object.assign(bracket[roundIndex][matchIndex], patch);
+                current.bracket = bracket;
+
+                if (roundIndex < bracket.length - 1) {
+                    const nextMatchIdx = Math.floor(matchIndex / 2);
+                    const nextMatch = bracket[roundIndex + 1]?.[nextMatchIdx];
+                    if (nextMatch) {
+                        if (matchIndex % 2 === 0) nextMatch.player1 = winner;
+                        else nextMatch.player2 = winner;
+                        if (nextMatch.player1 && nextMatch.player2) nextMatch.status = 'ready';
+                    }
+                } else {
+                    isFinalRound = true;
+                    current.status = 'finished';
+                    current.champion = winner.name;
+                }
+
+                return current;
+            });
+
+            return isFinalRound;
+        }
+
         function saveSession(sessionPatch = {}) {
             try {
                 const existing = loadSession() || {};
@@ -3346,45 +3381,22 @@
                         finishedAt: firebase.database.ServerValue.TIMESTAMP
                     });
                 } else {
-                    // Update bracket match
+                    // Update bracket match (transakcja zapobiega wyścigowi przy równoległych meczach)
                     if (!currentTournament.bracket) return;
 
-                    const bracket = JSON.parse(JSON.stringify(currentTournament.bracket));
-                    if (!bracket[currentMatch.roundIndex]) return;
+                    const isFinalRound = await updateBracketMatchTransactional(
+                        currentMatch.id,
+                        currentMatch.roundIndex,
+                        {
+                            score1: gameState.score1,
+                            score2: gameState.score2,
+                            winner: winner.id,
+                            status: 'completed'
+                        },
+                        winner
+                    );
 
-                    const match = bracket[currentMatch.roundIndex].find(m => m.id === currentMatch.id);
-                    if (!match) return;
-
-                    match.score1 = gameState.score1;
-                    match.score2 = gameState.score2;
-                    match.winner = winner.id;
-                    match.status = 'completed';
-
-                    // Advance winner
-                    if (currentMatch.roundIndex < bracket.length - 1) {
-                        const matchIndex = bracket[currentMatch.roundIndex].indexOf(match);
-                        const nextMatchIndex = Math.floor(matchIndex / 2);
-                        const nextMatch = bracket[currentMatch.roundIndex + 1]?.[nextMatchIndex];
-
-                        if (nextMatch) {
-                            if (matchIndex % 2 === 0) {
-                                nextMatch.player1 = winner;
-                            } else {
-                                nextMatch.player2 = winner;
-                            }
-
-                            if (nextMatch.player1 && nextMatch.player2) {
-                                nextMatch.status = 'ready';
-                            }
-                        }
-                    } else {
-                        // Champion!
-                        await db.ref('tournaments/' + currentTournament.code).update({
-                            status: 'finished',
-                            champion: winner.name
-                        });
-
-                        // Save to history
+                    if (isFinalRound) {
                         await db.ref('tournamentHistory').push({
                             name: currentTournament.name,
                             champion: winner.name,
@@ -3394,8 +3406,6 @@
                             finishedAt: firebase.database.ServerValue.TIMESTAMP
                         });
                     }
-
-                    await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
                 }
             } catch (error) {
                 console.error('Błąd aktualizacji wyniku meczu:', error);
