@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>Generator Promptów Narracyjnych</title>
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script src="scripts-common.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .container {
+            max-width: 660px;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: var(--spacing-xs);
+            font-size: 1.6rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.75);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-card {
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-lg);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .field-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 6px;
+        }
+
+        label .required { color: #ffd700; margin-left: 2px; }
+
+        select, input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            color: white;
+            background: rgba(255,255,255,0.1);
+            font-family: var(--font-family);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        select option {
+            background: #3d3062;
+            color: white;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-color: rgba(255,255,255,0.1);
+            padding-right: 44px;
+        }
+
+        select:focus, input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.6);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.18);
+        }
+
+        input[type="text"]::placeholder, textarea::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+            line-height: 1.6;
+        }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        /* Przyciski długości narracji */
+        .length-pills {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .length-pill {
+            padding: 10px 6px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 1.3;
+            user-select: none;
+        }
+
+        .length-pill:hover {
+            border-color: rgba(255, 215, 0, 0.5);
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.08);
+        }
+
+        .length-pill.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
+        }
+
+        .length-pill small {
+            display: block;
+            font-weight: 400;
+            opacity: 0.75;
+            font-size: 0.72rem;
+            margin-top: 2px;
+        }
+
+        /* Przycisk generowania */
+        .btn-generate {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #1a1a2e;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.35);
+            margin-top: var(--spacing-sm);
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(255, 215, 0, 0.5);
+        }
+
+        .btn-generate:active { transform: translateY(0); }
+
+        /* Sekcja wyniku */
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.15);
+            margin: var(--spacing-lg) 0 var(--spacing-md);
+        }
+
+        .result-section { display: none; }
+        .result-section.visible { display: block; }
+
+        .result-card {
+            background: rgba(40, 167, 69, 0.12);
+            border: 1.5px solid rgba(40, 167, 69, 0.35);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+        }
+
+        .result-label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #68d391;
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .result-box {
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.9);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .btn-copy {
+            width: 100%;
+            margin-top: var(--spacing-sm);
+            padding: 14px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            box-shadow: 0 4px 14px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-copy:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-copy:active { transform: scale(0.98); }
+        .btn-copy.copied { background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%); }
+
+        .reset-link {
+            display: block;
+            text-align: center;
+            margin-top: var(--spacing-md);
+            color: rgba(255,255,255,0.45);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .reset-link:hover { color: rgba(255,255,255,0.8); }
+
+        @media (max-width: 540px) {
+            .row-2 { grid-template-columns: 1fr; }
+            .length-pills { grid-template-columns: repeat(2, 1fr); }
+            h1 { font-size: 1.3rem; }
+            .btn-generate { font-size: 1rem; padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="home-btn">⬅ Strona główna</a>
+
+    <h1>📖 Generator Promptów Narracyjnych</h1>
+    <p class="subtitle">Wypełnij pola i wygeneruj gotowy prompt do Claude, ChatGPT lub Gemini</p>
+
+    <div class="form-card">
+
+        <div class="row-2">
+            <div class="field-group">
+                <label for="przedmiot">Przedmiot <span class="required">*</span></label>
+                <select id="przedmiot">
+                    <option value="">— wybierz —</option>
+                    <option value="języka polskiego">Język polski</option>
+                    <option value="matematyki">Matematyka</option>
+                    <option value="historii">Historia</option>
+                    <option value="przyrody">Przyroda</option>
+                    <option value="biologii">Biologia</option>
+                    <option value="geografii">Geografia</option>
+                    <option value="fizyki">Fizyka</option>
+                    <option value="chemii">Chemia</option>
+                    <option value="techniki">Technika</option>
+                    <option value="informatyki">Informatyka</option>
+                    <option value="wiedzy o społeczeństwie">WOS</option>
+                    <option value="plastyki">Plastyka</option>
+                    <option value="muzyki">Muzyka</option>
+                    <option value="wychowania fizycznego">Wychowanie fizyczne</option>
+                    <option value="języka angielskiego">Język angielski</option>
+                    <option value="edukacji dla bezpieczeństwa">Edukacja dla bezpieczeństwa</option>
+                    <option value="religii">Religia</option>
+                    <option value="etyki">Etyka</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="klasa">Klasa <span class="required">*</span></label>
+                <select id="klasa">
+                    <option value="">— wybierz —</option>
+                    <option value="1">Klasa 1</option>
+                    <option value="2">Klasa 2</option>
+                    <option value="3">Klasa 3</option>
+                    <option value="4">Klasa 4</option>
+                    <option value="5">Klasa 5</option>
+                    <option value="6">Klasa 6</option>
+                    <option value="7">Klasa 7</option>
+                    <option value="8">Klasa 8</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label for="temat">Temat lekcji <span class="required">*</span></label>
+            <input type="text" id="temat" placeholder="np. Bitwa pod Grunwaldem, Fotosynteza, Liczby ujemne…">
+        </div>
+
+        <div class="field-group">
+            <label for="narrator">Perspektywa narratora <span class="required">*</span></label>
+            <input type="text" id="narrator" placeholder="np. żołnierz, roślina, kronikarz, mieszczanin, chłop">
+            <p class="hint">Kto opowiada historię? Im bardziej konkretna rola, tym lepsza narracja.</p>
+        </div>
+
+        <div class="row-2">
+            <div class="field-group">
+                <label for="styl">Styl narracji</label>
+                <select id="styl">
+                    <option value="angażujący i żywy, dramatyczny tam gdzie to właściwe">Dramatyczny</option>
+                    <option value="dokumentalny i rzeczowy, jak reportaż historyczny">Dokumentalny</option>
+                    <option value="poetycki i liryczny, bogaty w obrazy i metafory">Poetycki</option>
+                    <option value="lekki i humorystyczny, z przymrużeniem oka">Humorystyczny</option>
+                    <option value="spokojny i refleksyjny, zachęcający do zadumy">Refleksyjny</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Długość narracji <span class="required">*</span></label>
+                <div class="length-pills" id="lengthPills">
+                    <div class="length-pill" data-value="100–150 słów" onclick="selectLength(this)">
+                        Krótka<small>100–150 słów</small>
+                    </div>
+                    <div class="length-pill active" data-value="200–300 słów" onclick="selectLength(this)">
+                        Standardowa<small>200–300 słów</small>
+                    </div>
+                    <div class="length-pill" data-value="400–500 słów" onclick="selectLength(this)">
+                        Rozbudowana<small>400–500 słów</small>
+                    </div>
+                    <div class="length-pill" data-value="600–800 słów" onclick="selectLength(this)">
+                        Pogłębiona<small>600–800 słów</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label for="fakty">Fakty do uwzględnienia</label>
+            <textarea id="fakty" placeholder="Wpisz daty, nazwiska, miejsca, pojęcia które muszą pojawić się w narracji…"></textarea>
+            <p class="hint">Opcjonalne, ale ważne — zapobiega zmyślaniu przez AI.</p>
+        </div>
+
+        <div class="field-group">
+            <label for="faktKluczowy">Fakt kluczowy</label>
+            <input type="text" id="faktKluczowy" placeholder="Jedno zdanie — najważniejsza rzecz którą uczeń ma zapamiętać">
+            <p class="hint">Opcjonalne. AI wyeksponuje ten fakt wyraźnie w narracji.</p>
+        </div>
+
+        <button class="btn-generate" onclick="generujPrompt()">✨ Generuj prompt</button>
+
+        <div class="result-section" id="resultSection">
+            <hr class="divider">
+            <div class="result-card">
+                <div class="result-label">✅ Gotowy prompt — skopiuj i wklej do AI</div>
+                <div class="result-box" id="resultBox"></div>
+            </div>
+            <button class="btn-copy" id="copyBtn" onclick="kopiuj()">📋 Kopiuj prompt</button>
+            <span class="reset-link" onclick="resetujFormularz()">↩ Wyczyść i zacznij od nowa</span>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const WIEK = { '1': '7', '2': '8', '3': '9', '4': '10', '5': '11', '6': '12', '7': '13', '8': '14' };
+
+    function selectLength(el) {
+        document.querySelectorAll('.length-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function getSelectedLength() {
+        const active = document.querySelector('.length-pill.active');
+        return active ? active.dataset.value : '200–300 słów';
+    }
+
+    function generujPrompt() {
+        const przedmiot    = document.getElementById('przedmiot').value;
+        const klasa        = document.getElementById('klasa').value;
+        const temat        = document.getElementById('temat').value.trim();
+        const narrator     = document.getElementById('narrator').value.trim();
+        const styl         = document.getElementById('styl').value;
+        const fakty        = document.getElementById('fakty').value.trim();
+        const faktKluczowy = document.getElementById('faktKluczowy').value.trim();
+        const dlugosc      = getSelectedLength();
+
+        if (!przedmiot || !klasa || !temat || !narrator) {
+            alert('Wypełnij wymagane pola oznaczone gwiazdką:\nPrzedmiot, Klasa, Temat lekcji, Perspektywa narratora.');
+            return;
+        }
+
+        let prompt = '';
+        prompt += `Wciel się w rolę: ${narrator}.\n\n`;
+        prompt += `Napisz narrację edukacyjną w pierwszej osobie na lekcję ${przedmiot}`;
+        prompt += ` dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${WIEK[klasa]} lat).\n\n`;
+        prompt += `Temat: ${temat}\n`;
+
+        if (fakty) {
+            prompt += `\nFakty, które muszą pojawić się w narracji:\n${fakty}\n`;
+        }
+
+        if (faktKluczowy) {
+            prompt += `\nFakt kluczowy — wyeksponuj go wyraźnie:\n${faktKluczowy}\n`;
+        }
+
+        prompt += `\nWymagania:\n`;
+        prompt += `— narracja w pierwszej osobie, z perspektywy: ${narrator}\n`;
+        prompt += `— język dostosowany do ucznia klasy ${klasa} (wiek ok. ${WIEK[klasa]} lat)\n`;
+        prompt += `— długość: ${dlugosc}\n`;
+        prompt += `— ton: ${styl}\n`;
+        prompt += `— zakończ pytaniem do klasy lub refleksją zachęcającą do dyskusji\n`;
+        prompt += `— nie zmyślaj faktów — trzymaj się podanych danych`;
+
+        document.getElementById('resultBox').textContent = prompt;
+
+        const section = document.getElementById('resultSection');
+        section.classList.add('visible');
+
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '📋 Kopiuj prompt';
+        btn.classList.remove('copied');
+
+        setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    }
+
+    function kopiuj() {
+        const tekst = document.getElementById('resultBox').textContent;
+        const btn = document.getElementById('copyBtn');
+
+        navigator.clipboard.writeText(tekst).then(() => {
+            btn.textContent = '✅ Skopiowano!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = '📋 Kopiuj prompt';
+                btn.classList.remove('copied');
+            }, 2500);
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = tekst;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            btn.textContent = '✅ Skopiowano!';
+            setTimeout(() => { btn.textContent = '📋 Kopiuj prompt'; }, 2500);
+        });
+    }
+
+    function resetujFormularz() {
+        ['przedmiot', 'klasa', 'temat', 'narrator', 'fakty', 'faktKluczowy'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+            else el.value = '';
+        });
+        document.getElementById('styl').selectedIndex = 0;
+        document.querySelectorAll('.length-pill').forEach((p, i) => p.classList.toggle('active', i === 1));
+        document.getElementById('resultSection').classList.remove('visible');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>
