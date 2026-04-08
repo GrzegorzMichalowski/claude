@@ -292,6 +292,73 @@
 
         .reset-link:hover { color: rgba(255,255,255,0.8); }
 
+        /* Szablony — szybki start */
+        .szablony-section {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .szablony-label {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .szablony-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+
+        .szablony-row::-webkit-scrollbar { height: 4px; }
+        .szablony-row::-webkit-scrollbar-track { background: transparent; }
+        .szablony-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .szablon-card {
+            flex: 0 0 auto;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.18);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            min-width: 108px;
+            max-width: 120px;
+        }
+
+        .szablon-card:hover {
+            background: rgba(255,255,255,0.16);
+            border-color: rgba(255,255,255,0.4);
+            transform: translateY(-2px);
+        }
+
+        .szablon-card .sz-emoji {
+            font-size: 1.3rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .szablon-card .sz-subject {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.55);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            line-height: 1.3;
+        }
+
+        .szablon-card .sz-title {
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            line-height: 1.3;
+            margin-top: 3px;
+        }
+
         @media (max-width: 540px) {
             .row-2 { grid-template-columns: 1fr; }
             .length-pills { grid-template-columns: repeat(2, 1fr); }
@@ -308,6 +375,42 @@
 
     <h1>📖 Generator Promptów Narracyjnych</h1>
     <p class="subtitle">Wypełnij pola i wygeneruj gotowy prompt do Claude, ChatGPT lub Gemini</p>
+
+    <div class="szablony-section">
+        <p class="szablony-label">⚡ Szybki start — wybierz gotowy szablon:</p>
+        <div class="szablony-row">
+            <div class="szablon-card" onclick="wypełnijSzablon(0)">
+                <span class="sz-emoji">⚔️</span>
+                <div class="sz-subject">Historia · kl. 6</div>
+                <div class="sz-title">Bitwa pod Grunwaldem</div>
+            </div>
+            <div class="szablon-card" onclick="wypełnijSzablon(1)">
+                <span class="sz-emoji">🌿</span>
+                <div class="sz-subject">Biologia · kl. 5</div>
+                <div class="sz-title">Fotosynteza</div>
+            </div>
+            <div class="szablon-card" onclick="wypełnijSzablon(2)">
+                <span class="sz-emoji">➗</span>
+                <div class="sz-subject">Matematyka · kl. 4</div>
+                <div class="sz-title">Dodawanie ułamków</div>
+            </div>
+            <div class="szablon-card" onclick="wypełnijSzablon(3)">
+                <span class="sz-emoji">💧</span>
+                <div class="sz-subject">Geografia · kl. 5</div>
+                <div class="sz-title">Obieg wody</div>
+            </div>
+            <div class="szablon-card" onclick="wypełnijSzablon(4)">
+                <span class="sz-emoji">🍎</span>
+                <div class="sz-subject">Fizyka · kl. 7</div>
+                <div class="sz-title">Siła grawitacji</div>
+            </div>
+            <div class="szablon-card" onclick="wypełnijSzablon(5)">
+                <span class="sz-emoji">📜</span>
+                <div class="sz-subject">Polski · kl. 8</div>
+                <div class="sz-title">Reduta Ordona</div>
+            </div>
+        </div>
+    </div>
 
     <div class="form-card">
 
@@ -491,6 +594,102 @@
 
 <script>
     const WIEK = { '1': '7', '2': '8', '3': '9', '4': '10', '5': '11', '6': '12', '7': '13', '8': '14' };
+
+    const SZABLONY = [
+        {
+            przedmiotVal: 'historii', klasa: '6',
+            temat: 'Bitwa pod Grunwaldem (15 lipca 1410)',
+            format: 'narracja', narrator: 'żołnierz wojsk Władysława Jagiełły walczący pod Grunwaldem',
+            styl: 'angażujący i żywy, dramatyczny tam gdzie to właściwe',
+            fakty: '15 lipca 1410 r., Władysław II Jagiełło, Wielki Mistrz Ulrich von Jungingen (poległ w boju), Zakon Krzyżacki, Wielka Wojna 1409–1411, klęska Krzyżaków',
+            faktKluczowy: 'Bitwa pod Grunwaldem była jedną z największych bitew średniowiecznej Europy — zadała Zakonowi Krzyżackiemu cios, z którego nigdy się w pełni nie podniósł.',
+            dlugosc: 1
+        },
+        {
+            przedmiotVal: 'biologii', klasa: '5',
+            temat: 'Fotosynteza — jak rośliny produkują pokarm',
+            format: 'narracja', narrator: 'liść dębowy w słoneczny letni dzień',
+            styl: 'spokojny i refleksyjny, zachęcający do zadumy',
+            fakty: 'chlorofil, chloroplasty, dwutlenek węgla (CO₂), woda (H₂O), glukoza, tlen (O₂), energia słoneczna',
+            faktKluczowy: 'Fotosynteza to proces, dzięki któremu rośliny produkują glukozę z CO₂ i wody, używając energii słonecznej — i przy okazji wytwarzają tlen, którym oddychamy.',
+            dlugosc: 1
+        },
+        {
+            przedmiotVal: 'matematyki', klasa: '4',
+            temat: 'Dodawanie ułamków o tym samym mianowniku',
+            format: 'dialog',
+            postaćA: 'Kasia — uczennica klasy 4, która nie rozumie ułamków',
+            postaćB: 'Marek — jej starszy brat, uczeń klasy 7, który tłumaczy zasady',
+            styl: 'lekki i humorystyczny, z przymrużeniem oka',
+            fakty: 'mianownik, licznik, 1/4 + 2/4 = 3/4, ułamek jako część całości, pizzа lub tort jako przykład',
+            faktKluczowy: 'Dodając ułamki o tym samym mianowniku, dodajemy tylko liczniki — mianownik pozostaje bez zmian.',
+            dlugosc: 2
+        },
+        {
+            przedmiotVal: 'geografii', klasa: '5',
+            temat: 'Obieg wody w przyrodzie',
+            format: 'legenda', narrator: 'stara mądra rzeka opowiadająca historię jednej kropli wody',
+            styl: 'poetycki i liryczny, bogaty w obrazy i metafory',
+            fakty: 'parowanie, kondensacja, chmury, opady (deszcz, śnieg), spływ powierzchniowy, wsiąkanie, wody gruntowe, morze',
+            faktKluczowy: 'Woda krąży w przyrodzie w nieskończonym cyklu: paruje, tworzy chmury, opada jako deszcz lub śnieg i wraca do mórz i rzek.',
+            dlugosc: 2
+        },
+        {
+            przedmiotVal: 'fizyki', klasa: '7',
+            temat: 'Siła grawitacji i swobodne spadanie ciał',
+            format: 'reportaz', narrator: 'dziennikarka naukowa relacjonująca z laboratorium fizycznego podczas doświadczenia ze swobodnym spadaniem',
+            styl: 'dokumentalny i rzeczowy, jak reportaż historyczny',
+            fakty: 'Isaac Newton (1687), legenda o jabłku, przyspieszenie ziemskie g ≈ 9,81 m/s², w próżni wszystkie ciała spadają jednakowo niezależnie od masy, doświadczenie Galileusza',
+            faktKluczowy: 'Każde ciało — niezależnie od masy — w próżni spada z tym samym przyspieszeniem g ≈ 9,81 m/s².',
+            dlugosc: 1
+        },
+        {
+            przedmiotVal: 'języka polskiego', klasa: '8',
+            temat: '„Reduta Ordona" Adama Mickiewicza — analiza i kontekst historyczny',
+            format: 'list', narrator: 'adiutant kapitana Ordona, piszący list do rodziny po upadku reduty',
+            styl: 'poetycki i liryczny, bogaty w obrazy i metafory',
+            fakty: 'Adam Mickiewicz, 1831, Powstanie Listopadowe, kapitan Julian Konstanty Ordon, reduta na Woli, Warszawa, obrona przed wojskami rosyjskimi, 6 września 1831, bohater romantyczny',
+            faktKluczowy: 'Mickiewicz ukazał Ordona jako bohatera romantycznego — człowieka, który poświęca życie w imię wolności ojczyzny.',
+            dlugosc: 1
+        }
+    ];
+
+    function wypełnijSzablon(idx) {
+        const s = SZABLONY[idx];
+
+        document.getElementById('przedmiot').value = s.przedmiotVal;
+        document.getElementById('klasa').value = s.klasa;
+        document.getElementById('temat').value = s.temat;
+        document.getElementById('fakty').value = s.fakty || '';
+        document.getElementById('faktKluczowy').value = s.faktKluczowy || '';
+        document.getElementById('styl').value = s.styl;
+
+        // Ustaw format i pokaż odpowiednie pola
+        selectFormat(document.querySelector(`.format-pill[data-format="${s.format}"]`));
+
+        // Wypełnij pola narratora
+        if (s.format === 'narracja') {
+            document.getElementById('narrator').value = s.narrator || '';
+        } else if (s.format === 'dialog') {
+            document.getElementById('postaćA').value = s.postaćA || '';
+            document.getElementById('postaćB').value = s.postaćB || '';
+        } else if (s.format === 'list') {
+            document.getElementById('autorListu').value = s.narrator || '';
+        } else if (s.format === 'reportaz') {
+            document.getElementById('reporter').value = s.narrator || '';
+        } else if (s.format === 'legenda') {
+            document.getElementById('narratorLeg').value = s.narrator || '';
+        }
+
+        // Ustaw długość
+        document.querySelectorAll('.length-pill').forEach((p, i) => p.classList.toggle('active', i === s.dlugosc));
+
+        // Ukryj poprzedni wynik
+        document.getElementById('resultSection').classList.remove('visible');
+
+        // Scroll do formularza
+        setTimeout(() => document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    }
 
     // Domyślna długość dla każdego formatu (indeks w tablicy pills: 0=krótka, 1=standardowa, 2=rozbudowana, 3=pogłębiona)
     const FORMAT_DEFAULT_LENGTH = {
