@@ -115,6 +115,52 @@
             line-height: 1.4;
         }
 
+        /* Przyciski formatu narracji */
+        .format-pills {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .format-pill {
+            padding: 10px 4px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 1.3;
+            user-select: none;
+        }
+
+        .format-pill:hover {
+            border-color: rgba(100, 200, 255, 0.5);
+            color: #6dcff6;
+            background: rgba(100, 200, 255, 0.08);
+        }
+
+        .format-pill.active {
+            border-color: #6dcff6;
+            background: rgba(100, 200, 255, 0.18);
+            color: #6dcff6;
+        }
+
+        .format-pill small {
+            display: block;
+            font-weight: 400;
+            opacity: 0.75;
+            font-size: 0.7rem;
+            margin-top: 2px;
+        }
+
+        /* Dynamiczne pola narratora */
+        .narrator-variant { display: none; }
+        .narrator-variant.visible { display: block; }
+
         /* Przyciski długości narracji */
         .length-pills {
             display: grid;
@@ -249,6 +295,7 @@
         @media (max-width: 540px) {
             .row-2 { grid-template-columns: 1fr; }
             .length-pills { grid-template-columns: repeat(2, 1fr); }
+            .format-pills { grid-template-columns: repeat(3, 1fr); }
             h1 { font-size: 1.3rem; }
             .btn-generate { font-size: 1rem; padding: 16px; }
         }
@@ -311,10 +358,77 @@
             <input type="text" id="temat" placeholder="np. Bitwa pod Grunwaldem, Fotosynteza, Liczby ujemne…">
         </div>
 
+        <!-- Format narracji -->
         <div class="field-group">
-            <label for="narrator">Perspektywa narratora <span class="required">*</span></label>
-            <input type="text" id="narrator" placeholder="np. żołnierz, roślina, kronikarz, mieszczanin, chłop">
-            <p class="hint">Kto opowiada historię? Im bardziej konkretna rola, tym lepsza narracja.</p>
+            <label>Format narracji <span class="required">*</span></label>
+            <div class="format-pills" id="formatPills">
+                <div class="format-pill active" data-format="narracja" onclick="selectFormat(this)">
+                    👤 Narracja<small>1. osoba</small>
+                </div>
+                <div class="format-pill" data-format="dialog" onclick="selectFormat(this)">
+                    💬 Dialog<small>2 postaci</small>
+                </div>
+                <div class="format-pill" data-format="list" onclick="selectFormat(this)">
+                    ✉️ List<small>Pamiętnik</small>
+                </div>
+                <div class="format-pill" data-format="reportaz" onclick="selectFormat(this)">
+                    📰 Reportaż<small>Notatka</small>
+                </div>
+                <div class="format-pill" data-format="legenda" onclick="selectFormat(this)">
+                    🏰 Legenda<small>Opowieść</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamiczne pola zależne od formatu -->
+        <div id="narratorSection">
+
+            <div class="narrator-variant visible" id="nv-narracja">
+                <div class="field-group">
+                    <label for="narrator">Perspektywa narratora <span class="required">*</span></label>
+                    <input type="text" id="narrator" placeholder="np. żołnierz, roślina, kronikarz, mieszczanin, chłop">
+                    <p class="hint">Kto opowiada historię? Im bardziej konkretna rola, tym lepsza narracja.</p>
+                </div>
+            </div>
+
+            <div class="narrator-variant" id="nv-dialog">
+                <div class="row-2">
+                    <div class="field-group">
+                        <label for="postaćA">Postać A <span class="required">*</span></label>
+                        <input type="text" id="postaćA" placeholder="np. uczeń, dziennikarz">
+                    </div>
+                    <div class="field-group">
+                        <label for="postaćB">Postać B <span class="required">*</span></label>
+                        <input type="text" id="postaćB" placeholder="np. naukowiec, świadek">
+                    </div>
+                </div>
+                <p class="hint" style="margin-top:-8px">Dwie postaci, które ze sobą rozmawiają i razem odkrywają temat.</p>
+            </div>
+
+            <div class="narrator-variant" id="nv-list">
+                <div class="field-group">
+                    <label for="autorListu">Autor listu / pamiętnika <span class="required">*</span></label>
+                    <input type="text" id="autorListu" placeholder="np. mieszczanin, żołnierz, podróżnik, uczennica">
+                    <p class="hint">Kto pisze? Osoba powinna być związana z tematem lekcji.</p>
+                </div>
+            </div>
+
+            <div class="narrator-variant" id="nv-reportaz">
+                <div class="field-group">
+                    <label for="reporter">Reporter / Obserwator <span class="required">*</span></label>
+                    <input type="text" id="reporter" placeholder="np. kronikarz z miejsca zdarzenia, dziennikarz naukowy">
+                    <p class="hint">Z czyjej perspektywy relacjonowane jest wydarzenie?</p>
+                </div>
+            </div>
+
+            <div class="narrator-variant" id="nv-legenda">
+                <div class="field-group">
+                    <label for="narratorLeg">Narrator <span style="opacity:0.6; font-weight:400; font-size:0.8rem">(opcjonalnie)</span></label>
+                    <input type="text" id="narratorLeg" placeholder="np. stary dziad, wędrowiec — lub zostaw puste">
+                    <p class="hint">Narracja 3-osobowa. Możesz nadać narratorowi charakter lub zostawić bezosobowy styl baśniowy.</p>
+                </div>
+            </div>
+
         </div>
 
         <div class="row-2">
@@ -330,7 +444,7 @@
             </div>
 
             <div class="field-group">
-                <label>Długość narracji <span class="required">*</span></label>
+                <label>Długość <span class="required">*</span></label>
                 <div class="length-pills" id="lengthPills">
                     <div class="length-pill" data-value="100–150 słów" onclick="selectLength(this)">
                         Krótka<small>100–150 słów</small>
@@ -378,6 +492,33 @@
 <script>
     const WIEK = { '1': '7', '2': '8', '3': '9', '4': '10', '5': '11', '6': '12', '7': '13', '8': '14' };
 
+    // Domyślna długość dla każdego formatu (indeks w tablicy pills: 0=krótka, 1=standardowa, 2=rozbudowana, 3=pogłębiona)
+    const FORMAT_DEFAULT_LENGTH = {
+        narracja: 1,
+        dialog:   2,
+        list:     1,
+        reportaz: 1,
+        legenda:  2
+    };
+
+    let currentFormat = 'narracja';
+
+    function selectFormat(el) {
+        document.querySelectorAll('.format-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+
+        const format = el.dataset.format;
+        currentFormat = format;
+
+        // Pokaż odpowiedni blok pól narratora
+        document.querySelectorAll('.narrator-variant').forEach(v => v.classList.remove('visible'));
+        document.getElementById('nv-' + format).classList.add('visible');
+
+        // Ustaw domyślną długość dla formatu
+        const pills = document.querySelectorAll('.length-pill');
+        pills.forEach((p, i) => p.classList.toggle('active', i === FORMAT_DEFAULT_LENGTH[format]));
+    }
+
     function selectLength(el) {
         document.querySelectorAll('.length-pill').forEach(p => p.classList.remove('active'));
         el.classList.add('active');
@@ -388,42 +529,132 @@
         return active ? active.dataset.value : '200–300 słów';
     }
 
+    function getNarratorFields() {
+        switch (currentFormat) {
+            case 'narracja':
+                return { ok: !!document.getElementById('narrator').value.trim(),
+                         narrator: document.getElementById('narrator').value.trim() };
+            case 'dialog':
+                return { ok: !!(document.getElementById('postaćA').value.trim() && document.getElementById('postaćB').value.trim()),
+                         postaćA: document.getElementById('postaćA').value.trim(),
+                         postaćB: document.getElementById('postaćB').value.trim() };
+            case 'list':
+                return { ok: !!document.getElementById('autorListu').value.trim(),
+                         autor: document.getElementById('autorListu').value.trim() };
+            case 'reportaz':
+                return { ok: !!document.getElementById('reporter').value.trim(),
+                         reporter: document.getElementById('reporter').value.trim() };
+            case 'legenda':
+                return { ok: true,
+                         narrator: document.getElementById('narratorLeg').value.trim() };
+        }
+    }
+
+    function buildPrompt(fields, przedmiot, klasa, wiek, temat, styl, dlugosc, fakty, faktKluczowy) {
+        const faktySec = fakty
+            ? `\nFakty, które muszą pojawić się w tekście:\n${fakty}\n`
+            : '';
+        const kluczSec = faktKluczowy
+            ? `\nFakt kluczowy — wyeksponuj go wyraźnie:\n${faktKluczowy}\n`
+            : '';
+        const common = `— język dostosowany do ucznia klasy ${klasa} (wiek ok. ${wiek} lat)\n— długość: ${dlugosc}\n— ton: ${styl}\n— nie zmyślaj faktów — trzymaj się podanych danych`;
+
+        switch (currentFormat) {
+
+            case 'narracja':
+                return `Wciel się w rolę: ${fields.narrator}.
+
+Napisz narrację edukacyjną w pierwszej osobie na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Temat: ${temat}
+${faktySec}${kluczSec}
+Wymagania:
+— narracja w pierwszej osobie, z perspektywy: ${fields.narrator}
+${common}
+— zakończ pytaniem do klasy lub refleksją zachęcającą do dyskusji`;
+
+            case 'dialog':
+                return `Napisz dialog edukacyjny między dwiema postaciami na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Postać A: ${fields.postaćA}
+Postać B: ${fields.postaćB}
+Temat rozmowy: ${temat}
+${faktySec}${kluczSec}
+Wymagania:
+— forma: scenariusz dialogu (Postać A: … / Postać B: …)
+— każda postać ma swój unikalny głos i perspektywę
+— wiedza o temacie przekazywana naturalnie przez rozmowę
+${common}
+— zakończ pytaniem otwartym jednej z postaci, zachęcającym klasę do dyskusji`;
+
+            case 'list':
+                return `Napisz list lub wpis do pamiętnika na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Autor: ${fields.autor}
+Temat / sytuacja: ${temat}
+${faktySec}${kluczSec}
+Wymagania:
+— forma: autentyczny list lub wpis pamiętnikarski, pisany w 1. osobie
+— zawiera datę lub miejsce charakterystyczne dla epoki / tematu
+— wiedza o temacie przekazywana przez osobiste przeżycia autora
+${common}
+— zakończ refleksją lub pytaniem zachęcającym klasę do dyskusji`;
+
+            case 'reportaz':
+                return `Napisz reportaż lub notatkę terenową na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Reporter / obserwator: ${fields.reporter}
+Temat relacji: ${temat}
+${faktySec}${kluczSec}
+Wymagania:
+— forma: żywa relacja z miejsca zdarzenia lub zjawiska, styl reporterski
+— narracja w 1. osobie; dobierz czas narracji tak, by był najbardziej angażujący
+— wiedza o temacie przekazywana przez obserwacje i fakty z terenu
+${common}
+— zakończ pytaniem skierowanym do czytelnika / klasy`;
+
+            case 'legenda': {
+                const narratorLinia = fields.narrator
+                    ? `Narrator: ${fields.narrator}`
+                    : `Narrator: bezosobowy, tradycyjny styl baśniowy`;
+                return `Napisz legendę lub opowieść edukacyjną na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Temat: ${temat}
+${narratorLinia}
+${faktySec}${kluczSec}
+Wymagania:
+— forma: narracja 3-osobowa w stylu legendy lub opowieści ludowej
+— zakorzeniona w realiach epoki / miejsca / zjawiska
+— wiedza o temacie przekazywana przez fabułę i losy bohaterów
+${common}
+— zakończ morałem lub pytaniem zachęcającym klasę do refleksji`;
+            }
+        }
+    }
+
     function generujPrompt() {
         const przedmiot    = document.getElementById('przedmiot').value;
         const klasa        = document.getElementById('klasa').value;
         const temat        = document.getElementById('temat').value.trim();
-        const narrator     = document.getElementById('narrator').value.trim();
         const styl         = document.getElementById('styl').value;
         const fakty        = document.getElementById('fakty').value.trim();
         const faktKluczowy = document.getElementById('faktKluczowy').value.trim();
         const dlugosc      = getSelectedLength();
+        const wiek         = WIEK[klasa] || '?';
 
-        if (!przedmiot || !klasa || !temat || !narrator) {
-            alert('Wypełnij wymagane pola oznaczone gwiazdką:\nPrzedmiot, Klasa, Temat lekcji, Perspektywa narratora.');
+        const fields = getNarratorFields();
+
+        if (!przedmiot || !klasa || !temat) {
+            alert('Wypełnij wymagane pola:\nPrzedmiot, Klasa, Temat lekcji.');
+            return;
+        }
+        if (!fields.ok) {
+            const etykiety = { narracja: 'Perspektywa narratora', dialog: 'Postać A i Postać B', list: 'Autor listu/pamiętnika', reportaz: 'Reporter/Obserwator' };
+            alert(`Wypełnij pole: ${etykiety[currentFormat] || 'Narrator'}.`);
             return;
         }
 
-        let prompt = '';
-        prompt += `Wciel się w rolę: ${narrator}.\n\n`;
-        prompt += `Napisz narrację edukacyjną w pierwszej osobie na lekcję ${przedmiot}`;
-        prompt += ` dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${WIEK[klasa]} lat).\n\n`;
-        prompt += `Temat: ${temat}\n`;
-
-        if (fakty) {
-            prompt += `\nFakty, które muszą pojawić się w narracji:\n${fakty}\n`;
-        }
-
-        if (faktKluczowy) {
-            prompt += `\nFakt kluczowy — wyeksponuj go wyraźnie:\n${faktKluczowy}\n`;
-        }
-
-        prompt += `\nWymagania:\n`;
-        prompt += `— narracja w pierwszej osobie, z perspektywy: ${narrator}\n`;
-        prompt += `— język dostosowany do ucznia klasy ${klasa} (wiek ok. ${WIEK[klasa]} lat)\n`;
-        prompt += `— długość: ${dlugosc}\n`;
-        prompt += `— ton: ${styl}\n`;
-        prompt += `— zakończ pytaniem do klasy lub refleksją zachęcającą do dyskusji\n`;
-        prompt += `— nie zmyślaj faktów — trzymaj się podanych danych`;
+        const prompt = buildPrompt(fields, przedmiot, klasa, wiek, temat, styl, dlugosc, fakty, faktKluczowy);
 
         document.getElementById('resultBox').textContent = prompt;
 
@@ -461,13 +692,18 @@
     }
 
     function resetujFormularz() {
-        ['przedmiot', 'klasa', 'temat', 'narrator', 'fakty', 'faktKluczowy'].forEach(id => {
+        ['przedmiot', 'klasa', 'temat', 'fakty', 'faktKluczowy',
+         'narrator', 'postaćA', 'postaćB', 'autorListu', 'reporter', 'narratorLeg'].forEach(id => {
             const el = document.getElementById(id);
+            if (!el) return;
             if (el.tagName === 'SELECT') el.selectedIndex = 0;
             else el.value = '';
         });
         document.getElementById('styl').selectedIndex = 0;
-        document.querySelectorAll('.length-pill').forEach((p, i) => p.classList.toggle('active', i === 1));
+
+        // Reset formatu do narracji
+        selectFormat(document.querySelector('.format-pill[data-format="narracja"]'));
+
         document.getElementById('resultSection').classList.remove('visible');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
