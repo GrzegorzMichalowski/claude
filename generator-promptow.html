@@ -253,6 +253,19 @@
             gap: 6px;
         }
 
+        .live-badge {
+            margin-left: auto;
+            font-size: 0.68rem;
+            color: rgba(104, 211, 145, 0.65);
+            font-weight: 400;
+            animation: livepulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes livepulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
         .result-box {
             font-size: 0.9rem;
             line-height: 1.8;
@@ -694,7 +707,7 @@
         <div class="result-section" id="resultSection">
             <hr class="divider">
             <div class="result-card">
-                <div class="result-label">✅ Gotowy prompt — skopiuj i wklej do AI</div>
+                <div class="result-label">✅ Gotowy prompt — skopiuj i wklej do AI<span class="live-badge">● na żywo</span></div>
                 <div class="result-box" id="resultBox"></div>
             </div>
             <button class="btn-copy" id="copyBtn" onclick="kopiuj()">📋 Kopiuj prompt</button>
@@ -933,11 +946,14 @@
         // Ustaw domyślną długość dla formatu
         const pills = document.querySelectorAll('.length-pill');
         pills.forEach((p, i) => p.classList.toggle('active', i === FORMAT_DEFAULT_LENGTH[format]));
+
+        debouncedPreview();
     }
 
     function selectLength(el) {
         document.querySelectorAll('.length-pill').forEach(p => p.classList.remove('active'));
         el.classList.add('active');
+        debouncedPreview();
     }
 
     function getSelectedLength() {
@@ -1048,17 +1064,52 @@ ${common}
         }
     }
 
-    function generujPrompt() {
-        const przedmiot    = document.getElementById('przedmiot').value;
-        const klasa        = document.getElementById('klasa').value;
-        const temat        = document.getElementById('temat').value.trim();
+    // ── Podgląd na żywo ───────────────────────────────────────────────────────
+    let previewTimer = null;
+
+    function debouncedPreview() {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(previewSilent, 400);
+    }
+
+    function previewSilent() {
+        const przedmiot = document.getElementById('przedmiot').value;
+        const klasa     = document.getElementById('klasa').value;
+        const temat     = document.getElementById('temat').value.trim();
+        const fields    = getNarratorFields();
+
+        if (!przedmiot || !klasa || !temat || !fields.ok) return;
+
         const styl         = document.getElementById('styl').value;
         const fakty        = document.getElementById('fakty').value.trim();
         const faktKluczowy = document.getElementById('faktKluczowy').value.trim();
         const dlugosc      = getSelectedLength();
         const wiek         = WIEK[klasa] || '?';
 
-        const fields = getNarratorFields();
+        const prompt = buildPrompt(fields, przedmiot, klasa, wiek, temat, styl, dlugosc, fakty, faktKluczowy);
+        document.getElementById('resultBox').textContent = prompt;
+        document.getElementById('resultSection').classList.add('visible');
+        document.getElementById('copyBtn').textContent = '📋 Kopiuj prompt';
+        document.getElementById('copyBtn').classList.remove('copied');
+    }
+
+    function initPodglad() {
+        ['temat', 'narrator', 'postaćA', 'postaćB', 'autorListu', 'reporter', 'narratorLeg', 'fakty', 'faktKluczowy']
+            .forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', debouncedPreview);
+            });
+        ['przedmiot', 'klasa', 'styl'].forEach(id =>
+            document.getElementById(id).addEventListener('change', debouncedPreview)
+        );
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
+    function generujPrompt() {
+        const przedmiot = document.getElementById('przedmiot').value;
+        const klasa     = document.getElementById('klasa').value;
+        const temat     = document.getElementById('temat').value.trim();
+        const fields    = getNarratorFields();
 
         if (!przedmiot || !klasa || !temat) {
             alert('Wypełnij wymagane pola:\nPrzedmiot, Klasa, Temat lekcji.');
@@ -1070,22 +1121,19 @@ ${common}
             return;
         }
 
-        const prompt = buildPrompt(fields, przedmiot, klasa, wiek, temat, styl, dlugosc, fakty, faktKluczowy);
+        previewSilent(); // generuj i pokaż
 
         // Zapisz do historii
-        const dlugoscIdx = [...document.querySelectorAll('.length-pill')].findIndex(p => p.classList.contains('active'));
-        zapiszHistorie({ format: currentFormat, przedmiot, klasa, temat, styl, fakty, faktKluczowy, dlugosc: dlugoscIdx, ...fields }, prompt);
+        const styl         = document.getElementById('styl').value;
+        const fakty        = document.getElementById('fakty').value.trim();
+        const faktKluczowy = document.getElementById('faktKluczowy').value.trim();
+        const dlugoscIdx   = [...document.querySelectorAll('.length-pill')].findIndex(p => p.classList.contains('active'));
+        zapiszHistorie(
+            { format: currentFormat, przedmiot, klasa, temat, styl, fakty, faktKluczowy, dlugosc: dlugoscIdx, ...fields },
+            document.getElementById('resultBox').textContent
+        );
 
-        document.getElementById('resultBox').textContent = prompt;
-
-        const section = document.getElementById('resultSection');
-        section.classList.add('visible');
-
-        const btn = document.getElementById('copyBtn');
-        btn.textContent = '📋 Kopiuj prompt';
-        btn.classList.remove('copied');
-
-        setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        setTimeout(() => document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
     }
 
     function kopiuj() {
@@ -1128,8 +1176,9 @@ ${common}
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Załaduj historię przy starcie
+    // Załaduj historię i uruchom podgląd na żywo
     renderHistoria();
+    initPodglad();
 </script>
 
 </body>
