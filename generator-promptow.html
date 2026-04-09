@@ -292,6 +292,115 @@
 
         .reset-link:hover { color: rgba(255,255,255,0.8); }
 
+        /* Historia promptów */
+        .historia-section {
+            margin-top: var(--spacing-md);
+        }
+
+        .historia-toggle {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.07);
+            border: 1.5px solid rgba(255,255,255,0.18);
+            border-radius: var(--radius-md);
+            color: rgba(255,255,255,0.65);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-family);
+        }
+
+        .historia-toggle:hover {
+            background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.9);
+        }
+
+        .historia-toggle::after {
+            content: '▾';
+            margin-left: auto;
+            transition: transform 0.2s;
+            font-size: 1rem;
+        }
+
+        .historia-toggle.open::after { transform: rotate(-180deg); }
+
+        .historia-list {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .historia-item {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.13);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .hi-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hi-format {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #6dcff6;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .hi-temat {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hi-date {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .hi-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .hi-btn {
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.74rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            font-family: var(--font-family);
+        }
+
+        .hi-btn:hover { background: rgba(255,255,255,0.14); color: white; }
+        .hi-restore:hover { border-color: #ffd700; color: #ffd700; }
+        .hi-copy:hover { border-color: #6dcff6; color: #6dcff6; }
+
         /* Szablony — szybki start */
         .szablony-section {
             margin-bottom: var(--spacing-md);
@@ -365,6 +474,9 @@
             .format-pills { grid-template-columns: repeat(3, 1fr); }
             h1 { font-size: 1.3rem; }
             .btn-generate { font-size: 1rem; padding: 16px; }
+            .historia-item { flex-direction: column; align-items: flex-start; }
+            .hi-actions { width: 100%; }
+            .hi-btn { flex: 1; text-align: center; }
         }
     </style>
 </head>
@@ -590,10 +702,115 @@
         </div>
 
     </div>
+
+    <!-- Historia wygenerowanych promptów -->
+    <div class="historia-section" id="historiaSection" style="display:none">
+        <button class="historia-toggle" id="historiaTog" onclick="toggleHistoria()">
+            🕐 Historia promptów <span id="historiaCount"></span>
+        </button>
+        <div class="historia-list" id="historiaList" style="display:none"></div>
+    </div>
+
 </div>
 
 <script>
     const WIEK = { '1': '7', '2': '8', '3': '9', '4': '10', '5': '11', '6': '12', '7': '13', '8': '14' };
+
+    // ── Historia promptów ──────────────────────────────────────────────────────
+    const GP_KEY = 'gp_historia';
+    const MAX_HISTORIA = 5;
+    const FMT_EMOJI = { narracja: '👤', dialog: '💬', list: '✉️', reportaz: '📰', legenda: '🏰' };
+    const FMT_LABEL = { narracja: 'Narracja', dialog: 'Dialog', list: 'List', reportaz: 'Reportaż', legenda: 'Legenda' };
+
+    function zapiszHistorie(state, prompt) {
+        const historia = JSON.parse(localStorage.getItem(GP_KEY) || '[]');
+        historia.unshift({ id: Date.now(), date: new Date().toISOString(), state, prompt });
+        if (historia.length > MAX_HISTORIA) historia.length = MAX_HISTORIA;
+        localStorage.setItem(GP_KEY, JSON.stringify(historia));
+        renderHistoria();
+    }
+
+    function formatDate(iso) {
+        const d = new Date(iso);
+        const diff = Math.floor((Date.now() - d) / 86400000);
+        if (diff === 0) return 'dziś, ' + d.toLocaleTimeString('pl', { hour: '2-digit', minute: '2-digit' });
+        if (diff === 1) return 'wczoraj';
+        return d.toLocaleDateString('pl', { day: 'numeric', month: 'short' });
+    }
+
+    function renderHistoria() {
+        const historia = JSON.parse(localStorage.getItem(GP_KEY) || '[]');
+        const section = document.getElementById('historiaSection');
+        if (historia.length === 0) { section.style.display = 'none'; return; }
+        section.style.display = 'block';
+        document.getElementById('historiaCount').textContent = `(${historia.length})`;
+        document.getElementById('historiaList').innerHTML = historia.map((e, i) => `
+            <div class="historia-item">
+                <div class="hi-meta">
+                    <span class="hi-format">${FMT_EMOJI[e.state.format] || '📄'} ${FMT_LABEL[e.state.format] || e.state.format}</span>
+                    <span class="hi-temat">${e.state.temat}</span>
+                    <span class="hi-date">${formatDate(e.date)}</span>
+                </div>
+                <div class="hi-actions">
+                    <button class="hi-btn hi-restore" onclick="przywróćZHistorii(${i})">↩ Przywróć</button>
+                    <button class="hi-btn hi-copy" id="hc${i}" onclick="kopiujZHistorii(${i})">📋 Kopiuj</button>
+                </div>
+            </div>`).join('');
+    }
+
+    function toggleHistoria() {
+        const list = document.getElementById('historiaList');
+        const tog = document.getElementById('historiaTog');
+        const open = list.style.display !== 'none';
+        list.style.display = open ? 'none' : 'flex';
+        tog.classList.toggle('open', !open);
+    }
+
+    function przywróćZHistorii(idx) {
+        const historia = JSON.parse(localStorage.getItem(GP_KEY) || '[]');
+        const s = historia[idx]?.state;
+        if (!s) return;
+
+        document.getElementById('przedmiot').value = s.przedmiot;
+        document.getElementById('klasa').value = s.klasa;
+        document.getElementById('temat').value = s.temat;
+        document.getElementById('fakty').value = s.fakty || '';
+        document.getElementById('faktKluczowy').value = s.faktKluczowy || '';
+        document.getElementById('styl').value = s.styl;
+
+        selectFormat(document.querySelector(`.format-pill[data-format="${s.format}"]`));
+
+        if (s.format === 'narracja') document.getElementById('narrator').value = s.narrator || '';
+        else if (s.format === 'dialog') {
+            document.getElementById('postaćA').value = s.postaćA || '';
+            document.getElementById('postaćB').value = s.postaćB || '';
+        } else if (s.format === 'list') document.getElementById('autorListu').value = s.narrator || '';
+        else if (s.format === 'reportaz') document.getElementById('reporter').value = s.narrator || '';
+        else if (s.format === 'legenda') document.getElementById('narratorLeg').value = s.narrator || '';
+
+        document.querySelectorAll('.length-pill').forEach((p, i) => p.classList.toggle('active', i === s.dlugosc));
+
+        document.getElementById('resultBox').textContent = historia[idx].prompt;
+        document.getElementById('resultSection').classList.add('visible');
+        document.getElementById('copyBtn').textContent = '📋 Kopiuj prompt';
+        document.getElementById('copyBtn').classList.remove('copied');
+
+        document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function kopiujZHistorii(idx) {
+        const historia = JSON.parse(localStorage.getItem(GP_KEY) || '[]');
+        const prompt = historia[idx]?.prompt;
+        if (!prompt) return;
+        const btn = document.getElementById('hc' + idx);
+        navigator.clipboard.writeText(prompt).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = prompt; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+        });
+        if (btn) { btn.textContent = '✅'; setTimeout(() => { btn.textContent = '📋 Kopiuj'; }, 1500); }
+    }
+    // ──────────────────────────────────────────────────────────────────────────
 
     const SZABLONY = [
         {
@@ -855,6 +1072,10 @@ ${common}
 
         const prompt = buildPrompt(fields, przedmiot, klasa, wiek, temat, styl, dlugosc, fakty, faktKluczowy);
 
+        // Zapisz do historii
+        const dlugoscIdx = [...document.querySelectorAll('.length-pill')].findIndex(p => p.classList.contains('active'));
+        zapiszHistorie({ format: currentFormat, przedmiot, klasa, temat, styl, fakty, faktKluczowy, dlugosc: dlugoscIdx, ...fields }, prompt);
+
         document.getElementById('resultBox').textContent = prompt;
 
         const section = document.getElementById('resultSection');
@@ -906,6 +1127,9 @@ ${common}
         document.getElementById('resultSection').classList.remove('visible');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // Załaduj historię przy starcie
+    renderHistoria();
 </script>
 
 </body>
