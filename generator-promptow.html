@@ -274,9 +274,14 @@
             word-break: break-word;
         }
 
-        .btn-copy {
-            width: 100%;
+        .result-btns {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
             margin-top: var(--spacing-sm);
+        }
+
+        .btn-copy {
             padding: 14px;
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
@@ -287,11 +292,32 @@
             cursor: pointer;
             transition: opacity 0.2s, transform 0.1s;
             box-shadow: 0 4px 14px rgba(40, 167, 69, 0.3);
+            font-family: var(--font-family);
         }
 
         .btn-copy:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-copy:active { transform: scale(0.98); }
         .btn-copy.copied { background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%); }
+
+        .btn-download {
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: var(--font-family);
+        }
+
+        .btn-download:hover {
+            background: rgba(255,255,255,0.18);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
+        }
 
         .reset-link {
             display: block;
@@ -710,7 +736,10 @@
                 <div class="result-label">✅ Gotowy prompt — skopiuj i wklej do AI<span class="live-badge">● na żywo</span></div>
                 <div class="result-box" id="resultBox"></div>
             </div>
-            <button class="btn-copy" id="copyBtn" onclick="kopiuj()">📋 Kopiuj prompt</button>
+            <div class="result-btns">
+                <button class="btn-copy" id="copyBtn" onclick="kopiuj()">📋 Kopiuj prompt</button>
+                <button class="btn-download" onclick="pobierzTxt()">⬇ .txt</button>
+            </div>
             <span class="reset-link" onclick="resetujFormularz()">↩ Wyczyść i zacznij od nowa</span>
         </div>
 
@@ -1174,6 +1203,23 @@ ${common}
 
         document.getElementById('resultSection').classList.remove('visible');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function pobierzTxt() {
+        const tekst = document.getElementById('resultBox').textContent;
+        if (!tekst) return;
+        const temat = document.getElementById('temat').value.trim();
+        const klasa = document.getElementById('klasa').value;
+        const slug = temat
+            .toLowerCase()
+            .replace(/[ąćęłńóśźż]/g, c => ({ ą:'a',ć:'c',ę:'e',ł:'l',ń:'n',ó:'o',ś:'s',ź:'z',ż:'z' }[c] || c))
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
+        const filename = `prompt-${slug}${klasa ? '-kl' + klasa : ''}.txt`;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([tekst], { type: 'text/plain;charset=utf-8' }));
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
     }
 
     // Załaduj historię i uruchom podgląd na żywo
