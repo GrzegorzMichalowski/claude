@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>Generator Quizów i Testów</title>
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script src="scripts-common.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #e96c75 0%, #c0392b 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .container { max-width: 660px; }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: var(--spacing-xs);
+            font-size: 1.6rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.75);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-card {
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-lg);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .field-group { margin-bottom: var(--spacing-md); }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 6px;
+        }
+
+        label .required { color: #ffd700; margin-left: 2px; }
+
+        select, input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            color: white;
+            background: rgba(255,255,255,0.1);
+            font-family: var(--font-family);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        select option { background: #7b2020; color: white; }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-color: rgba(255,255,255,0.1);
+            padding-right: 44px;
+        }
+
+        select:focus, input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.6);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.18);
+        }
+
+        input[type="text"]::placeholder, textarea::placeholder { color: rgba(255,255,255,0.4); }
+
+        textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        .hint {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        /* Typ sprawdzianu */
+        .typ-pills {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .typ-pill {
+            padding: 12px 8px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 1.3;
+            user-select: none;
+        }
+
+        .typ-pill:hover {
+            border-color: rgba(255, 215, 0, 0.5);
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.08);
+        }
+
+        .typ-pill.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.18);
+            color: #ffd700;
+        }
+
+        .typ-pill small {
+            display: block;
+            font-weight: 400;
+            opacity: 0.7;
+            font-size: 0.72rem;
+            margin-top: 3px;
+        }
+
+        /* Liczba pytań */
+        .liczba-pills {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        /* Poziom trudności */
+        .trudnosc-pills {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        /* Wspólne style dla liczba + trudność */
+        .liczba-pill, .trudnosc-pill {
+            padding: 10px 6px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 1.3;
+            user-select: none;
+        }
+
+        .liczba-pill:hover, .trudnosc-pill:hover {
+            border-color: rgba(100, 200, 255, 0.5);
+            color: #6dcff6;
+            background: rgba(100, 200, 255, 0.08);
+        }
+
+        .liczba-pill.active, .trudnosc-pill.active {
+            border-color: #6dcff6;
+            background: rgba(100, 200, 255, 0.18);
+            color: #6dcff6;
+        }
+
+        /* Opcje dodatkowe — toggle pills */
+        .opcje-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .toggle-pill {
+            padding: 8px 14px;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-full);
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .toggle-pill:hover {
+            background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.9);
+        }
+
+        .toggle-pill.active {
+            border-color: #68d391;
+            background: rgba(104, 211, 145, 0.15);
+            color: #68d391;
+        }
+
+        /* Przycisk generowania */
+        .btn-generate {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #1a1a2e;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.35);
+            margin-top: var(--spacing-sm);
+        }
+
+        .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,215,0,0.5); }
+        .btn-generate:active { transform: translateY(0); }
+
+        /* Wynik */
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.15);
+            margin: var(--spacing-lg) 0 var(--spacing-md);
+        }
+
+        .result-section { display: none; }
+        .result-section.visible { display: block; }
+
+        .result-card {
+            background: rgba(40, 167, 69, 0.12);
+            border: 1.5px solid rgba(40, 167, 69, 0.35);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+        }
+
+        .result-label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #68d391;
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-badge {
+            margin-left: auto;
+            font-size: 0.68rem;
+            color: rgba(104, 211, 145, 0.65);
+            font-weight: 400;
+            animation: livepulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes livepulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .result-box {
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.9);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .result-btns {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            margin-top: var(--spacing-sm);
+        }
+
+        .btn-copy {
+            padding: 14px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            box-shadow: 0 4px 14px rgba(40,167,69,0.3);
+            font-family: var(--font-family);
+        }
+
+        .btn-copy:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-copy:active { transform: scale(0.98); }
+        .btn-copy.copied { background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%); }
+
+        .btn-download {
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            border: 1.5px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: var(--font-family);
+        }
+
+        .btn-download:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.5); color: white; }
+
+        .reset-link {
+            display: block;
+            text-align: center;
+            margin-top: var(--spacing-md);
+            color: rgba(255,255,255,0.45);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .reset-link:hover { color: rgba(255,255,255,0.8); }
+
+        @media (max-width: 540px) {
+            .row-2 { grid-template-columns: 1fr; }
+            .liczba-pills { grid-template-columns: repeat(3, 1fr); }
+            .trudnosc-pills { grid-template-columns: repeat(2, 1fr); }
+            h1 { font-size: 1.3rem; }
+            .btn-generate { font-size: 1rem; padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="home-btn">⬅ Strona główna</a>
+
+    <h1>❓ Generator Quizów i Testów</h1>
+    <p class="subtitle">Wygeneruj gotowy prompt do tworzenia quizów, testów i kartkówek w Claude, ChatGPT lub Gemini</p>
+
+    <div class="form-card">
+
+        <div class="row-2">
+            <div class="field-group">
+                <label for="przedmiot">Przedmiot <span class="required">*</span></label>
+                <select id="przedmiot">
+                    <option value="">— wybierz —</option>
+                    <option value="języka polskiego">Język polski</option>
+                    <option value="matematyki">Matematyka</option>
+                    <option value="historii">Historia</option>
+                    <option value="przyrody">Przyroda</option>
+                    <option value="biologii">Biologia</option>
+                    <option value="geografii">Geografia</option>
+                    <option value="fizyki">Fizyka</option>
+                    <option value="chemii">Chemia</option>
+                    <option value="techniki">Technika</option>
+                    <option value="informatyki">Informatyka</option>
+                    <option value="wiedzy o społeczeństwie">WOS</option>
+                    <option value="plastyki">Plastyka</option>
+                    <option value="muzyki">Muzyka</option>
+                    <option value="wychowania fizycznego">Wychowanie fizyczne</option>
+                    <option value="języka angielskiego">Język angielski</option>
+                    <option value="edukacji dla bezpieczeństwa">Edukacja dla bezpieczeństwa</option>
+                    <option value="religii">Religia</option>
+                    <option value="etyki">Etyka</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="klasa">Klasa <span class="required">*</span></label>
+                <select id="klasa">
+                    <option value="">— wybierz —</option>
+                    <option value="1">Klasa 1</option>
+                    <option value="2">Klasa 2</option>
+                    <option value="3">Klasa 3</option>
+                    <option value="4">Klasa 4</option>
+                    <option value="5">Klasa 5</option>
+                    <option value="6">Klasa 6</option>
+                    <option value="7">Klasa 7</option>
+                    <option value="8">Klasa 8</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label for="temat">Temat / zakres materiału <span class="required">*</span></label>
+            <input type="text" id="temat" placeholder="np. Bitwa pod Grunwaldem, Fotosynteza, Ułamki zwykłe…">
+        </div>
+
+        <div class="field-group">
+            <label>Typ sprawdzianu <span class="required">*</span></label>
+            <div class="typ-pills" id="typPills">
+                <div class="typ-pill active" data-typ="quiz" onclick="selectTyp(this)">
+                    ❓ Quiz<small>wielokrotny wybór</small>
+                </div>
+                <div class="typ-pill" data-typ="test" onclick="selectTyp(this)">
+                    📝 Test<small>pytania otwarte</small>
+                </div>
+                <div class="typ-pill" data-typ="kartkowka" onclick="selectTyp(this)">
+                    ✏️ Kartkówka<small>krótka, do 15 min</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row-2">
+            <div class="field-group">
+                <label>Liczba pytań <span class="required">*</span></label>
+                <div class="liczba-pills" id="liczbaPills">
+                    <div class="liczba-pill" data-value="3" onclick="selectLiczba(this)">3</div>
+                    <div class="liczba-pill" data-value="5" onclick="selectLiczba(this)">5</div>
+                    <div class="liczba-pill active" data-value="8" onclick="selectLiczba(this)">8</div>
+                    <div class="liczba-pill" data-value="10" onclick="selectLiczba(this)">10</div>
+                    <div class="liczba-pill" data-value="15" onclick="selectLiczba(this)">15</div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>Poziom trudności</label>
+                <div class="trudnosc-pills" id="trudnoscPills">
+                    <div class="trudnosc-pill" data-value="łatwy" onclick="selectTrudnosc(this)">Łatwy</div>
+                    <div class="trudnosc-pill" data-value="średni" onclick="selectTrudnosc(this)">Średni</div>
+                    <div class="trudnosc-pill" data-value="trudny" onclick="selectTrudnosc(this)">Trudny</div>
+                    <div class="trudnosc-pill active" data-value="mieszany (różne poziomy)" onclick="selectTrudnosc(this)">Mieszany</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label for="material">Materiał źródłowy / notatki</label>
+            <textarea id="material" placeholder="Wklej fragmenty notatek, definicje, daty, wzory, listę pojęć — AI oprze pytania na tym materiale…"></textarea>
+            <p class="hint">Opcjonalne, ale kluczowe — bez tego AI może zmyślać lub odbiegać od programu klasy.</p>
+        </div>
+
+        <div class="field-group">
+            <label>Opcje dodatkowe</label>
+            <div class="opcje-row" id="opcjeRow">
+                <div class="toggle-pill active" data-opcja="klucz" onclick="toggleOpcja(this)">✅ Klucz odpowiedzi</div>
+                <div class="toggle-pill" data-opcja="punktacja" onclick="toggleOpcja(this)">🔢 Punktacja</div>
+                <div class="toggle-pill" data-opcja="zroznicowany" onclick="toggleOpcja(this)">📊 Zróżnicowany poziom</div>
+                <div class="toggle-pill" data-opcja="praktyczne" onclick="toggleOpcja(this)">🔬 Zadanie praktyczne</div>
+            </div>
+        </div>
+
+        <button class="btn-generate" onclick="generujPrompt()">✨ Generuj prompt</button>
+
+        <div class="result-section" id="resultSection">
+            <hr class="divider">
+            <div class="result-card">
+                <div class="result-label">✅ Gotowy prompt — skopiuj i wklej do AI<span class="live-badge">● na żywo</span></div>
+                <div class="result-box" id="resultBox"></div>
+            </div>
+            <div class="result-btns">
+                <button class="btn-copy" id="copyBtn" onclick="kopiuj()">📋 Kopiuj prompt</button>
+                <button class="btn-download" onclick="pobierzTxt()">⬇ .txt</button>
+            </div>
+            <span class="reset-link" onclick="resetujFormularz()">↩ Wyczyść i zacznij od nowa</span>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const WIEK = { '1':'7','2':'8','3':'9','4':'10','5':'11','6':'12','7':'13','8':'14' };
+
+    // Domyślna liczba pytań dla każdego typu
+    const TYP_DEFAULT_LICZBA = { quiz: 2, test: 1, kartkowka: 0 }; // indeks w pills
+
+    let currentTyp = 'quiz';
+
+    function selectTyp(el) {
+        document.querySelectorAll('.typ-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        currentTyp = el.dataset.typ;
+        const pills = document.querySelectorAll('.liczba-pill');
+        pills.forEach((p, i) => p.classList.toggle('active', i === TYP_DEFAULT_LICZBA[currentTyp]));
+        debouncedPreview();
+    }
+
+    function selectLiczba(el) {
+        document.querySelectorAll('.liczba-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        debouncedPreview();
+    }
+
+    function selectTrudnosc(el) {
+        document.querySelectorAll('.trudnosc-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        debouncedPreview();
+    }
+
+    function toggleOpcja(el) {
+        el.classList.toggle('active');
+        debouncedPreview();
+    }
+
+    function getLiczba() {
+        const a = document.querySelector('.liczba-pill.active');
+        return a ? a.dataset.value : '8';
+    }
+
+    function getTrudnosc() {
+        const a = document.querySelector('.trudnosc-pill.active');
+        return a ? a.dataset.value : 'mieszany (różne poziomy)';
+    }
+
+    function getOpcje() {
+        return {
+            klucz:        !!document.querySelector('.toggle-pill[data-opcja="klucz"].active'),
+            punktacja:    !!document.querySelector('.toggle-pill[data-opcja="punktacja"].active'),
+            zroznicowany: !!document.querySelector('.toggle-pill[data-opcja="zroznicowany"].active'),
+            praktyczne:   !!document.querySelector('.toggle-pill[data-opcja="praktyczne"].active'),
+        };
+    }
+
+    function budujPrompt() {
+        const przedmiot = document.getElementById('przedmiot').value;
+        const klasa     = document.getElementById('klasa').value;
+        const temat     = document.getElementById('temat').value.trim();
+        const material  = document.getElementById('material').value.trim();
+        const liczba    = getLiczba();
+        const trudnosc  = getTrudnosc();
+        const wiek      = WIEK[klasa] || '?';
+        const o         = getOpcje();
+
+        const materialSec   = material ? `\nMateriał źródłowy:\n${material}\n` : '';
+        const klucz         = o.klucz        ? '— na końcu dołącz klucz odpowiedzi z krótkim uzasadnieniem każdej poprawnej odpowiedzi\n' : '';
+        const punktSec      = o.punktacja    ? '— przy każdym pytaniu podaj liczbę punktów (suma powinna wynosić 100 pkt lub wielokrotność 5)\n' : '';
+        const zrozSec       = o.zroznicowany ? '— zróżnicuj poziom trudności: ok. 30% pytań łatwych, 50% średnich, 20% trudnych\n' : '';
+        const praktSec      = o.praktyczne   ? '— na końcu dodaj jedno zadanie praktyczne lub problemowe wymagające zastosowania wiedzy\n' : '';
+        const wspolne       = `— język i słownictwo dostosowane do ucznia klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat)\n— nie zmyślaj faktów — opieraj się wyłącznie na podanym materiale i sprawdzonej wiedzy`;
+
+        switch (currentTyp) {
+
+            case 'quiz':
+                return `Przygotuj quiz wielokrotnego wyboru na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Temat: ${temat}
+Liczba pytań: ${liczba}
+Poziom trudności: ${trudnosc}
+${materialSec}
+Format każdego pytania:
+[numer]. Treść pytania
+A) ...
+B) ...
+C) ...
+D) ...
+
+Wymagania:
+— dokładnie 4 opcje odpowiedzi (A–D), jedna poprawna
+— pytania różnorodne: definicje, rozumienie pojęć, zastosowanie, analiza
+— dystraktor wiarygodny — błędne odpowiedzi nie mogą być oczywiście złe
+${klucz}${punktSec}${zrozSec}${praktSec}${wspolne}`;
+
+            case 'test':
+                return `Przygotuj test pisemny z pytaniami otwartymi na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Temat: ${temat}
+Liczba pytań: ${liczba}
+Poziom trudności: ${trudnosc}
+${materialSec}
+Wymagania:
+— pytania otwarte wymagające samodzielnej, pełnej odpowiedzi (2–4 zdania lub obliczenie)
+— każde pytanie jednoznaczne i precyzyjne — bez możliwości dwuznacznej interpretacji
+— pytania sprawdzają różne umiejętności: znajomość faktów, rozumienie, wnioskowanie
+${klucz}${punktSec}${zrozSec}${praktSec}${wspolne}`;
+
+            case 'kartkowka': {
+                const czas = Math.max(5, Math.ceil(parseInt(liczba) * 2.5));
+                return `Przygotuj krótką kartkówkę na lekcję ${przedmiot} dla uczniów klasy ${klasa} szkoły podstawowej (wiek ok. ${wiek} lat).
+
+Temat: ${temat}
+Liczba pytań: ${liczba}
+Poziom trudności: ${trudnosc}
+Przewidywany czas rozwiązywania: ok. ${czas} minut
+${materialSec}
+Wymagania:
+— pytania krótkie i precyzyjne — odpowiedź to 1 zdanie, liczba lub termin
+— kartkówka sprawdza kluczowe pojęcia i fakty z podanego zakresu
+— może zawierać mieszankę: pytania otwarte, uzupełnij lukę, prawda/fałsz
+${klucz}${punktSec}${zrozSec}${praktSec}${wspolne}`;
+            }
+        }
+    }
+
+    // ── Podgląd na żywo ───────────────────────────────────────────────────────
+    let previewTimer = null;
+
+    function debouncedPreview() {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(previewSilent, 400);
+    }
+
+    function previewSilent() {
+        const przedmiot = document.getElementById('przedmiot').value;
+        const klasa     = document.getElementById('klasa').value;
+        const temat     = document.getElementById('temat').value.trim();
+        if (!przedmiot || !klasa || !temat) return;
+
+        const prompt = budujPrompt();
+        document.getElementById('resultBox').textContent = prompt;
+        document.getElementById('resultSection').classList.add('visible');
+        document.getElementById('copyBtn').textContent = '📋 Kopiuj prompt';
+        document.getElementById('copyBtn').classList.remove('copied');
+    }
+
+    function initPodglad() {
+        ['temat', 'material'].forEach(id =>
+            document.getElementById(id).addEventListener('input', debouncedPreview)
+        );
+        ['przedmiot', 'klasa'].forEach(id =>
+            document.getElementById(id).addEventListener('change', debouncedPreview)
+        );
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
+    function generujPrompt() {
+        const przedmiot = document.getElementById('przedmiot').value;
+        const klasa     = document.getElementById('klasa').value;
+        const temat     = document.getElementById('temat').value.trim();
+
+        if (!przedmiot || !klasa || !temat) {
+            alert('Wypełnij wymagane pola:\nPrzedmiot, Klasa, Temat.');
+            return;
+        }
+
+        previewSilent();
+        setTimeout(() => document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    }
+
+    function kopiuj() {
+        const tekst = document.getElementById('resultBox').textContent;
+        const btn = document.getElementById('copyBtn');
+        navigator.clipboard.writeText(tekst).then(() => {
+            btn.textContent = '✅ Skopiowano!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = '📋 Kopiuj prompt'; btn.classList.remove('copied'); }, 2500);
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = tekst; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+            btn.textContent = '✅ Skopiowano!';
+            setTimeout(() => { btn.textContent = '📋 Kopiuj prompt'; }, 2500);
+        });
+    }
+
+    function pobierzTxt() {
+        const tekst = document.getElementById('resultBox').textContent;
+        if (!tekst) return;
+        const temat = document.getElementById('temat').value.trim();
+        const klasa = document.getElementById('klasa').value;
+        const slug = temat
+            .toLowerCase()
+            .replace(/[ąćęłńóśźż]/g, c => ({ą:'a',ć:'c',ę:'e',ł:'l',ń:'n',ó:'o',ś:'s',ź:'z',ż:'z'}[c]||c))
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 35);
+        const typy = { quiz: 'quiz', test: 'test', kartkowka: 'kartkowka' };
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([tekst], { type: 'text/plain;charset=utf-8' }));
+        a.download = `${typy[currentTyp]}-${slug}${klasa ? '-kl'+klasa : ''}.txt`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    function resetujFormularz() {
+        document.getElementById('przedmiot').selectedIndex = 0;
+        document.getElementById('klasa').selectedIndex = 0;
+        document.getElementById('temat').value = '';
+        document.getElementById('material').value = '';
+
+        selectTyp(document.querySelector('.typ-pill[data-typ="quiz"]'));
+        document.querySelectorAll('.trudnosc-pill').forEach((p, i) => p.classList.toggle('active', i === 3));
+
+        document.querySelectorAll('.toggle-pill').forEach(p => {
+            p.classList.toggle('active', p.dataset.opcja === 'klucz');
+        });
+
+        document.getElementById('resultSection').classList.remove('visible');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    initPodglad();
+</script>
+
+</body>
+</html>
