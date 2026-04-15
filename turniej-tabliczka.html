@@ -1765,6 +1765,7 @@
                 <div class="participant ready">
                     <span class="status"></span>
                     <span>${p.name}</span>
+                    ${isHost ? `<button onclick="removeParticipant('${id}')" style="background: none; border: none; color: rgba(255,100,100,0.8); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0 0 6px;" title="Usuń gracza">✕</button>` : ''}
                 </div>
             `).join('');
 
@@ -1784,6 +1785,19 @@
             } else {
                 document.getElementById('startTournamentBtn').textContent =
                     `Rozpocznij turniej (${entries.length} graczy)`;
+            }
+        }
+
+        // Remove participant from lobby (only host, only before tournament starts)
+        async function removeParticipant(playerId) {
+            if (!isHost || !currentTournament) return;
+            if (currentTournament.status !== 'lobby') return;
+            const playerName = currentTournament.participants?.[playerId]?.name || playerId;
+            if (!confirm(`Usunąć gracza "${playerName}" z turnieju?`)) return;
+            try {
+                await db.ref('tournaments/' + currentTournament.code + '/participants/' + playerId).remove();
+            } catch (e) {
+                alert('Błąd usuwania gracza: ' + e.message);
             }
         }
 
@@ -2835,6 +2849,9 @@
             if (roundResult) roundResult.classList.add('hidden');
             if (matchResult) matchResult.classList.add('hidden');
             if (gameBoard) gameBoard.style.display = 'grid';
+
+            // Zaktualizuj podświetlenie gracza po zresetowaniu (zawsze X zaczyna rundę)
+            updateGamePlayerHighlight();
 
             if (showAnnouncement && currentMatch?.player1?.name && !document.body.classList.contains('edge-lite')) {
                 showTournamentAnnouncement('X', currentMatch.player1.name, () => {
