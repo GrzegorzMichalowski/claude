@@ -150,6 +150,7 @@
         .card-paradoksja .card-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .card-generator .card-icon { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
         .card-quiz .card-icon { background: linear-gradient(135deg, #e96c75 0%, #c0392b 100%); }
+        .card-robot .card-icon { background: linear-gradient(135deg, #1a1a3e 0%, #667eea 100%); }
 
         .card-content h2 {
             font-size: var(--font-size-base);
@@ -214,6 +215,9 @@
             </button>
             <button class="tab-btn" onclick="showTab('nauka')">
                 <span class="tab-icon">📖</span>Nauka / Quizy<span class="tab-count">8</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('robotyka')">
+                <span class="tab-icon">🤖</span>Robotyka<span class="tab-count">1</span>
             </button>
         </div>
 
@@ -348,6 +352,16 @@
                     <div class="card-content">
                         <h2>Paradoksja</h2>
                         <p>Gra przygodowa - polski, matematyka, angielski w jednej przygodzie!</p>
+                    </div>
+                </a>
+            </div>
+            <!-- Robotyka -->
+            <div id="robotyka" class="cards-group">
+                <a href="programowanie-robotow.html" class="card card-robot">
+                    <div class="card-icon">🤖</div>
+                    <div class="card-content">
+                        <h2>Programowanie Robotów LEGO</h2>
+                        <p>Algorytmy SPIKE Prime w Python + Kalkulator WRO Junior 2026 Heritage Heroes</p>
                     </div>
                 </a>
             </div>

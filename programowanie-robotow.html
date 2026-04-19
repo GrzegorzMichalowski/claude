@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>Programowanie Robotów LEGO — Narzędzia dla Nauczycieli</title>
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <!-- Highlight.js - podświetlanie kodu -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a3e 0%, #2d1b69 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .container { max-width: 740px; }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: var(--spacing-xs);
+            font-size: 1.5rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.65);
+            font-size: 0.85rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        /* ── TABS ── */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: var(--spacing-lg);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 999px;
+            background: transparent;
+            color: rgba(255,255,255,0.75);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+            font-family: var(--font-family);
+        }
+
+        .tab-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+        .tab-btn.active { background: white; color: #2d1b69; border-color: white; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── KARTA ALGORYTMU ── */
+        .algo-card {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px;
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+        }
+
+        .algo-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .algo-header:hover { background: rgba(255,255,255,0.05); }
+
+        .algo-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .algo-title { flex: 1; }
+        .algo-title h3 { color: white; font-size: 1rem; margin-bottom: 2px; }
+        .algo-title p { color: rgba(255,255,255,0.55); font-size: 0.8rem; }
+
+        .algo-pts {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .chevron {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8rem;
+            transition: transform 0.25s;
+        }
+
+        .algo-card.open .chevron { transform: rotate(180deg); }
+
+        .algo-body {
+            display: none;
+            padding: 0 20px 20px;
+        }
+
+        .algo-card.open .algo-body { display: block; }
+
+        /* Tabela parametrów */
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 0.82rem;
+        }
+
+        .params-table th {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .params-table td {
+            padding: 7px 12px;
+            color: rgba(255,255,255,0.75);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .params-table tr:last-child td { border-bottom: none; }
+
+        code.inline {
+            background: rgba(255,255,255,0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #a8d8f0;
+        }
+
+        /* Kod Python */
+        .code-block {
+            position: relative;
+            margin: 12px 0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .code-block pre {
+            margin: 0;
+            font-size: 0.8rem;
+            line-height: 1.55;
+        }
+
+        .code-block code { border-radius: 0; }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: rgba(255,255,255,0.8);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-family);
+        }
+
+        .copy-btn:hover { background: rgba(255,255,255,0.25); }
+        .copy-btn.copied { background: rgba(40,167,69,0.5); color: white; }
+
+        .tip-box {
+            background: rgba(102, 126, 234, 0.2);
+            border-left: 3px solid #667eea;
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: 12px;
+        }
+
+        .tip-box strong { color: #a8b8ff; }
+
+        /* ── KALKULATOR WRO ── */
+        .score-header {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: var(--spacing-md);
+            text-align: center;
+        }
+
+        .score-total {
+            font-size: 3rem;
+            font-weight: 800;
+            color: white;
+            line-height: 1;
+        }
+
+        .score-max { font-size: 1rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+        .score-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 999px;
+            margin: 12px 0 8px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+
+        .score-pct { font-size: 0.85rem; color: rgba(255,255,255,0.6); }
+
+        .mission-card {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+        }
+
+        .mission-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .mission-title h3 {
+            color: white;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .mission-max {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.45);
+            background: rgba(255,255,255,0.08);
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+
+        .mission-score-badge {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #a8d8f0;
+        }
+
+        /* Elementy licznika */
+        .scoring-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .scoring-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .item-label { color: rgba(255,255,255,0.75); font-size: 0.85rem; }
+        .item-sublabel { color: rgba(255,255,255,0.4); font-size: 0.75rem; margin-top: 2px; }
+
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .counter-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            font-family: var(--font-family);
+        }
+
+        .counter-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.45); }
+
+        .counter-val {
+            min-width: 28px;
+            text-align: center;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        /* Checkboxy dla bonus */
+        .check-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            transition: all 0.15s;
+            color: rgba(255,255,255,0.75);
+            font-size: 0.85rem;
+        }
+
+        .check-item.checked {
+            background: rgba(40,167,69,0.2);
+            border-color: rgba(40,167,69,0.5);
+            color: #7ddfb0;
+        }
+
+        .check-item input { display: none; }
+
+        /* Przyciski kalkulatora */
+        .calc-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: var(--spacing-md);
+        }
+
+        .btn-reset {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: background 0.2s;
+        }
+
+        .btn-reset:hover { background: rgba(255,255,255,0.15); }
+
+        .btn-copy-score {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: opacity 0.2s;
+        }
+
+        .btn-copy-score:hover { opacity: 0.88; }
+
+        /* ── ŚCIĄGAWKA ── */
+        .ref-section {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .ref-section h3 {
+            color: rgba(255,255,255,0.9);
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .ref-table th {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .ref-table td {
+            padding: 7px 10px;
+            color: rgba(255,255,255,0.7);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .ref-table tr:last-child td { border-bottom: none; }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.85rem;
+        }
+
+        .checklist li:last-child { border-bottom: none; }
+
+        .checklist li::before {
+            content: '☐';
+            font-size: 1rem;
+            flex-shrink: 0;
+            color: rgba(255,255,255,0.35);
+        }
+
+        .card-glass {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.2rem; }
+            .tab-btn { padding: 8px 12px; font-size: 0.82rem; }
+            .score-total { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <a href="index.html" class="home-btn">🏠</a>
+
+        <h1>🤖 Programowanie Robotów LEGO</h1>
+        <p class="subtitle">SPIKE Prime · Python 3.x · WRO Junior 2026 Heritage Heroes</p>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('algorytmy')">🧩 Algorytmy</button>
+            <button class="tab-btn" onclick="showTab('kalkulator')">🏆 Kalkulator WRO</button>
+            <button class="tab-btn" onclick="showTab('sciagawka')">📋 Ściągawka</button>
+        </div>
+
+        <!-- ════════════════════════════════════ -->
+        <!-- TAB 1: ALGORYTMY                     -->
+        <!-- ════════════════════════════════════ -->
+        <div id="algorytmy" class="tab-panel active">
+
+            <!-- KARTA 1: Jazda prosto -->
+            <div class="algo-card" onclick="toggleCard(this)">
+                <div class="algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#667eea,#764ba2)">🧭</div>
+                    <div class="algo-title">
+                        <h3>Jazda prosto — PID na żyroskopie</h3>
+                        <p>Korekcja proporcjonalna + całkująca + różniczkująca</p>
+                    </div>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="algo-body">
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this, event)">Kopiuj</button>
+                        <pre><code class="language-python">def drive_straight(distance_cm, speed=400, Kp=1.5, Ki=0.0, Kd=0.8):
+    """Jedzie prosto z korekcją PID na żyroskopie."""
+    import math
+    motion_sensor.reset_yaw_angle()
+    motor.reset_relative_position(LEFT_MOTOR, 0)
+
+    circ = math.pi * WHEEL_DIAMETER_MM / 10  # cm
+    target_deg = (distance_cm / circ) * 360
+
+    integral, last_error = 0.0, 0.0
+
+    while abs(motor.relative_position(LEFT_MOTOR)) < target_deg:
+        error = motion_sensor.tilt_angles()[0] / 10  # decidegrees → degrees
+        if abs(error) < 0.5:
+            integral = 0.0
+        else:
+            integral = max(-30, min(30, integral + error))
+        derivative = error - last_error
+        correction  = int(Kp*error + Ki*integral + Kd*derivative)
+        correction  = max(-200, min(200, correction))
+        motor.run(LEFT_MOTOR,  speed - correction)
+        motor.run(RIGHT_MOTOR, speed + correction)
+        last_error = error
+
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
+                    </div>
+                    <table class="params-table">
+                        <tr><th>Parametr</th><th>Domyślnie</th><th>Zakres</th><th>Opis</th></tr>
+                        <tr><td><code class="inline">distance_cm</code></td><td>—</td><td>&gt;0 przód, &lt;0 tył</td><td>Dystans w centymetrach</td></tr>
+                        <tr><td><code class="inline">speed</code></td><td>400</td><td>200–700 deg/s</td><td>Prędkość bazowa</td></tr>
+                        <tr><td><code class="inline">Kp</code></td><td>1.5</td><td>0.5–3.0</td><td>Wzmocnienie proporcjonalne</td></tr>
+                        <tr><td><code class="inline">Ki</code></td><td>0.0</td><td>0–0.3</td><td>Całkujące (zacznij od 0)</td></tr>
+                        <tr><td><code class="inline">Kd</code></td><td>0.8</td><td>0–2.0</td><td>Różniczkujące (tłumi oscylacje)</td></tr>
+                    </table>
+                    <div class="tip-box">
+                        <strong>Strojenie:</strong> Zacznij od Kp=1.5, Ki=0, Kd=0. Zwiększaj Kp aż robot dryfuje, potem dodaj Kd ≈ Kp/2 żeby wytłumić wibracje. Ki dodaj tylko gdy robot stale skręca w jedną stronę.
+                    </div>
+                </div>
+            </div>
+
+            <!-- KARTA 2: Skręt -->
+            <div class="algo-card" onclick="toggleCard(this)">
+                <div class="algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#f093fb,#f5576c)">🔄</div>
+                    <div class="algo-title">
+                        <h3>Skręt o dokładny kąt</h3>
+                        <p>PD controller — precyzja ±1°</p>
+                    </div>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="algo-body">
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this, event)">Kopiuj</button>
+                        <pre><code class="language-python">def turn_gyro(angle, speed=200, Kp=2.0, Kd=0.5):
+    """Skręt w miejscu o zadany kąt. + prawo, - lewo."""
+    motion_sensor.reset_yaw_angle()
+    last_error = 0.0
+
+    while True:
+        current = motion_sensor.tilt_angles()[0] / 10
+        error   = angle - current
+        if abs(error) <= 1.0:
+            break
+        correction = int(Kp * error + Kd * (error - last_error))
+        correction = max(-speed, min(speed, correction))
+        # Minimalna prędkość żeby robot się poruszył
+        if 0 < abs(correction) < 80:
+            correction = 80 if correction > 0 else -80
+        motor.run(LEFT_MOTOR,   correction)
+        motor.run(RIGHT_MOTOR, -correction)
+        last_error = error
+
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)
+
+
+# Wariant: skręt na jednym kole (szerszy łuk)
+def turn_one_wheel(angle, pivot='right', speed=200):
+    """Skręt łukowy: pivot='right' lub 'left'."""
+    motion_sensor.reset_yaw_angle()
+    while True:
+        error = angle - motion_sensor.tilt_angles()[0] / 10
+        if abs(error) <= 1.5: break
+        spd = max(-speed, min(speed, int(1.5 * error)))
+        if 0 < abs(spd) < 60: spd = 60 if spd > 0 else -60
+        if pivot == 'right':
+            motor.run(LEFT_MOTOR, spd); motor.stop(RIGHT_MOTOR)
+        else:
+            motor.stop(LEFT_MOTOR); motor.run(RIGHT_MOTOR, -spd)
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
+                    </div>
+                    <table class="params-table">
+                        <tr><th>Przykład</th><th>Efekt</th></tr>
+                        <tr><td><code class="inline">turn_gyro(90)</code></td><td>Skręt 90° w prawo (w miejscu)</td></tr>
+                        <tr><td><code class="inline">turn_gyro(-45)</code></td><td>Skręt 45° w lewo</td></tr>
+                        <tr><td><code class="inline">turn_gyro(180, 150)</code></td><td>Obrót 180°, wolniej (precyzyjniej)</td></tr>
+                        <tr><td><code class="inline">turn_one_wheel(90)</code></td><td>Łuk 90° na prawym kole</td></tr>
+                    </table>
+                    <div class="tip-box">
+                        <strong>Wskazówka:</strong> Przy kątach &gt;90° użyj mniejszego speed (150–200). Żyroskop może dryfować po długim biegu — zawsze wywołaj <code class="inline">reset_gyro()</code> przed każdym skrętem.
+                    </div>
+                </div>
+            </div>
+
+            <!-- KARTA 3: Jazda po linii -->
+            <div class="algo-card" onclick="toggleCard(this)">
+                <div class="algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">➡️</div>
+                    <div class="algo-title">
+                        <h3>Jazda po linii</h3>
+                        <p>Kontroler proporcjonalny — krawędź czarnej linii</p>
+                    </div>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="algo-body">
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this, event)">Kopiuj</button>
+                        <pre><code class="language-python">from color_sensor import reflection
+
+def follow_line(distance_cm, speed=300, sensor_port=None,
+                side='right', Kp=1.2):
+    """
+    Jedzie wzdłuż krawędzi linii (proportional control).
+    side='right' = prawa krawędź, 'left' = lewa krawędź
+    """
+    import math
+    if sensor_port is None: sensor_port = COLOR_FRONT
+    motor.reset_relative_position(LEFT_MOTOR, 0)
+    circ = math.pi * WHEEL_DIAMETER_MM / 10
+    target_deg = (distance_cm / circ) * 360
+    TARGET = 50  # krawędź linii (0=czarny, 100=biały)
+
+    while abs(motor.relative_position(LEFT_MOTOR)) < target_deg:
+        ref    = reflection(sensor_port)
+        error  = ref - TARGET
+        if side == 'left': error = -error
+        correction = max(-300, min(300, int(Kp * error)))
+        motor.run(LEFT_MOTOR,  speed - correction)
+        motor.run(RIGHT_MOTOR, speed + correction)
+
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)
+
+
+def follow_line_until_color(target_color, speed=250,
+                             sensor_port=None, side='right', Kp=1.2):
+    """Jedzie po linii aż wykryje zadany kolor."""
+    from color_sensor import reflection, color as cscolor
+    if sensor_port is None: sensor_port = COLOR_FRONT
+    TARGET = 50
+
+    while cscolor(sensor_port) != target_color:
+        ref   = reflection(sensor_port)
+        error = (ref - TARGET) if side == 'right' else -(ref - TARGET)
+        correction = max(-300, min(300, int(Kp * error)))
+        motor.run(LEFT_MOTOR,  speed - correction)
+        motor.run(RIGHT_MOTOR, speed + correction)
+
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
+                    </div>
+                    <table class="params-table">
+                        <tr><th>Parametr</th><th>Wartość</th><th>Wskazówka</th></tr>
+                        <tr><td>TARGET (krawędź)</td><td>50</td><td>Środek między czarnym a białym — zmień jeśli linia jest wąska</td></tr>
+                        <tr><td>Kp startowe</td><td>1.2</td><td>Zwiększaj po 0.2 aż robot jest płynny</td></tr>
+                        <tr><td>Pozycja czujnika</td><td>3–4 studs przed osią</td><td>Najbardziej stabilna pozycja montażu</td></tr>
+                    </table>
+                    <div class="tip-box">
+                        <strong>Kalibracja:</strong> Przed zawodami zmierz odbicie na czarnym (~20) i białym (~90). TARGET powinien być w połowie: (20+90)/2 = 55. Zaktualizuj stałą <code class="inline">TARGET</code> w kodzie.
+                    </div>
+                </div>
+            </div>
+
+            <!-- KARTA 4: Wyrównanie -->
+            <div class="algo-card" onclick="toggleCard(this)">
+                <div class="algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">⬛</div>
+                    <div class="algo-title">
+                        <h3>Wyrównanie do linii</h3>
+                        <p>Dwa czujniki — precyzyjne ustawienie prostopadle</p>
+                    </div>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="algo-body">
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this, event)">Kopiuj</button>
+                        <pre><code class="language-python">from color_sensor import reflection
+import time
+
+def line_square(speed=150, timeout_ms=3000):
+    """
+    Wyrównuje robota do czarnej linii — wymaga 2 czujników!
+    COLOR_LEFT i COLOR_RIGHT muszą być symetrycznie.
+    Każdy silnik zatrzymuje się gdy jego czujnik wykryje czerń.
+    """
+    left_done = right_done = False
+    start = time.ticks_ms()
+
+    motor.run(LEFT_MOTOR,  speed)
+    motor.run(RIGHT_MOTOR, speed)
+
+    while not (left_done and right_done):
+        if time.ticks_diff(time.ticks_ms(), start) > timeout_ms:
+            print("TIMEOUT: line_square!")
+            break
+        if not left_done and reflection(COLOR_LEFT) < 30:
+            motor.stop(LEFT_MOTOR);  left_done  = True
+        if not right_done and reflection(COLOR_RIGHT) < 30:
+            motor.stop(RIGHT_MOTOR); right_done = True
+
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)
+
+
+def line_square_backward(speed=150, timeout_ms=3000):
+    """To samo co line_square() ale jadąc do tyłu."""
+    left_done = right_done = False
+    start = time.ticks_ms()
+    motor.run(LEFT_MOTOR,  -speed)
+    motor.run(RIGHT_MOTOR, -speed)
+    while not (left_done and right_done):
+        if time.ticks_diff(time.ticks_ms(), start) > timeout_ms: break
+        if not left_done and reflection(COLOR_LEFT) < 30:
+            motor.stop(LEFT_MOTOR);  left_done  = True
+        if not right_done and reflection(COLOR_RIGHT) < 30:
+            motor.stop(RIGHT_MOTOR); right_done = True
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
+                    </div>
+                    <div class="tip-box">
+                        <strong>Montaż:</strong> Oba czujniki koloru muszą być symetrycznie po bokach robota, na tej samej wysokości i tej samej odległości od osi kół. Im dalej od osi tym dokładniejsze wyrównanie, ale robot musi mieć miejsce na manewr.
+                    </div>
+                </div>
+            </div>
+
+            <!-- KARTA 5: Czytnik kolorów -->
+            <div class="algo-card" onclick="toggleCard(this)">
+                <div class="algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#fa709a,#fee140)">🎨</div>
+                    <div class="algo-title">
+                        <h3>Obsługa czytnika kolorów</h3>
+                        <p>Detekcja koloru, odbicie, kalibracja</p>
+                    </div>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="algo-body">
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this, event)">Kopiuj</button>
+                        <pre><code class="language-python">from color_sensor import reflection, color as cscolor
+from color import Color
+import time
+
+# ── Wykrycie koloru ───────────────────────────────────
+def get_color(sensor_port=None) -> str:
+    """Zwraca kolor jako string: 'red','blue','green','yellow','black','white'"""
+    if sensor_port is None: sensor_port = COLOR_FRONT
+    COLOR_MAP = {
+        Color.RED: 'red', Color.BLUE: 'blue', Color.GREEN: 'green',
+        Color.YELLOW: 'yellow', Color.WHITE: 'white', Color.BLACK: 'black',
+        Color.CYAN: 'cyan', Color.ORANGE: 'orange',
+    }
+    return COLOR_MAP.get(cscolor(sensor_port), None)
+
+# ── Odczyt odbicia ─────────────────────────────────────
+def get_reflection(sensor_port=None) -> int:
+    """0 = czarny, 100 = biały. Używaj do linii i kalibracji."""
+    if sensor_port is None: sensor_port = COLOR_FRONT
+    return reflection(sensor_port)
+
+# ── Czekaj na kolor ────────────────────────────────────
+def wait_for_color(target_color, sensor_port=None, timeout_ms=10000):
+    """Blokuje program aż czujnik wykryje zadany kolor."""
+    if sensor_port is None: sensor_port = COLOR_FRONT
+    start = time.ticks_ms()
+    while cscolor(sensor_port) != target_color:
+        if time.ticks_diff(time.ticks_ms(), start) > timeout_ms:
+            return False  # timeout — nie wykryto
+    return True
+
+# ── Kalibracja ─────────────────────────────────────────
+def calibrate(sensor_port=None, seconds=5):
+    """Uruchom przed zawodami! Pokaż czujnik nad różnymi kolorami."""
+    if sensor_port is None: sensor_port = COLOR_FRONT
+    end = time.ticks_ms() + seconds * 1000
+    while time.ticks_ms() < end:
+        print(f"Odbicie: {reflection(sensor_port):3d}% | Kolor: {cscolor(sensor_port)}")
+        time.sleep_ms(300)
+
+# ── Przykład użycia ────────────────────────────────────
+# kolor = get_color()
+# if kolor == 'red':
+#     run_motor(AUX_MOTOR, 360)   # misja czerwona
+# elif kolor == 'blue':
+#     run_motor(AUX_MOTOR, -360)  # misja niebieska</code></pre>
+                    </div>
+                    <table class="params-table">
+                        <tr><th>Orientacyjne odczyty odbicia</th><th>Wartość</th></tr>
+                        <tr><td>Czarna linia / taśma</td><td>~15–25%</td></tr>
+                        <tr><td>Szara mata WRO</td><td>~35–50%</td></tr>
+                        <tr><td>Białe pole maty</td><td>~75–90%</td></tr>
+                        <tr><td>Krawędź linii (TARGET)</td><td>~50% (środek)</td></tr>
+                    </table>
+                    <div class="tip-box">
+                        <strong>Pro tip:</strong> Użyj <code class="inline">calibrate()</code> na macie zawodów — oświetlenie sali zmienia odczyty nawet o 20%. Optymalna wysokość czujnika: 10–16 mm od maty.
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /algorytmy -->
+
+        <!-- ════════════════════════════════════ -->
+        <!-- TAB 2: KALKULATOR WRO               -->
+        <!-- ════════════════════════════════════ -->
+        <div id="kalkulator" class="tab-panel">
+
+            <!-- Wynik główny -->
+            <div class="score-header">
+                <div class="score-total" id="totalScore">0</div>
+                <div class="score-max">/ 230 punktów</div>
+                <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
+                <div class="score-pct" id="scorePct">0%</div>
+            </div>
+
+            <!-- MISJA 1: Goście -->
+            <div class="mission-card">
+                <div class="mission-title">
+                    <h3>🧑‍🤝‍🧑 Misja 1 — Oprowadź gości</h3>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span class="mission-score-badge" id="s1">0</span>
+                        <span class="mission-max">max 40</span>
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">🟢 Gość zielony (strefa excavation)</div>
+                        <div class="item-sublabel">Kompletnie w obszarze i pionowo = 10 pkt | Częściowo = 5 pkt</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('v1',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('v1',5)">5</button>
+                        <button class="counter-btn" onclick="setVal('v1',10)">10</button>
+                        <span class="counter-val" id="v1-val">0</span>
+                        <input type="hidden" id="v1" value="0">
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">🔴 Gość czerwony (muzeum)</div>
+                        <div class="item-sublabel">Kompletnie i pionowo = 10 pkt | Częściowo = 5 pkt</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('v2',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('v2',5)">5</button>
+                        <button class="counter-btn" onclick="setVal('v2',10)">10</button>
+                        <span class="counter-val" id="v2-val">0</span>
+                        <input type="hidden" id="v2" value="0">
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">⬛ Gość czarny (strefa bruku górna)</div>
+                        <div class="item-sublabel">Kompletnie i pionowo = 10 pkt | Częściowo = 5 pkt</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('v3',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('v3',5)">5</button>
+                        <button class="counter-btn" onclick="setVal('v3',10)">10</button>
+                        <span class="counter-val" id="v3-val">0</span>
+                        <input type="hidden" id="v3" value="0">
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">🔵 Gość niebieski (strefa bruku dolna)</div>
+                        <div class="item-sublabel">Kompletnie i pionowo = 10 pkt | Częściowo = 5 pkt</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('v4',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('v4',5)">5</button>
+                        <button class="counter-btn" onclick="setVal('v4',10)">10</button>
+                        <span class="counter-val" id="v4-val">0</span>
+                        <input type="hidden" id="v4" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- MISJA 2: Wieże -->
+            <div class="mission-card">
+                <div class="mission-title">
+                    <h3>🏰 Misja 2 — Odbuduj wieże</h3>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span class="mission-score-badge" id="s2">0</span>
+                        <span class="mission-max">max 80</span>
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">🔴 Czerwona wieża #1</div>
+                        <div class="item-sublabel">Kompletnie w obszarze i pionowo = 15 | Częściowo = 10</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('r1',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('r1',10)">10</button>
+                        <button class="counter-btn" onclick="setVal('r1',15)">15</button>
+                        <span class="counter-val" id="r1-val">0</span>
+                        <input type="hidden" id="r1" value="0">
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">🔴 Czerwona wieża #2</div>
+                        <div class="item-sublabel">Kompletnie w obszarze i pionowo = 15 | Częściowo = 10</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('r2',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('r2',10)">10</button>
+                        <button class="counter-btn" onclick="setVal('r2',15)">15</button>
+                        <span class="counter-val" id="r2-val">0</span>
+                        <input type="hidden" id="r2" value="0">
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">🟡 Żółta wieża #1</div>
+                        <div class="item-sublabel">Wieżyczka na bazie + baza kompletnie = 25 | Częściowo = 15</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('y1',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('y1',15)">15</button>
+                        <button class="counter-btn" onclick="setVal('y1',25)">25</button>
+                        <span class="counter-val" id="y1-val">0</span>
+                        <input type="hidden" id="y1" value="0">
+                    </div>
+                </div>
+
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">🟡 Żółta wieża #2</div>
+                        <div class="item-sublabel">Wieżyczka na bazie + baza kompletnie = 25 | Częściowo = 15</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="setVal('y2',0)">0</button>
+                        <button class="counter-btn" onclick="setVal('y2',15)">15</button>
+                        <button class="counter-btn" onclick="setVal('y2',25)">25</button>
+                        <span class="counter-val" id="y2-val">0</span>
+                        <input type="hidden" id="y2" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- MISJA 3: Artefakty -->
+            <div class="mission-card">
+                <div class="mission-title">
+                    <h3>🏺 Misja 3 — Artefakty do muzeum</h3>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span class="mission-score-badge" id="s3">0</span>
+                        <span class="mission-max">max 60</span>
+                    </div>
+                </div>
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">Liczba artefaktów kompletnie na miejscu</div>
+                        <div class="item-sublabel">Kompletnie w kolorowym miejscu i pionowo = 15 pkt każdy (max 4)</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="changeCount('ac',0,4,-1)">−</button>
+                        <span class="counter-val" id="ac-val">0</span>
+                        <button class="counter-btn" onclick="changeCount('ac',0,4,1)">+</button>
+                        <input type="hidden" id="ac" value="0">
+                    </div>
+                </div>
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">Liczba artefaktów częściowo / nie pionowo</div>
+                        <div class="item-sublabel">5 pkt każdy</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="changeCount('ap',0,4,-1)">−</button>
+                        <span class="counter-val" id="ap-val">0</span>
+                        <button class="counter-btn" onclick="changeCount('ap',0,4,1)">+</button>
+                        <input type="hidden" id="ap" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- MISJA 4: Brud -->
+            <div class="mission-card">
+                <div class="mission-title">
+                    <h3>🧹 Misja 4 — Wyczyść bruk</h3>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span class="mission-score-badge" id="s4">0</span>
+                        <span class="mission-max">max 20</span>
+                    </div>
+                </div>
+                <div class="scoring-item">
+                    <div>
+                        <div class="item-label">Cząstki brudu poza brukiem</div>
+                        <div class="item-sublabel">2 pkt za każdą cząstkę (max 10 cząstek)</div>
+                    </div>
+                    <div class="item-controls">
+                        <button class="counter-btn" onclick="changeCount('dirt',0,10,-1)">−</button>
+                        <span class="counter-val" id="dirt-val">0</span>
+                        <button class="counter-btn" onclick="changeCount('dirt',0,10,1)">+</button>
+                        <input type="hidden" id="dirt" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BONUS -->
+            <div class="mission-card">
+                <div class="mission-title">
+                    <h3>⭐ Bonus — Nie rusz przeszkód</h3>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span class="mission-score-badge" id="s5">0</span>
+                        <span class="mission-max">max 30</span>
+                    </div>
+                </div>
+                <div class="scoring-item">
+                    <div class="item-label">Bariery i papuga (10 pkt każda gdy nieruszona i nieuszkodzona)</div>
+                </div>
+                <div class="check-group" id="bonusChecks">
+                    <label class="check-item checked" onclick="toggleBonus(this,'b1')">
+                        <input type="checkbox" id="b1" checked> 🔴 Bariera czerwona
+                    </label>
+                    <label class="check-item checked" onclick="toggleBonus(this,'b2')">
+                        <input type="checkbox" id="b2" checked> ⬜ Bariera biała
+                    </label>
+                    <label class="check-item checked" onclick="toggleBonus(this,'b3')">
+                        <input type="checkbox" id="b3" checked> 🦜 Papuga
+                    </label>
+                </div>
+            </div>
+
+            <div class="calc-actions">
+                <button class="btn-reset" onclick="resetCalc()">🔄 Reset</button>
+                <button class="btn-copy-score" onclick="copyScore()">📋 Kopiuj wynik</button>
+            </div>
+
+        </div><!-- /kalkulator -->
+
+        <!-- ════════════════════════════════════ -->
+        <!-- TAB 3: ŚCIĄGAWKA                    -->
+        <!-- ════════════════════════════════════ -->
+        <div id="sciagawka" class="tab-panel">
+
+            <div class="ref-section">
+                <h3>✅ Checklist przed zawodami</h3>
+                <div class="card-glass">
+                    <ul class="checklist">
+                        <li>Zaktualizuj porty silników w <code class="inline">robot_config.py</code></li>
+                        <li>Zmierz WHEEL_DIAMETER_MM i WHEELBASE_MM swojego robota</li>
+                        <li>Uruchom <code class="inline">kalibracja.py</code> na macie zawodów</li>
+                        <li>Zaktualizuj BLACK_THRESHOLD z wyników kalibracji</li>
+                        <li>Przetestuj <code class="inline">drive_straight(50)</code> — sprawdź prostoliniowość</li>
+                        <li>Przetestuj <code class="inline">turn_gyro(90)</code> — sprawdź dokładność kąta</li>
+                        <li>Odczekaj 30s po włączeniu (żyroskop potrzebuje czasu)</li>
+                        <li>Sprawdź naładowanie baterii (&gt;80%)</li>
+                        <li>Zrób 3 próbne przebiegi każdej misji</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="ref-section">
+                <h3>📊 Tabela funkcji — quick reference</h3>
+                <div class="card-glass" style="overflow-x:auto">
+                    <table class="ref-table">
+                        <tr><th>Funkcja</th><th>Kluczowy parametr</th><th>Uwaga</th></tr>
+                        <tr><td><code class="inline">drive_straight(50)</code></td><td>Kp=1.5, Kd=0.8</td><td>+ przód, − tył</td></tr>
+                        <tr><td><code class="inline">turn_gyro(90)</code></td><td>speed=200</td><td>+ prawo, − lewo</td></tr>
+                        <tr><td><code class="inline">turn_one_wheel(90)</code></td><td>pivot='right'</td><td>Szerszy, przewidywalny łuk</td></tr>
+                        <tr><td><code class="inline">follow_line(30)</code></td><td>Kp=1.2</td><td>side='right' lub 'left'</td></tr>
+                        <tr><td><code class="inline">follow_line_until_color(Color.RED)</code></td><td>—</td><td>Blokuje do wykrycia</td></tr>
+                        <tr><td><code class="inline">line_square()</code></td><td>speed=150</td><td>Wymaga 2 czujników!</td></tr>
+                        <tr><td><code class="inline">get_color()</code></td><td>—</td><td>Zwraca string</td></tr>
+                        <tr><td><code class="inline">run_motor(AUX,360)</code></td><td>speed=300</td><td>Silnik pomocniczy</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="ref-section">
+                <h3>🔧 Strojenie PID</h3>
+                <div class="card-glass">
+                    <table class="ref-table">
+                        <tr><th>Objaw</th><th>Przyczyna</th><th>Rozwiązanie</th></tr>
+                        <tr><td>Robot skręca w prawo</td><td>Kp za małe lub asymetria</td><td>Zwiększ Kp lub wyrównaj koła</td></tr>
+                        <tr><td>Robot oscyluje</td><td>Kp za duże</td><td>Zmniejsz Kp, dodaj Kd</td></tr>
+                        <tr><td>Skręt 90° daje 95°</td><td>Speed za duże</td><td>Zmniejsz speed do 150–200</td></tr>
+                        <tr><td>Jazda po linii wężykuje</td><td>Kp za małe</td><td>Zwiększ Kp po 0.2</td></tr>
+                        <tr><td>Jazda po linii oscyluje</td><td>Kp za duże</td><td>Zmniejsz Kp</td></tr>
+                        <tr><td>line_square nie działa</td><td>Zły próg czerni</td><td>Uruchom kalibracja.py</td></tr>
+                        <tr><td>Żyroskop dryfuje</td><td>Za zimny hub</td><td>30s przerwy przed startem</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="ref-section">
+                <h3>🏆 WRO Junior 2026 — Heritage Heroes</h3>
+                <div class="card-glass">
+                    <table class="ref-table">
+                        <tr><th>Misja</th><th>Max pkt</th><th>Jednostka</th></tr>
+                        <tr><td>🧑‍🤝‍🧑 Oprowadź gości (×4)</td><td>40</td><td>10 pkt kompletnie, 5 częściowo</td></tr>
+                        <tr><td>🔴 Czerwone wieże (×2)</td><td>30</td><td>15 pkt kompletnie, 10 częściowo</td></tr>
+                        <tr><td>🟡 Żółte wieże (×2)</td><td>50</td><td>25 pkt kompletnie, 15 częściowo</td></tr>
+                        <tr><td>🏺 Artefakty (×4)</td><td>60</td><td>15 pkt kompletnie, 5 częściowo</td></tr>
+                        <tr><td>🧹 Brud (×10)</td><td>20</td><td>2 pkt za każdą cząstkę</td></tr>
+                        <tr><td>⭐ Bariery + papuga (×3)</td><td>30</td><td>10 pkt każda, gdy nieruszona</td></tr>
+                        <tr><td><strong>RAZEM</strong></td><td><strong>230</strong></td><td></td></tr>
+                    </table>
+                    <p style="margin-top:12px;font-size:0.8rem;color:rgba(255,255,255,0.45);">
+                        Źródło: <a href="https://wro-association.org/wp-content/uploads/WRO-2026-RoboMission-Junior-Game-Rules.pdf" target="_blank" style="color:#a8b8ff">WRO Official Game Rules Junior 2026</a>
+                    </p>
+                </div>
+            </div>
+
+            <div class="ref-section">
+                <h3>📁 Pliki biblioteki</h3>
+                <div class="card-glass">
+                    <table class="ref-table">
+                        <tr><th>Plik</th><th>Co robi</th></tr>
+                        <tr><td><code class="inline">robot_config.py</code></td><td>Porty, progi, stałe PID — <strong>edytuj pod swój robot</strong></td></tr>
+                        <tr><td><code class="inline">spike_library.py</code></td><td>Wszystkie algorytmy — nie zmieniaj</td></tr>
+                        <tr><td><code class="inline">main_template.py</code></td><td>Szablon misji — kopiuj i wypełniaj</td></tr>
+                        <tr><td><code class="inline">kalibracja.py</code></td><td>Uruchom przed zawodami!</td></tr>
+                    </table>
+                    <p style="margin-top:10px;font-size:0.8rem;color:rgba(255,255,255,0.45)">Lokalizacja: <code class="inline">/claude/wro-spike-prime/</code></p>
+                </div>
+            </div>
+
+        </div><!-- /sciagawka -->
+
+    </main>
+
+    <script>
+    // ── TABY ───────────────────────────────────────
+    function showTab(id) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.target.closest('.tab-btn').classList.add('active');
+    }
+
+    // ── AKORDEONY ──────────────────────────────────
+    function toggleCard(card) {
+        if (event.target.closest('.copy-btn') || event.target.closest('.counter-btn')) return;
+        card.classList.toggle('open');
+    }
+
+    // ── KOD: KOPIUJ ───────────────────────────────
+    function copyCode(btn, e) {
+        e.stopPropagation();
+        const code = btn.closest('.code-block').querySelector('code').innerText;
+        navigator.clipboard.writeText(code).then(() => {
+            btn.textContent = '✓ Skopiowano!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = 'Kopiuj'; btn.classList.remove('copied'); }, 2000);
+        });
+    }
+
+    // ── KALKULATOR ─────────────────────────────────
+    const MAX = 230;
+    const missionFields = {
+        s1: ['v1','v2','v3','v4'],
+        s2: ['r1','r2','y1','y2'],
+        s3: [],   // specjalne
+        s4: [],   // specjalne
+        s5: ['b1','b2','b3'],
+    };
+
+    function setVal(id, val) {
+        document.getElementById(id).value = val;
+        document.getElementById(id + '-val').textContent = val;
+        recalc();
+    }
+
+    function changeCount(id, min, max, delta) {
+        const el = document.getElementById(id);
+        let v = parseInt(el.value) + delta;
+        v = Math.max(min, Math.min(max, v));
+        el.value = v;
+        document.getElementById(id + '-val').textContent = v;
+        recalc();
+    }
+
+    function toggleBonus(label, id) {
+        const cb = document.getElementById(id);
+        cb.checked = !cb.checked;
+        label.classList.toggle('checked', cb.checked);
+        recalc();
+    }
+
+    function recalc() {
+        // Misja 1
+        const m1 = ['v1','v2','v3','v4'].reduce((s,id) => s + parseInt(document.getElementById(id).value), 0);
+        // Misja 2
+        const m2 = ['r1','r2','y1','y2'].reduce((s,id) => s + parseInt(document.getElementById(id).value), 0);
+        // Misja 3
+        const ac = parseInt(document.getElementById('ac').value);
+        const ap = parseInt(document.getElementById('ap').value);
+        const m3 = ac * 15 + ap * 5;
+        // Misja 4
+        const m4 = parseInt(document.getElementById('dirt').value) * 2;
+        // Bonus
+        const m5 = (['b1','b2','b3'].filter(id => document.getElementById(id).checked)).length * 10;
+
+        document.getElementById('s1').textContent = m1;
+        document.getElementById('s2').textContent = m2;
+        document.getElementById('s3').textContent = m3;
+        document.getElementById('s4').textContent = m4;
+        document.getElementById('s5').textContent = m5;
+
+        const total = m1 + m2 + m3 + m4 + m5;
+        document.getElementById('totalScore').textContent = total;
+        document.getElementById('scoreFill').style.width = Math.min(100, total / MAX * 100) + '%';
+        document.getElementById('scorePct').textContent = Math.round(total / MAX * 100) + '%';
+    }
+
+    function resetCalc() {
+        ['v1','v2','v3','v4','r1','r2','y1','y2'].forEach(id => setVal(id, 0));
+        ['ac','ap','dirt'].forEach(id => {
+            document.getElementById(id).value = 0;
+            document.getElementById(id + '-val').textContent = '0';
+        });
+        ['b1','b2','b3'].forEach(id => {
+            document.getElementById(id).checked = true;
+            document.getElementById(id).closest('.check-item').classList.add('checked');
+        });
+        recalc();
+    }
+
+    function copyScore() {
+        const total = document.getElementById('totalScore').textContent;
+        const pct   = document.getElementById('scorePct').textContent;
+        const s1 = document.getElementById('s1').textContent;
+        const s2 = document.getElementById('s2').textContent;
+        const s3 = document.getElementById('s3').textContent;
+        const s4 = document.getElementById('s4').textContent;
+        const s5 = document.getElementById('s5').textContent;
+        const text = `WRO Junior 2026 — Heritage Heroes\nWynik: ${total}/230 pkt (${pct})\n\nMisja 1 Goście: ${s1}/40\nMisja 2 Wieże: ${s2}/80\nMisja 3 Artefakty: ${s3}/60\nMisja 4 Brud: ${s4}/20\nBonus: ${s5}/30`;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.querySelector('.btn-copy-score');
+            btn.textContent = '✓ Skopiowano!';
+            setTimeout(() => btn.textContent = '📋 Kopiuj wynik', 2000);
+        });
+    }
+
+    // ── INICJALIZACJA ──────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        hljs.highlightAll();
+        recalc();
+    });
+    </script>
+</body>
+</html>

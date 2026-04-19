@@ -1,5 +1,5 @@
 // Service Worker dla Narzędzi dla Nauczycieli
-const CACHE_NAME = 'nauczyciel-tools-v2';
+const CACHE_NAME = 'nauczyciel-tools-v3';
 
 // Pliki do cache'owania przy instalacji (ścieżki względne dla GitHub Pages)
 const STATIC_ASSETS = [
@@ -16,7 +16,8 @@ const STATIC_ASSETS = [
   './stworek.html',
   './termometr-emocji.html',
   './manifest.json',
-  './icons/icon-192.png'
+  './icons/icon-192.png',
+  './programowanie-robotow.html'
 ];
 
 // Pliki które wymagają sieci (Firebase)
