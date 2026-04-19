@@ -205,6 +205,94 @@
 
         .tip-box strong { color: #a8b8ff; }
 
+        /* ── WYJAŚNIENIA ── */
+        .explain-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: rgba(168,216,240,0.12);
+            border: 1.5px solid rgba(168,216,240,0.25);
+            border-radius: 8px;
+            color: #a8d8f0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: all 0.2s;
+            width: 100%;
+            text-align: left;
+        }
+
+        .explain-btn:hover { background: rgba(168,216,240,0.2); border-color: rgba(168,216,240,0.45); }
+        .explain-btn .arrow { margin-left: auto; transition: transform 0.25s; font-size: 0.75rem; }
+        .explain-btn.open .arrow { transform: rotate(180deg); }
+
+        .explain-panel {
+            display: none;
+            margin-top: 8px;
+            background: rgba(10,15,40,0.6);
+            border: 1px solid rgba(168,216,240,0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .explain-panel.open { display: block; }
+
+        .explain-intro {
+            padding: 14px 16px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.8);
+            background: rgba(102,126,234,0.15);
+            border-bottom: 1px solid rgba(168,216,240,0.1);
+            line-height: 1.55;
+        }
+
+        .explain-intro strong { color: #c8d8ff; }
+
+        .explain-line {
+            display: grid;
+            grid-template-columns: 1fr;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            gap: 6px;
+        }
+
+        .explain-line:last-child { border-bottom: none; }
+
+        .explain-code {
+            font-family: monospace;
+            font-size: 0.78rem;
+            color: #e5c07b;
+            background: rgba(255,255,255,0.06);
+            padding: 4px 8px;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+
+        .explain-text {
+            font-size: 0.83rem;
+            color: rgba(255,255,255,0.78);
+            line-height: 1.5;
+            padding-left: 4px;
+        }
+
+        .explain-text::before {
+            content: '→ ';
+            color: #7ddfb0;
+            font-weight: 700;
+        }
+
+        .explain-analogy {
+            font-size: 0.78rem;
+            color: rgba(255,220,100,0.75);
+            padding-left: 4px;
+            font-style: italic;
+        }
+
+        .explain-analogy::before { content: '💡 '; }
+
         /* ── KALKULATOR WRO ── */
         .score-header {
             background: rgba(255,255,255,0.08);
@@ -522,6 +610,54 @@
 
     motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
                     </div>
+                    <button class="explain-btn" onclick="toggleExplain(this,'ex1')">🔍 Wyjaśnij mi ten kod! <span class="arrow">▼</span></button>
+                    <div class="explain-panel" id="ex1">
+                        <div class="explain-intro">
+                            <strong>O co chodzi?</strong> Robot jedzie prosto, ale bez żyroskopu zawsze trochę skręca — jedno koło kręci się odrobinę szybciej. Ten kod sprawdza co chwilę czy robot jest skrzywiony i na bieżąco koryguje oba silniki. To tak jak ty trzymasz kierownicę samochodu — ciągle robisz drobne korekty żeby nie zjechać z drogi.
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motion_sensor.reset_yaw_angle()</div>
+                            <div class="explain-text">Zerujemy "kompas" robota. Mówimy mu: <em>"teraz stoisz prosto — to jest Twój punkt startowy, kąt = 0°"</em>. Bez tego robot nie wiedziałby, od czego mierzyć skrzywienie.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motor.reset_relative_position(LEFT_MOTOR, 0)</div>
+                            <div class="explain-text">Resetujemy licznik obrotu lewego silnika do zera. Dzięki temu będziemy wiedzieć ile silnik się już obrócił, czyli jak daleko robot pojechał.</div>
+                            <div class="explain-analogy">Jak wyzerowanie licznika kilometrów przed podróżą.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">target_deg = (distance_cm / circ) * 360</div>
+                            <div class="explain-text">Przeliczamy centymetry na stopnie obrotu silnika. Koło o średnicy 56mm ma obwód ~17,6 cm. Żeby pojechać 50 cm, silnik musi się obrócić: (50 / 17,6) × 360 = ok. 1022°.</div>
+                            <div class="explain-analogy">Jak liczenie ile razy rower musi zakręcić kołem żeby dojechać do sklepu.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">while abs(motor.relative_position(LEFT_MOTOR)) &lt; target_deg:</div>
+                            <div class="explain-text">Pętla: "Rób wszystko poniżej, dopóki silnik nie obrócił się tyle ile zaplanowaliśmy." <em>abs()</em> bierze wartość bezwzględną — działa zarówno dla jazdy w przód jak i w tył.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">error = motion_sensor.tilt_angles()[0] / 10</div>
+                            <div class="explain-text">Pytamy żyroskop: <em>"o ile stopni jesteś teraz skrzywiony?"</em>. Żyroskop mierzy w dziesiątych stopnia (decidegrees), więc dzielimy przez 10 żeby mieć normalne stopnie. Jeśli robot skręcił w prawo o 2°, error = 2.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">integral = max(-30, min(30, integral + error))</div>
+                            <div class="explain-text">Sumujemy wszystkie błędy z przeszłości (Ki — człon całkujący). Jeśli robot przez 5 sekund troszkę skręcał w prawo, integral się nazbierał i wymusi mocniejszą korektę. Ograniczamy do ±30 żeby korekcja nie "wariowała".</div>
+                            <div class="explain-analogy">Jak pamiętanie że w tej sali zawsze wieje od okna — bierzesz to pod uwagę z wyprzedzeniem.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">derivative = error - last_error</div>
+                            <div class="explain-text">Sprawdzamy czy błąd rośnie czy maleje. Jeśli robot szybko skręca w prawo (błąd rośnie), reagujemy mocniej zanim skrzywienie stanie się duże.</div>
+                            <div class="explain-analogy">Kd = patrz nie tylko gdzie jesteś, ale też w którą stronę zmierzasz.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">correction = int(Kp*error + Ki*integral + Kd*derivative)</div>
+                            <div class="explain-text">Liczymy całkowitą korektę z trzech składników. To jest serce algorytmu PID. Wynik mówi: <em>"o ile deg/s jeden silnik powinien być szybszy od drugiego"</em>.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motor.run(LEFT_MOTOR, speed - correction)</div>
+                            <div class="explain-code">motor.run(RIGHT_MOTOR, speed + correction)</div>
+                            <div class="explain-text">Jeśli robot skręcił w prawo (error > 0, correction > 0): lewy silnik zwalnia, prawy przyspiesza → robot prostuje się w lewo. Jeśli skręcił w lewo: odwrotnie. Suma prędkości zawsze = 2×speed.</div>
+                            <div class="explain-analogy">Jak ciągnięcie za lejce konia: pociągnij lewy → skręt w lewo.</div>
+                        </div>
+                    </div>
                     <table class="params-table">
                         <tr><th>Parametr</th><th>Domyślnie</th><th>Zakres</th><th>Opis</th></tr>
                         <tr><td><code class="inline">distance_cm</code></td><td>—</td><td>&gt;0 przód, &lt;0 tył</td><td>Dystans w centymetrach</td></tr>
@@ -585,6 +721,44 @@ def turn_one_wheel(angle, pivot='right', speed=200):
         else:
             motor.stop(LEFT_MOTOR); motor.run(RIGHT_MOTOR, -spd)
     motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
+                    </div>
+                    <button class="explain-btn" onclick="toggleExplain(this,'ex2')">🔍 Wyjaśnij mi ten kod! <span class="arrow">▼</span></button>
+                    <div class="explain-panel" id="ex2">
+                        <div class="explain-intro">
+                            <strong>O co chodzi?</strong> Robot obraca się w miejscu — jedno koło jedzie do przodu, drugie do tyłu. Żyroskop mierzy co chwilę o ile stopni się już obrócił i kiedy dojdzie do celu, zatrzymuje się. Im bliżej celu, tym wolniej (żeby nie "przeskoczył").
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motion_sensor.reset_yaw_angle()</div>
+                            <div class="explain-text">Zerujemy kompas przed skrętem. Od tej chwili robot mierzy kąt od zera. Jeśli chcemy skręcić o 90°, robot będzie kręcił się aż żyroskop pokaże 90°.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">current = motion_sensor.tilt_angles()[0] / 10</div>
+                            <div class="explain-text">Odczytujemy aktualny kąt obrotu w stopniach. Na początku = 0°. Po obróceniu w prawo o 45° = 45°.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">error = angle - current</div>
+                            <div class="explain-text">Obliczamy ile stopni zostało do celu. Jeśli cel to 90° a robot jest na 60°, error = 30°. Gdy robot dojdzie do celu, error = 0.</div>
+                            <div class="explain-analogy">Jak nawigacja GPS: "zostało Ci 30 km do celu".</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">if abs(error) &lt;= 1.0: break</div>
+                            <div class="explain-text">Jeśli błąd jest mniejszy niż 1 stopień — zatrzymaj się, jesteśmy w miejscu docelowym. Tolerancja 1° jest wystarczająco precyzyjna do zawodów.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">correction = int(Kp * error + Kd * (error - last_error))</div>
+                            <div class="explain-text">Liczymy prędkość obrotu. Daleko od celu (duży error) → kręcimy szybko. Blisko celu (mały error) → kręcimy wolno. To zapobiega "przeskoczeniu" o za dużo.</div>
+                            <div class="explain-analogy">Jak parkowanie auta: z daleka jedziesz normalnie, przy samym miejscu prawie się czołgasz.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">if 0 &lt; abs(correction) &lt; 80: correction = 80</div>
+                            <div class="explain-text">Minimalna prędkość żeby silniki w ogóle ruszyły. Silniki LEGO mają martwy punkt — przy zbyt małym sygnale stoją w miejscu. Wymuszamy minimum 80 deg/s.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motor.run(LEFT_MOTOR, correction)</div>
+                            <div class="explain-code">motor.run(RIGHT_MOTOR, -correction)</div>
+                            <div class="explain-text">Lewy silnik jedzie do przodu (+), prawy do tyłu (−). To powoduje obrót w miejscu (skręt w prawo). Gdyby oba silniki jechały w przód, robot pojechałby do przodu, a nie obrócił się.</div>
+                            <div class="explain-analogy">Jak czołg: żeby skręcić w prawo, lewa gąsienica jedzie do przodu a prawa do tyłu.</div>
+                        </div>
                     </div>
                     <table class="params-table">
                         <tr><th>Przykład</th><th>Efekt</th></tr>
@@ -654,6 +828,39 @@ def follow_line_until_color(target_color, speed=250,
 
     motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
                     </div>
+                    <button class="explain-btn" onclick="toggleExplain(this,'ex3')">🔍 Wyjaśnij mi ten kod! <span class="arrow">▼</span></button>
+                    <div class="explain-panel" id="ex3">
+                        <div class="explain-intro">
+                            <strong>O co chodzi?</strong> Robot nie jedzie <em>po linii</em> — jedzie <em>wzdłuż krawędzi</em> linii. Czujnik koloru mierzy ile światła odbija się od podłogi (0 = czarny, 100 = biały). Krawędź linii to punkt środkowy ~50. Robot stara się ciągle trzymać czujnik dokładnie na tej granicy czarno-białej.
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">TARGET = 50</div>
+                            <div class="explain-text">Cel to wartość 50 — punkt w połowie między czarnym (~15) a białym (~85). To jest krawędź linii. Robot będzie starał się utrzymać czujnik dokładnie w tym miejscu.</div>
+                            <div class="explain-analogy">Jak jazda rowerem: trzymasz się linii krawężnika, nie wjeżdżasz na chodnik ani na jezdnię.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">ref = reflection(sensor_port)</div>
+                            <div class="explain-text">Odczytujemy ile światła odbija się od podłogi w tej chwili. Jeśli czujnik jest nad czarną linią — ref będzie małe (ok. 15). Nad białą matą — duże (ok. 85).</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">error = ref - TARGET</div>
+                            <div class="explain-text">Obliczamy jak bardzo czujnik odchylił się od krawędzi. Nad czarnym: error = 15 − 50 = −35 (za bardzo w lewo). Nad białym: error = 85 − 50 = +35 (za bardzo w prawo).</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">if side == 'left': error = -error</div>
+                            <div class="explain-text">Jeśli śledzimy lewą krawędź linii zamiast prawej, odwracamy znak błędu. Inaczej robot skręcałby w złą stronę.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">correction = max(-300, min(300, int(Kp * error)))</div>
+                            <div class="explain-text">Przeliczamy błąd na korektę prędkości. Im dalej od krawędzi, tym mocniej skręcamy. Ograniczamy do ±300 żeby robot nie kręcił się w kółko przy dużym błędzie.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motor.run(LEFT_MOTOR, speed - correction)</div>
+                            <div class="explain-code">motor.run(RIGHT_MOTOR, speed + correction)</div>
+                            <div class="explain-text">Gdy czujnik jest za bardzo na białym (error > 0, correction > 0): lewy silnik zwalnia, prawy przyspiesza → robot skręca w lewo z powrotem na krawędź. Działa ciągle w pętli — robot węży się wzdłuż linii.</div>
+                            <div class="explain-analogy">Jak slalom: trochę w lewo, trochę w prawo, cały czas w okolicach linii.</div>
+                        </div>
+                    </div>
                     <table class="params-table">
                         <tr><th>Parametr</th><th>Wartość</th><th>Wskazówka</th></tr>
                         <tr><td>TARGET (krawędź)</td><td>50</td><td>Środek między czarnym a białym — zmień jeśli linia jest wąska</td></tr>
@@ -720,6 +927,39 @@ def line_square_backward(speed=150, timeout_ms=3000):
             motor.stop(RIGHT_MOTOR); right_done = True
     motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</code></pre>
                     </div>
+                    <button class="explain-btn" onclick="toggleExplain(this,'ex4')">🔍 Wyjaśnij mi ten kod! <span class="arrow">▼</span></button>
+                    <div class="explain-panel" id="ex4">
+                        <div class="explain-intro">
+                            <strong>O co chodzi?</strong> Robot jedzie powoli do czarnej linii. Ma dwa czujniki — lewy i prawy. Każdy silnik zatrzymuje się niezależnie gdy jego czujnik wykryje czerń. Jeśli np. lewa strona dojdzie do linii wcześniej — lewy silnik staje, a prawy jedzie dalej aż "dogoni". W efekcie robot ustawia się prostopadle do linii.
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">left_done = right_done = False</div>
+                            <div class="explain-text">Tworzymy dwie "flagi" — znaczniki czy dany silnik już się zatrzymał. Na początku oba są False (nie zatrzymane).</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">start = time.ticks_ms()</div>
+                            <div class="explain-text">Zapamiętujemy czas startu. Jeśli po 3 sekundach robot nadal nie znalazł linii — przerywamy żeby nie jechał w nieskończoność. To zabezpieczenie na wypadek błędu.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motor.run(LEFT_MOTOR, speed)</div>
+                            <div class="explain-code">motor.run(RIGHT_MOTOR, speed)</div>
+                            <div class="explain-text">Uruchamiamy oba silniki do przodu. Ważne: używamy <em>motor.run</em> (nie motor_pair) — bo za chwilę będziemy zatrzymywać każdy silnik osobno.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">while not (left_done and right_done):</div>
+                            <div class="explain-text">Pętla działa dopóki przynajmniej jeden silnik jest jeszcze aktywny. Gdy oba zatrzymane — pętla kończy się i robot stoi wyprostowany.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">if not left_done and reflection(COLOR_LEFT) &lt; 30:</div>
+                            <div class="explain-code">    motor.stop(LEFT_MOTOR); left_done = True</div>
+                            <div class="explain-text">Jeśli lewy czujnik widzi wartość odbicia mniejszą niż 30 (czyli czarną linię) I lewy silnik jeszcze nie był zatrzymany — zatrzymujemy go i ustawiamy flagę left_done = True.</div>
+                            <div class="explain-analogy">Jak dwie nogi wchodzące do pokoju: każda zatrzymuje się gdy poczuje próg. Jeśli wejdziesz krzywo, jedna noga trafi na próg wcześniej i staje — drugą dostawiasz.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)</div>
+                            <div class="explain-text">Na końcu pewność — zatrzymujemy oba silniki z hamowaniem. <em>motor.BRAKE</em> to hamowanie aktywne (jak hamulce w rowerze), a nie samo odcięcie prądu (które powoduje wybieg).</div>
+                        </div>
+                    </div>
                     <div class="tip-box">
                         <strong>Montaż:</strong> Oba czujniki koloru muszą być symetrycznie po bokach robota, na tej samej wysokości i tej samej odległości od osi kół. Im dalej od osi tym dokładniejsze wyrównanie, ale robot musi mieć miejsce na manewr.
                     </div>
@@ -785,6 +1025,42 @@ def calibrate(sensor_port=None, seconds=5):
 #     run_motor(AUX_MOTOR, 360)   # misja czerwona
 # elif kolor == 'blue':
 #     run_motor(AUX_MOTOR, -360)  # misja niebieska</code></pre>
+                    </div>
+                    <button class="explain-btn" onclick="toggleExplain(this,'ex5')">🔍 Wyjaśnij mi ten kod! <span class="arrow">▼</span></button>
+                    <div class="explain-panel" id="ex5">
+                        <div class="explain-intro">
+                            <strong>O co chodzi?</strong> Czujnik koloru SPIKE Prime potrafi rozpoznawać kolory (czerwony, niebieski, zielony...) i mierzyć ile światła odbija się od powierzchni. Na zawodach WRO colory znaczników misji decydują co robot ma zrobić — np. przy czerwonym podnieś chwytak, przy niebieskim opuść.
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">from color_sensor import reflection, color as cscolor</div>
+                            <div class="explain-text">Importujemy (pobieramy) dwie funkcje z wbudowanej biblioteki SPIKE Prime: <em>reflection</em> (mierzy odbicie światła) i <em>color</em> (rozpoznaje kolor). Nazywamy "color" jako "cscolor" żeby nie mylić z innymi zmiennymi w programie.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">from color import Color</div>
+                            <div class="explain-text">Importujemy zestaw stałych kolorów. Zamiast pisać "1" (kod czerwonego), piszemy <em>Color.RED</em> — jest bardziej czytelne i mniej podatne na pomyłki.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">COLOR_MAP = { Color.RED: 'red', Color.BLUE: 'blue', ... }</div>
+                            <div class="explain-text">Tworzymy słownik — tabelkę tłumaczeń. Czujnik zwraca wewnętrzne kody (Color.RED, Color.BLUE). My chcemy dostać zwykły tekst ('red', 'blue') żeby łatwiej pisać warunki if.</div>
+                            <div class="explain-analogy">Jak słownik angielsko-polski: "red" → "czerwony". Tutaj: Color.RED → 'red'.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">return COLOR_MAP.get(cscolor(sensor_port), None)</div>
+                            <div class="explain-text">Odczytujemy kolor z czujnika (<em>cscolor</em>), szukamy go w słowniku (<em>COLOR_MAP.get</em>) i zwracamy polskie/angielskie słowo. Jeśli czujnik widzi kolor którego nie ma w słowniku — zwracamy None (nic).</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">def wait_for_color(target_color, ...)</div>
+                            <div class="explain-text">Ta funkcja zatrzymuje cały program i czeka aż czujnik zobaczy wybrany kolor. Przydatne gdy robot ma stać i czekać na sygnał, albo powoli podjechać i wykryć znacznik misji.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">def calibrate(sensor_port, seconds=5)</div>
+                            <div class="explain-text">Narzędzie do kalibracji — przez 5 sekund wyświetla na bieżąco co czujnik widzi. Uruchamiasz to przed zawodami: podsuwasz czujnik nad czarną taśmę, potem nad białą matę, i zapisujesz wyniki. Oświetlenie w każdej sali jest inne!</div>
+                            <div class="explain-analogy">Jak sprawdzanie czy termometr mierzy dobrze — przykładasz do lodówki i do gorącej herbaty i sprawdzasz czy pokazuje sensowne liczby.</div>
+                        </div>
+                        <div class="explain-line">
+                            <div class="explain-code">if kolor == 'red': run_motor(AUX_MOTOR, 360)</div>
+                            <div class="explain-text">Przykład użycia: jeśli czujnik widzi czerwony — obróć silnik pomocniczy (np. chwytak lub pchacz) o 360° (jeden pełny obrót). Różne kolory = różne akcje robota.</div>
+                        </div>
                     </div>
                     <table class="params-table">
                         <tr><th>Orientacyjne odczyty odbicia</th><th>Wartość</th></tr>
@@ -1141,8 +1417,20 @@ def calibrate(sensor_port=None, seconds=5):
 
     // ── AKORDEONY ──────────────────────────────────
     function toggleCard(card) {
-        if (event.target.closest('.copy-btn') || event.target.closest('.counter-btn')) return;
+        if (event.target.closest('.copy-btn') ||
+            event.target.closest('.counter-btn') ||
+            event.target.closest('.explain-btn')) return;
         card.classList.toggle('open');
+    }
+
+    // ── WYJAŚNIENIA ────────────────────────────────
+    function toggleExplain(btn, panelId) {
+        event.stopPropagation();
+        const panel = document.getElementById(panelId);
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open', !isOpen);
+        btn.classList.toggle('open', !isOpen);
+        btn.querySelector('.arrow').textContent = isOpen ? '▼' : '▲';
     }
 
     // ── KOD: KOPIUJ ───────────────────────────────
