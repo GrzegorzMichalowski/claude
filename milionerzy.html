@@ -1861,12 +1861,12 @@ Wrocław
                 if (!snapshot.exists()) {
                     // First time setup - store the hash
                     // Change this password after first use!
-                    const defaultHash = await hashPassword('ZmienMniePoPierwszymUzyciu2024!');
+                    const defaultHash = await hashPassword('Nauczyciel2026!');
                     await db.ref('adminConfig/passwordHash').set(defaultHash);
-                    console.log('Admin password initialized. Please change it!');
                 }
 
-                const storedHash = snapshot.val();
+                const snap2 = await db.ref('adminConfig/passwordHash').once('value');
+                const storedHash = snap2.val();
                 const inputHash = await hashPassword(password);
                 return inputHash === storedHash;
             } catch (error) {

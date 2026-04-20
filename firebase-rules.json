@@ -222,9 +222,8 @@
       ".read": true,
 
       "passwordHash": {
-        // Zapis tylko jeśli nie istnieje (jednorazowa inicjalizacja)
-        // Po ustawieniu, zmiana tylko przez Firebase Console
-        ".write": "!data.exists()",
+        // Zapis dozwolony zawsze (zmiana hasła przez panel moderatora)
+        ".write": true,
         ".validate": "newData.isString() && newData.val().length == 64"
       }
     },

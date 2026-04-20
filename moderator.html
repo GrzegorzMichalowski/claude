@@ -241,6 +241,9 @@
         <!-- Main Panel (hidden until login) -->
         <div id="mainPanel" style="display: none;">
             <h1>Panel Moderatora</h1>
+            <div style="text-align:center;margin-bottom:16px">
+                <button class="btn btn-preview" onclick="changePassword()" style="font-size:0.8rem;padding:6px 14px">🔑 Zmień hasło</button>
+            </div>
 
             <div class="stats">
                 <div class="stat-box">
@@ -334,7 +337,7 @@
 
                 // If no hash stored, set default (first login)
                 if (!storedHash) {
-                    const defaultHash = await hashPassword('admin123');
+                    const defaultHash = await hashPassword('Nauczyciel2026!');
                     await db.ref('adminConfig/passwordHash').set(defaultHash);
                     storedHash = defaultHash;
                 }
@@ -486,6 +489,20 @@
             }
 
             document.getElementById('totalApproved').textContent = total;
+        }
+
+        async function changePassword() {
+            const newPass = prompt('Podaj nowe hasło (min. 8 znaków):');
+            if (!newPass || newPass.length < 8) { alert('Hasło za krótkie!'); return; }
+            const confirm = prompt('Powtórz nowe hasło:');
+            if (newPass !== confirm) { alert('Hasła nie są zgodne!'); return; }
+            try {
+                const newHash = await hashPassword(newPass);
+                await db.ref('adminConfig/passwordHash').set(newHash);
+                alert('✅ Hasło zostało zmienione!');
+            } catch (e) {
+                alert('Błąd: ' + e.message);
+            }
         }
 
         function escapeHtml(text) {
