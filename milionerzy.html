@@ -714,19 +714,6 @@
             color: var(--milionerzy-gold);
         }
 
-        .secret-admin {
-            opacity: 0.15;
-            cursor: pointer;
-            margin-left: var(--spacing-md);
-            font-size: var(--font-size-sm);
-            transition: opacity var(--transition-normal);
-            user-select: none;
-        }
-
-        .secret-admin:hover {
-            opacity: 0.6;
-        }
-
         /* Import panel */
         .import-panel {
             display: none;
@@ -936,55 +923,6 @@
             margin-top: var(--spacing-lg);
         }
 
-        /* Admin panel */
-        .admin-panel {
-            display: none;
-            flex: 1;
-            flex-direction: column;
-            gap: var(--spacing-lg);
-            padding: var(--spacing-lg);
-        }
-
-        .admin-panel.active {
-            display: flex;
-        }
-
-        .admin-panel h2 {
-            color: var(--color-warning);
-            text-align: center;
-        }
-
-        .admin-set-card {
-            background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(255,165,0,0.3);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-lg);
-            margin-bottom: var(--spacing-md);
-        }
-
-        .admin-set-card h4 {
-            color: var(--milionerzy-gold);
-            margin-bottom: var(--spacing-sm);
-        }
-
-        .admin-set-card .preview-questions {
-            background: rgba(0,0,0,0.3);
-            padding: var(--spacing-sm);
-            border-radius: var(--radius-md);
-            margin: var(--spacing-sm) 0;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: var(--font-size-sm);
-        }
-
-        .admin-set-card .preview-questions p {
-            margin: var(--spacing-xs) 0;
-            color: var(--color-text-light-muted);
-        }
-
-        .admin-set-card .preview-questions .correct {
-            color: var(--color-success);
-        }
     </style>
 </head>
 <body>
@@ -1247,18 +1185,6 @@ Wrocław
             </div>
         </div>
 
-        <!-- Admin Panel -->
-        <div id="adminPanel" class="admin-panel">
-            <h2>🔐 Panel moderatora</h2>
-            <p class="community-info">Zestawy oczekujące na zatwierdzenie</p>
-            <div id="pendingList">
-                <p style="text-align: center; color: rgba(255,255,255,0.5);">Ładowanie...</p>
-            </div>
-            <div class="btn-group" style="justify-content: center; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
-            </div>
-        </div>
-
         <!-- Share Modal -->
         <div id="shareModal" class="modal-overlay">
             <div class="modal-content">
@@ -1280,7 +1206,6 @@ Wrocław
 
         <div class="footer-link">
             <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki odwiedzin</a>
-            <span class="secret-admin" onclick="showAdmin()" title="🤫">⚙️</span>
         </div>
     </div>
 
@@ -1304,8 +1229,6 @@ Wrocław
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Admin session - password verified per action via Firebase
-        let adminSession = null;
     </script>
 
     <script>
@@ -1540,7 +1463,6 @@ Wrocław
             document.getElementById('manager').classList.remove('active');
             document.getElementById('importPanel').classList.remove('active');
             document.getElementById('communityPanel').classList.remove('active');
-            document.getElementById('adminPanel').classList.remove('active');
         }
 
         // Import/Export functions
@@ -1840,146 +1762,6 @@ Wrocław
                 console.error('Błąd udostępniania:', error);
                 alert('Błąd wysyłania. Spróbuj ponownie.');
             }
-        }
-
-        // =====================
-        // ADMIN FUNCTIONS
-        // =====================
-
-        // Simple hash function for password verification
-        async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password + 'milionerzy_salt_2024');
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        async function verifyAdminPassword(password) {
-            try {
-                const snapshot = await db.ref('adminConfig/passwordHash').once('value');
-                if (!snapshot.exists()) {
-                    // First time setup - store the hash
-                    // Change this password after first use!
-                    const defaultHash = await hashPassword('Nauczyciel2026!');
-                    await db.ref('adminConfig/passwordHash').set(defaultHash);
-                }
-
-                const snap2 = await db.ref('adminConfig/passwordHash').once('value');
-                const storedHash = snap2.val();
-                const inputHash = await hashPassword(password);
-                return inputHash === storedHash;
-            } catch (error) {
-                console.error('Błąd weryfikacji:', error);
-                return false;
-            }
-        }
-
-        async function showAdmin() {
-            const code = prompt('Podaj kod moderatora:');
-            if (!code) return;
-
-            const isValid = await verifyAdminPassword(code);
-            if (!isValid) {
-                alert('Nieprawidłowy kod!');
-                return;
-            }
-
-            // Store session (expires on page reload)
-            adminSession = { verified: true, timestamp: Date.now() };
-
-            hideAll();
-            document.getElementById('adminPanel').classList.add('active');
-            loadPendingSets();
-        }
-
-        async function loadPendingSets() {
-            const container = document.getElementById('pendingList');
-            container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5);">Ładowanie...</p>';
-
-            try {
-                const snapshot = await db.ref('communityQuizSets').orderByChild('status').equalTo('pending').once('value');
-
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5);">Brak zestawów do zatwierdzenia.</p>';
-                    return;
-                }
-
-                let html = '';
-                snapshot.forEach(child => {
-                    const set = child.val();
-                    const setId = child.key;
-
-                    html += `
-                        <div class="admin-set-card">
-                            <h4>${escapeHtml(set.name)}</h4>
-                            <p>👤 Autor: ${escapeHtml(set.author)}</p>
-                            <p>${getCategoryEmoji(set.category)} ${getCategoryName(set.category)} | Poziom: ${set.level}</p>
-                            <div class="preview-questions">
-                                <strong>Przykładowe pytania:</strong>
-                                ${set.questions.slice(0, 3).map((q, i) => `
-                                    <p><strong>${i+1}.</strong> ${escapeHtml(q.q)}</p>
-                                    <p class="correct">✓ ${escapeHtml(q.answers[q.correct])}</p>
-                                `).join('')}
-                                ${set.questions.length > 3 ? `<p>... i ${set.questions.length - 3} więcej pytań</p>` : ''}
-                            </div>
-                            <div class="btn-group" style="margin-top: 15px;">
-                                <button class="btn btn-success" onclick="approveSet('${setId}')" style="padding: 10px 20px;">✓ Zatwierdź</button>
-                                <button class="btn btn-danger" onclick="rejectSet('${setId}')" style="padding: 10px 20px;">✗ Odrzuć</button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                container.innerHTML = html;
-
-            } catch (error) {
-                console.error('Błąd:', error);
-                container.innerHTML = '<p style="text-align: center; color: #e74c3c;">Błąd ładowania.</p>';
-            }
-        }
-
-        async function approveSet(setId) {
-            // Verify session is still valid
-            if (!adminSession || !adminSession.verified) {
-                alert('Sesja wygasła. Zaloguj się ponownie.');
-                showStartScreen();
-                return;
-            }
-
-            if (!confirm('Zatwierdzić ten zestaw?')) return;
-
-            try {
-                await db.ref('communityQuizSets/' + setId + '/status').set('approved');
-                alert('Zestaw zatwierdzony!');
-                loadPendingSets();
-            } catch (error) {
-                alert('Błąd: ' + error.message);
-            }
-        }
-
-        async function rejectSet(setId) {
-            // Verify session is still valid
-            if (!adminSession || !adminSession.verified) {
-                alert('Sesja wygasła. Zaloguj się ponownie.');
-                showStartScreen();
-                return;
-            }
-
-            if (!confirm('Odrzucić ten zestaw? Zostanie usunięty.')) return;
-
-            try {
-                await db.ref('communityQuizSets/' + setId).remove();
-                alert('Zestaw odrzucony i usunięty.');
-                loadPendingSets();
-            } catch (error) {
-                alert('Błąd: ' + error.message);
-            }
-        }
-
-        // Check URL for admin access
-        if (window.location.hash === '#admin') {
-            setTimeout(showAdmin, 500);
         }
 
         // =====================

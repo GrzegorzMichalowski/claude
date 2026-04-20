@@ -606,6 +606,74 @@
             opacity: 0.7;
             margin-top: var(--spacing-xs);
         }
+
+        .import-instructions,
+        .import-area {
+            background: rgba(255,255,255,0.12);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .import-instructions pre {
+            background: rgba(0,0,0,0.2);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .import-area textarea {
+            width: 100%;
+            min-height: 220px;
+            padding: var(--spacing-md);
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.95);
+            color: var(--color-text-primary);
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .import-area textarea:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.7);
+        }
+
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-top: var(--spacing-md);
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .file-input-label:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .import-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
     </style>
 </head>
 <body>
@@ -635,6 +703,10 @@
                 <button class="mode-btn" onclick="showManager()">
                     <span class="icon">📁</span>
                     Zarządzaj
+                </button>
+                <button class="mode-btn" onclick="showImport()">
+                    <span class="icon">📥</span>
+                    Importuj
                 </button>
             </div>
         </div>
@@ -804,6 +876,68 @@
             <div class="sets-grid" id="managerGrid"></div>
             <div class="btn-group" style="margin-top: var(--spacing-lg);">
                 <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
+            </div>
+        </div>
+
+        <!-- Import -->
+        <div id="importPanel" class="panel">
+            <h2>Import fiszek z pliku tekstowego</h2>
+
+            <div class="import-instructions">
+                <p style="margin-bottom: var(--spacing-md); opacity: 0.9;">
+                    Wklej tekst albo wybierz plik <code>.txt</code>. Każda fiszka powinna być zapisana jako <code>przód = tył</code>.
+                </p>
+                <pre>Nazwa zestawu: Angielski - Zwierzęta
+Kategoria: angielski
+Poziom: 4-6
+
+dog = pies
+cat = kot
+bird = ptak</pre>
+            </div>
+
+            <div class="import-area">
+                <textarea id="importText" placeholder="Wklej tutaj zawartość pliku..."></textarea>
+
+                <div class="file-input-wrapper">
+                    <label class="file-input-label">
+                        📁 Wybierz plik .txt
+                        <input type="file" id="importFile" accept=".txt" onchange="loadImportFile(event)">
+                    </label>
+                    <span id="fileName" style="opacity: 0.8;"></span>
+                </div>
+
+                <div class="import-meta">
+                    <div class="form-group">
+                        <label>Kategoria (opcjonalnie):</label>
+                        <select id="importCategory">
+                            <option value="">-- Z pliku --</option>
+                            <option value="angielski">Język angielski</option>
+                            <option value="niemiecki">Język niemiecki</option>
+                            <option value="matematyka">Matematyka</option>
+                            <option value="historia">Historia</option>
+                            <option value="geografia">Geografia</option>
+                            <option value="biologia">Biologia</option>
+                            <option value="inne">Inne</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Poziom (opcjonalnie):</label>
+                        <select id="importLevel">
+                            <option value="">-- Z pliku --</option>
+                            <option value="1-3">Klasy 1-3</option>
+                            <option value="4-6">Klasy 4-6</option>
+                            <option value="7-8">Klasy 7-8</option>
+                            <option value="wszystkie">Wszystkie poziomy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="margin-top: var(--spacing-lg);">
+                    <button class="btn btn-success" onclick="importSet()">✓ Importuj zestaw</button>
+                    <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
+                </div>
             </div>
         </div>
 
@@ -1119,6 +1253,16 @@
             document.getElementById('manager').classList.add('active');
         }
 
+        function showImport() {
+            hideAll();
+            document.getElementById('importText').value = '';
+            document.getElementById('importFile').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('importCategory').value = '';
+            document.getElementById('importLevel').value = '';
+            document.getElementById('importPanel').classList.add('active');
+        }
+
         function hideAll() {
             document.getElementById('startScreen').style.display = 'none';
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -1132,6 +1276,98 @@
 
         function saveCustomSets(sets) {
             localStorage.setItem('fiszki_sets', JSON.stringify(sets));
+        }
+
+        function loadImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('importText').value = e.target.result;
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function importSet() {
+            const text = document.getElementById('importText').value.trim();
+            if (!text) {
+                alert('Wklej tekst z fiszkami albo wybierz plik!');
+                return;
+            }
+
+            try {
+                const parsed = parseImportText(text);
+                const overrideCategory = document.getElementById('importCategory').value;
+                const overrideLevel = document.getElementById('importLevel').value;
+
+                if (overrideCategory) parsed.category = overrideCategory;
+                if (overrideLevel) parsed.level = overrideLevel;
+
+                if (parsed.cards.length < 3) {
+                    alert(`Za mało fiszek! Znaleziono ${parsed.cards.length}, wymagane minimum 3.`);
+                    return;
+                }
+
+                const sets = getCustomSets();
+                const setData = {
+                    id: 'import_' + Date.now(),
+                    name: parsed.name || 'Importowany zestaw',
+                    category: parsed.category || 'inne',
+                    level: parsed.level || 'wszystkie',
+                    cards: parsed.cards
+                };
+
+                sets.push(setData);
+                saveCustomSets(sets);
+
+                alert(`Zaimportowano zestaw "${setData.name}" z ${setData.cards.length} fiszkami!`);
+                showStartScreen();
+            } catch (error) {
+                alert('Błąd importu: ' + error.message);
+            }
+        }
+
+        function parseImportText(text) {
+            const lines = text.split('\n').map(line => line.trim());
+            const result = {
+                name: null,
+                category: null,
+                level: null,
+                cards: []
+            };
+
+            for (const line of lines) {
+                if (!line) continue;
+
+                const lowerLine = line.toLowerCase();
+                if (lowerLine.startsWith('nazwa zestawu:')) {
+                    result.name = line.substring(14).trim();
+                    continue;
+                }
+                if (lowerLine.startsWith('kategoria:')) {
+                    result.category = line.substring(10).trim().toLowerCase();
+                    continue;
+                }
+                if (lowerLine.startsWith('poziom:')) {
+                    result.level = line.substring(7).trim();
+                    continue;
+                }
+
+                const separatorIndex = line.indexOf('=');
+                if (separatorIndex === -1) continue;
+
+                const front = line.substring(0, separatorIndex).trim();
+                const back = line.substring(separatorIndex + 1).trim();
+
+                if (front && back) {
+                    result.cards.push({ front, back });
+                }
+            }
+
+            return result;
         }
 
         // Set selector
@@ -1502,11 +1738,33 @@
                     <div class="set-meta">${set.cards.length} fiszek | Poziom: ${set.level}</div>
                     <div class="btn-group" style="margin-top: var(--spacing-md);">
                         <button class="btn btn-primary" onclick="showEditor('${set.id}')">✏️</button>
+                        <button class="btn" style="background: #4facfe; color: white;" onclick="exportSet('${set.id}')">📤</button>
                         <button class="btn" style="background: var(--fiszki-accent); color: #333;" onclick="openShareModal('${set.id}')">🌍</button>
                         <button class="btn btn-danger" onclick="deleteSet('${set.id}')">🗑️</button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function exportSet(setId) {
+            const sets = getCustomSets();
+            const set = sets.find(item => item.id === setId);
+            if (!set) return;
+
+            let text = `Nazwa zestawu: ${set.name}\n`;
+            text += `Kategoria: ${set.category}\n`;
+            text += `Poziom: ${set.level}\n\n`;
+            text += set.cards.map(card => `${card.front} = ${card.back}`).join('\n');
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${set.name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ ]/g, '')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function deleteSet(setId) {
