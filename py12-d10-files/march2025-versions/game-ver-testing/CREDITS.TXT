@@ -1,0 +1,43 @@
+NOTE: Other art was public domain or didn't require attribution.
+
+
+Space ship art:
+   Stephen Challener (Redshrike), hosted by OpenGameArt.org
+    CC-BY 3.0
+
+----------------------------------------
+
+Title:
+    explosion
+
+Author:
+    Cuzco
+
+URL:
+    https://opengameart.org/content/explosion
+
+License(s):
+    * CC0 ( http://creativecommons.org/publicdomain/zero/1.0/legalcode )
+
+File(s):
+    * exp2.jpg
+    * exp3_0.jpg
+    * exp2_0.png
+
+----------------------------------------
+
+Title:
+  Asteroids
+
+Author:
+  phaelax
+
+URL:
+    https://opengameart.org/content/asteroids
+
+License(s):
+    * CC-BY-SA 3.0
+
+File(s):
+    * small/*.png
+
