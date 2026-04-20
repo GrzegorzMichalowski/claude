@@ -205,6 +205,236 @@
 
         .tip-box strong { color: #a8b8ff; }
 
+        /* ── WORD BLOCKS ── */
+        .wb-info {
+            background: rgba(255,200,50,0.12);
+            border: 1px solid rgba(255,200,50,0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.83rem;
+            color: rgba(255,255,200,0.85);
+            line-height: 1.55;
+        }
+
+        .wb-algo-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+
+        .wb-algo-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .wb-algo-header:hover { background: rgba(255,255,255,0.04); }
+
+        .wb-algo-header .algo-icon { width: 40px; height: 40px; font-size: 1.2rem; }
+        .wb-algo-header h3 { color: white; font-size: 0.95rem; margin: 0; flex: 1; }
+        .wb-algo-header .chevron { color: rgba(255,255,255,0.4); font-size: 0.75rem; transition: transform 0.25s; }
+        .wb-algo-card.open .wb-algo-header .chevron { transform: rotate(180deg); }
+
+        .wb-algo-body { display: none; padding: 0 18px 18px; }
+        .wb-algo-card.open .wb-algo-body { display: block; }
+
+        /* Przełącznik poziomów */
+        .wb-levels {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .wb-level-btn {
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: all 0.15s;
+        }
+
+        .wb-level-btn.active {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
+        }
+
+        /* Bloki programowania */
+        .wb-stack { display: inline-flex; flex-direction: column; gap: 2px; }
+
+        .wb-block {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px 7px 18px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: white;
+            min-height: 34px;
+            position: relative;
+            flex-wrap: wrap;
+            white-space: normal;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Wcięcie pętel */
+        .wb-indent { padding-left: 28px; }
+
+        /* Kształty */
+        .wb-hat {
+            border-radius: 18px 18px 4px 4px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .wb-cap { border-radius: 4px 4px 18px 18px; }
+
+        /* Kolory kategorii */
+        .wb-motion   { background: #4C97FF; box-shadow: 0 2px 0 #3373CC; }
+        .wb-control  { background: #FFAB19; box-shadow: 0 2px 0 #CF8B17; color: #333; }
+        .wb-sensing  { background: #5CB1D6; box-shadow: 0 2px 0 #2E8EB8; }
+        .wb-operators{ background: #59C059; box-shadow: 0 2px 0 #389438; }
+        .wb-start    { background: #FFAB19; box-shadow: 0 2px 0 #CF8B17; color: #333; }
+        .wb-stop     { background: #FF6680; box-shadow: 0 2px 0 #CC3354; }
+        .wb-variables{ background: #FF8C1A; box-shadow: 0 2px 0 #CC6600; }
+
+        /* Wartości do wpisania */
+        .wb-val {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .wb-val.wb-editable {
+            background: white;
+            border: 2px solid rgba(0,0,0,0.25);
+            min-width: 32px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* C-block (pętla / warunek) */
+        .wb-c {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .wb-c-head {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 4px 4px 0 0;
+            font-size: 0.82rem;
+            font-weight: 600;
+            flex-wrap: wrap;
+        }
+
+        .wb-c-body {
+            border-left: 8px solid rgba(0,0,0,0.2);
+            margin-left: 16px;
+            padding: 2px 0 2px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .wb-c-foot {
+            height: 12px;
+            border-radius: 0 0 4px 4px;
+        }
+
+        /* Linia podziału poziomów */
+        .wb-divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin: 14px 0;
+        }
+
+        .wb-label {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .wb-badge {
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .wb-badge-easy { background: rgba(89,192,89,0.3); color: #7ddfb0; }
+        .wb-badge-med  { background: rgba(255,171,25,0.3); color: #ffd080; }
+
+        .wb-note {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .wb-note strong { color: rgba(255,255,255,0.85); }
+
+        .wb-steps {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.8;
+        }
+
+        .wb-steps ol { margin: 0; padding-left: 18px; }
+        .wb-steps li { margin-bottom: 4px; }
+
+        .wb-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .wb-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.65);
+        }
+
+        .wb-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
         /* ── WYJAŚNIENIA ── */
         .explain-btn {
             display: flex;
@@ -562,6 +792,7 @@
 
         <div class="tabs">
             <button class="tab-btn active" onclick="showTab('algorytmy')">🧩 Algorytmy</button>
+            <button class="tab-btn" onclick="showTab('bloki')">🧱 Word Blocks</button>
             <button class="tab-btn" onclick="showTab('kalkulator')">🏆 Kalkulator WRO</button>
             <button class="tab-btn" onclick="showTab('sciagawka')">📋 Ściągawka</button>
         </div>
@@ -1078,6 +1309,293 @@ def calibrate(sensor_port=None, seconds=5):
         </div><!-- /algorytmy -->
 
         <!-- ════════════════════════════════════ -->
+        <!-- TAB: WORD BLOCKS                    -->
+        <!-- ════════════════════════════════════ -->
+        <div id="bloki" class="tab-panel">
+
+            <div class="wb-info">
+                ⚠️ <strong>Word Blocks i Python to osobne projekty</strong> — nie można automatycznie przełączyć.
+                Zacznij od bloków, opanuj logikę, a potem spróbuj napisać to samo w Pythonie!<br>
+                Poniższe programy są <strong>uproszczone</strong> — działają, ale bez pełnego algorytmu PID.
+                Dla precyzji zawodowej użyj zakładki 🧩 Algorytmy (Python).
+            </div>
+
+            <!-- Legenda kolorów -->
+            <div class="wb-legend">
+                <div class="wb-legend-item"><div class="wb-dot" style="background:#4C97FF"></div> Ruch (silniki)</div>
+                <div class="wb-legend-item"><div class="wb-dot" style="background:#FFAB19"></div> Sterowanie (pętle, warunki)</div>
+                <div class="wb-legend-item"><div class="wb-dot" style="background:#5CB1D6"></div> Czujniki</div>
+                <div class="wb-legend-item"><div class="wb-dot" style="background:#59C059"></div> Operatory (math)</div>
+                <div class="wb-legend-item"><div class="wb-dot" style="background:#FF6680"></div> Zatrzymaj</div>
+            </div>
+
+            <!-- ── 1. JAZDA PROSTO ── -->
+            <div class="wb-algo-card" onclick="toggleWbCard(this)">
+                <div class="wb-algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#667eea,#764ba2);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🧭</div>
+                    <h3>Jazda prosto</h3>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="wb-algo-body">
+
+                    <div class="wb-label"><span class="wb-badge wb-badge-easy">🟢 Proste — kl. 4–5</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start (przycisk środkowy)</div>
+                        <div class="wb-block wb-motion">Jedź do przodu przez <span class="wb-val">3</span> obroty z prędkością <span class="wb-val">50</span> %</div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 Blok <strong>Jedź przez X obrotów</strong> znajdziesz w kategorii <strong>Ruch</strong>. Robot może trochę skręcać — to normalne bez żyroskopu.</div>
+
+                    <hr class="wb-divider">
+                    <div class="wb-label"><span class="wb-badge wb-badge-med">🟡 Z żyroskopem — kl. 6–7</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-block wb-sensing">Ustaw kąt żyroskopu na <span class="wb-val">0</span></div>
+                        <div class="wb-block wb-motion">Resetuj licznik silnika A</div>
+                        <div class="wb-c">
+                            <div class="wb-c-head wb-control">🔁 Powtarzaj aż licznik silnika A &gt; <span class="wb-val">540</span> stopni</div>
+                            <div class="wb-c-body">
+                                <div class="wb-c">
+                                    <div class="wb-c-head wb-control">❓ Jeśli kąt żyroskopu &gt; <span class="wb-val">2</span> to</div>
+                                    <div class="wb-c-body">
+                                        <div class="wb-block wb-motion">Silnik A: <span class="wb-val">40</span> %  &nbsp; Silnik B: <span class="wb-val">60</span> %</div>
+                                    </div>
+                                    <div class="wb-c-head wb-control" style="border-radius:0">↩ W przeciwnym razie — jeśli kąt &lt; <span class="wb-val">-2</span></div>
+                                    <div class="wb-c-body">
+                                        <div class="wb-block wb-motion">Silnik A: <span class="wb-val">60</span> %  &nbsp; Silnik B: <span class="wb-val">40</span> %</div>
+                                    </div>
+                                    <div class="wb-c-head wb-control" style="border-radius:0">↩ W przeciwnym razie (jedzie prosto)</div>
+                                    <div class="wb-c-body">
+                                        <div class="wb-block wb-motion">Silnik A: <span class="wb-val">50</span> %  &nbsp; Silnik B: <span class="wb-val">50</span> %</div>
+                                    </div>
+                                    <div class="wb-c-foot wb-control"></div>
+                                </div>
+                            </div>
+                            <div class="wb-c-foot wb-control"></div>
+                        </div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-steps"><ol>
+                        <li>Otwórz kategorię <strong>Czujniki</strong> → znajdź blok "Ustaw kąt żyroskopu"</li>
+                        <li>Otwórz <strong>Sterowanie</strong> → przeciągnij "Powtarzaj aż"</li>
+                        <li>W środek wstaw blok "Jeśli...to...inaczej" (też ze Sterowania)</li>
+                        <li>W warunkach użyj <strong>Operatory</strong> → "większe niż (&gt;)" i "mniejsze niż (&lt;)"</li>
+                        <li>Bloki silników znajdziesz w <strong>Ruch</strong></li>
+                    </ol></div>
+                </div>
+            </div>
+
+            <!-- ── 2. SKRĘT ── -->
+            <div class="wb-algo-card" onclick="toggleWbCard(this)">
+                <div class="wb-algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#f093fb,#f5576c);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🔄</div>
+                    <h3>Skręt o dokładny kąt</h3>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="wb-algo-body">
+
+                    <div class="wb-label"><span class="wb-badge wb-badge-easy">🟢 Proste — kl. 4–5</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-block wb-motion">Obróć w prawo o <span class="wb-val">90</span> stopni z prędkością <span class="wb-val">40</span> %</div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 Blok <strong>Obróć o X stopni</strong> jest w kategorii <strong>Ruch</strong>. Dla skrętu w lewo zmień "w prawo" na "w lewo". Ta wersja jest mniej precyzyjna niż wersja z żyroskopem.</div>
+
+                    <hr class="wb-divider">
+                    <div class="wb-label"><span class="wb-badge wb-badge-med">🟡 Z żyroskopem — kl. 6–7</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-block wb-sensing">Ustaw kąt żyroskopu na <span class="wb-val">0</span></div>
+                        <div class="wb-c">
+                            <div class="wb-c-head wb-control">🔁 Powtarzaj aż kąt żyroskopu &gt; <span class="wb-val">88</span> stopni</div>
+                            <div class="wb-c-body">
+                                <div class="wb-block wb-motion">Silnik A: jedź <span class="wb-val">40</span> %</div>
+                                <div class="wb-block wb-motion">Silnik B: jedź <span class="wb-val">-40</span> %</div>
+                            </div>
+                            <div class="wb-c-foot wb-control"></div>
+                        </div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 <strong>Silnik A: +40%  Silnik B: -40%</strong> = obrót w prawo w miejscu. Dla skrętu w lewo: A: -40%, B: +40%. Zatrzymujemy na 88° (nie 90°) bo robot ma lekki wybieg po zatrzymaniu.</div>
+                    <div class="wb-steps"><ol>
+                        <li>Kategoria <strong>Czujniki</strong> → "Ustaw kąt żyroskopu na 0"</li>
+                        <li>Kategoria <strong>Sterowanie</strong> → "Powtarzaj aż"</li>
+                        <li>Warunek: <strong>Operatory</strong> → "kąt żyroskopu &gt; 88"</li>
+                        <li>W środku: kategoria <strong>Ruch</strong> → dwa oddzielne bloki silników</li>
+                        <li>Silnik B wpisz ujemną prędkość (np. -40) — jedzie do tyłu</li>
+                    </ol></div>
+                </div>
+            </div>
+
+            <!-- ── 3. JAZDA PO LINII ── -->
+            <div class="wb-algo-card" onclick="toggleWbCard(this)">
+                <div class="wb-algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#4facfe,#00f2fe);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">➡️</div>
+                    <h3>Jazda po linii</h3>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="wb-algo-body">
+
+                    <div class="wb-label"><span class="wb-badge wb-badge-easy">🟢 Proste (2 stany) — kl. 4–5</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-c">
+                            <div class="wb-c-head wb-control">🔁 Powtarzaj aż naciśnięto przycisk ■</div>
+                            <div class="wb-c-body">
+                                <div class="wb-c">
+                                    <div class="wb-c-head wb-control">❓ Jeśli jasność czujnika koloru F &gt; <span class="wb-val">50</span></div>
+                                    <div class="wb-c-body">
+                                        <div class="wb-block wb-motion">Silnik A: <span class="wb-val">55</span> % &nbsp; Silnik B: <span class="wb-val">30</span> %</div>
+                                    </div>
+                                    <div class="wb-c-head wb-control" style="border-radius:0">↩ W przeciwnym razie (jest ciemno)</div>
+                                    <div class="wb-c-body">
+                                        <div class="wb-block wb-motion">Silnik A: <span class="wb-val">30</span> % &nbsp; Silnik B: <span class="wb-val">55</span> %</div>
+                                    </div>
+                                    <div class="wb-c-foot wb-control"></div>
+                                </div>
+                            </div>
+                            <div class="wb-c-foot wb-control"></div>
+                        </div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 Robot jedzie lewą krawędzią linii. Czujnik jasny (biała mata) → skręć w lewo wracając na linię. Czujnik ciemny (czarna linia) → skręć w prawo na krawędź. Wartość <strong>50</strong> to próg graniczny.</div>
+
+                    <hr class="wb-divider">
+                    <div class="wb-label"><span class="wb-badge wb-badge-med">🟡 Proporcjonalne — kl. 6–7</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-block wb-variables">Ustaw zmienną <span class="wb-val">błąd</span> na <span class="wb-val">0</span></div>
+                        <div class="wb-c">
+                            <div class="wb-c-head wb-control">🔁 Powtarzaj aż naciśnięto przycisk ■</div>
+                            <div class="wb-c-body">
+                                <div class="wb-block wb-variables">Ustaw <span class="wb-val">błąd</span> na  (jasność czujnika F) − <span class="wb-val">50</span></div>
+                                <div class="wb-block wb-motion">Silnik A: <span class="wb-val">50</span> + <span class="wb-val">błąd</span> %</div>
+                                <div class="wb-block wb-motion">Silnik B: <span class="wb-val">50</span> − <span class="wb-val">błąd</span> %</div>
+                            </div>
+                            <div class="wb-c-foot wb-control"></div>
+                        </div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 Zmienna <strong>błąd</strong> = jak daleko jesteś od krawędzi. Gdy ciemno (20): błąd = -30 → lewy silnik zwalnia, prawy przyspiesza. Gdy jasno (80): błąd = +30 → odwrotnie. Robot płynnie trzyma krawędź!</div>
+                    <div class="wb-steps"><ol>
+                        <li>Utwórz zmienną "błąd" w kategorii <strong>Zmienne</strong></li>
+                        <li>Blok "jasność czujnika koloru" znajdziesz w <strong>Czujniki</strong></li>
+                        <li>Odejmowanie: kategoria <strong>Operatory</strong> → blok " − "</li>
+                        <li>Do prędkości silnika dodaj zmienną "błąd" (też Operatory → " + " i " − ")</li>
+                    </ol></div>
+                </div>
+            </div>
+
+            <!-- ── 4. WYRÓWNANIE DO LINII ── -->
+            <div class="wb-algo-card" onclick="toggleWbCard(this)">
+                <div class="wb-algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#43e97b,#38f9d7);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">⬛</div>
+                    <h3>Wyrównanie do linii</h3>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="wb-algo-body">
+
+                    <div class="wb-label"><span class="wb-badge wb-badge-easy">🟢 Jeden czujnik — kl. 4–5</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-block wb-motion">Jedź do przodu z prędkością <span class="wb-val">30</span> %</div>
+                        <div class="wb-block wb-sensing">Poczekaj aż kolor czujnika F = <span class="wb-val">Czarny</span></div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 Robot jedzie do przodu aż czujnik zobaczy czarną linię — wtedy staje. Czujnik musi być z przodu robota, skierowany w dół.</div>
+
+                    <hr class="wb-divider">
+                    <div class="wb-label"><span class="wb-badge wb-badge-med">🟡 Dwa czujniki — kl. 6–7</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-block wb-motion">Silnik A: jedź <span class="wb-val">30</span> %</div>
+                        <div class="wb-block wb-motion">Silnik B: jedź <span class="wb-val">30</span> %</div>
+                        <div class="wb-block wb-sensing">Poczekaj aż jasność czujnika <span class="wb-val">Lewego</span> &lt; <span class="wb-val">30</span></div>
+                        <div class="wb-block wb-motion">Zatrzymaj silnik <span class="wb-val">A</span></div>
+                        <div class="wb-block wb-sensing">Poczekaj aż jasność czujnika <span class="wb-val">Prawego</span> &lt; <span class="wb-val">30</span></div>
+                        <div class="wb-block wb-cap wb-motion">Zatrzymaj silnik <span class="wb-val">B</span></div>
+                    </div>
+                    <div class="wb-note">💡 Każdy silnik zatrzymuje się niezależnie gdy jego czujnik wykryje czerń. Jeśli robot jest krzywo — jedna strona dotrze do linii wcześniej i stanie, druga "dogoni". W efekcie robot ustawia się prostopadle.</div>
+                    <div class="wb-steps"><ol>
+                        <li>Bloki silników (osobne dla A i B): kategoria <strong>Ruch</strong></li>
+                        <li>"Poczekaj aż": kategoria <strong>Sterowanie</strong></li>
+                        <li>"jasność czujnika" i "kolor czujnika": kategoria <strong>Czujniki</strong></li>
+                        <li>Wartość 30 jako próg czerni — zmień po kalibracji</li>
+                    </ol></div>
+                </div>
+            </div>
+
+            <!-- ── 5. CZYTNIK KOLORÓW ── -->
+            <div class="wb-algo-card" onclick="toggleWbCard(this)">
+                <div class="wb-algo-header">
+                    <div class="algo-icon" style="background:linear-gradient(135deg,#fa709a,#fee140);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🎨</div>
+                    <h3>Czytnik kolorów</h3>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="wb-algo-body">
+
+                    <div class="wb-label"><span class="wb-badge wb-badge-easy">🟢 Proste — kl. 4–5</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-c">
+                            <div class="wb-c-head wb-control">❓ Jeśli kolor czujnika F = <span class="wb-val">🔴 Czerwony</span></div>
+                            <div class="wb-c-body">
+                                <div class="wb-block wb-motion">Silnik C: obróć o <span class="wb-val">360</span> stopni</div>
+                            </div>
+                            <div class="wb-c-foot wb-control"></div>
+                        </div>
+                        <div class="wb-c">
+                            <div class="wb-c-head wb-control">❓ Jeśli kolor czujnika F = <span class="wb-val">🔵 Niebieski</span></div>
+                            <div class="wb-c-body">
+                                <div class="wb-block wb-motion">Silnik C: obróć o <span class="wb-val">-360</span> stopni</div>
+                            </div>
+                            <div class="wb-c-foot wb-control"></div>
+                        </div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 Silnik C to zazwyczaj chwytak lub pchacz. +360 = obrót do przodu, -360 = do tyłu. Kolory znajdziesz w kategorii <strong>Czujniki</strong> → kolor czujnika koloru.</div>
+
+                    <hr class="wb-divider">
+                    <div class="wb-label"><span class="wb-badge wb-badge-med">🟡 Pętla z wieloma kolorami — kl. 6–7</span></div>
+                    <div class="wb-stack">
+                        <div class="wb-block wb-hat wb-start">▶ Kiedy kliknięto Start</div>
+                        <div class="wb-c">
+                            <div class="wb-c-head wb-control">🔁 Powtarzaj aż kolor czujnika F = <span class="wb-val">🟢 Zielony</span></div>
+                            <div class="wb-c-body">
+                                <div class="wb-c">
+                                    <div class="wb-c-head wb-control">❓ Jeśli kolor = <span class="wb-val">🔴 Czerwony</span></div>
+                                    <div class="wb-c-body">
+                                        <div class="wb-block wb-motion">Silnik C: obróć o <span class="wb-val">360</span> stopni</div>
+                                    </div>
+                                    <div class="wb-c-foot wb-control"></div>
+                                </div>
+                                <div class="wb-c">
+                                    <div class="wb-c-head wb-control">❓ Jeśli kolor = <span class="wb-val">🔵 Niebieski</span></div>
+                                    <div class="wb-c-body">
+                                        <div class="wb-block wb-motion">Silnik C: obróć o <span class="wb-val">-360</span> stopni</div>
+                                    </div>
+                                    <div class="wb-c-foot wb-control"></div>
+                                </div>
+                                <div class="wb-block wb-sensing">Poczekaj <span class="wb-val">1</span> sekund</div>
+                            </div>
+                            <div class="wb-c-foot wb-control"></div>
+                        </div>
+                        <div class="wb-block wb-cap wb-stop">■ Zatrzymaj wszystkie silniki</div>
+                    </div>
+                    <div class="wb-note">💡 Robot wykrywa kolory w pętli aż zobaczy zielony (koniec misji). "Poczekaj 1 sekundę" daje czas mechanizmowi na wykonanie akcji przed następnym sprawdzeniem koloru.</div>
+                    <div class="wb-steps"><ol>
+                        <li>Bloki kolorów: <strong>Czujniki</strong> → "kolor czujnika koloru"</li>
+                        <li>Porównanie: <strong>Operatory</strong> → "= (równa się)"</li>
+                        <li>Kolory wybieraj z listy w bloku (kliknij strzałkę obok koloru)</li>
+                        <li>Blok "Poczekaj X sekund": kategoria <strong>Sterowanie</strong></li>
+                    </ol></div>
+                </div>
+            </div>
+
+        </div><!-- /bloki -->
+
+        <!-- ════════════════════════════════════ -->
         <!-- TAB 2: KALKULATOR WRO               -->
         <!-- ════════════════════════════════════ -->
         <div id="kalkulator" class="tab-panel">
@@ -1413,6 +1931,11 @@ def calibrate(sensor_port=None, seconds=5):
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         event.target.closest('.tab-btn').classList.add('active');
+    }
+
+    // ── WORD BLOCKS AKORDEONY ──────────────────────
+    function toggleWbCard(card) {
+        card.classList.toggle('open');
     }
 
     // ── AKORDEONY ──────────────────────────────────
