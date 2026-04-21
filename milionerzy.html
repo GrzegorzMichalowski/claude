@@ -9,6 +9,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script src="scripts-common.js"></script>
     <style>
         /* Milionerzy theme - extends styles-common.css */
         :root {
@@ -1035,6 +1036,7 @@
             <div class="result-title" id="resultTitle">Gratulacje!</div>
             <div class="result-prize" id="resultPrize">1 000 000 zł</div>
             <div class="result-buttons">
+                <button class="btn btn-success" id="saveResultBtn" onclick="saveCurrentResult()">💾 Zapisz wynik</button>
                 <button class="btn btn-primary" onclick="showSetSelector()">Zagraj ponownie</button>
                 <button class="btn btn-secondary" onclick="showStartScreen()">Menu główne</button>
             </div>
@@ -1228,6 +1230,7 @@ Wrocław
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        GameResultsUtils.configure(db);
 
     </script>
 
@@ -1355,6 +1358,8 @@ Wrocław
         let lifelines = { fifty: true, phone: true, audience: true };
         let gameOver = false;
         let editingSetId = null;
+        let currentSetSource = 'builtin';
+        let lastGameResult = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -1690,10 +1695,12 @@ Wrocław
 
                 // Shuffle answers for each question
                 currentSet = shuffleAnswersForSet(originalSet);
+                currentSetSource = 'community';
                 currentQuestionIndex = 0;
                 selectedAnswer = null;
                 lifelines = { fifty: true, phone: true, audience: true };
                 gameOver = false;
+                lastGameResult = null;
 
                 document.getElementById('lifeline5050').disabled = false;
                 document.getElementById('lifelinePhone').disabled = false;
@@ -1879,6 +1886,8 @@ Wrocław
 
             // Shuffle answers for each question
             currentSet = shuffleAnswersForSet(originalSet);
+            currentSetSource = originalSet.builtin ? 'builtin' : 'custom';
+            lastGameResult = null;
 
             // Reset game state
             currentQuestionIndex = 0;
@@ -1995,9 +2004,56 @@ Wrocław
             document.getElementById('resultIcon').textContent = icon;
             document.getElementById('resultTitle').textContent = title;
             document.getElementById('resultPrize').textContent = formatMoney(prize);
+            document.getElementById('saveResultBtn').disabled = false;
+            document.getElementById('saveResultBtn').textContent = '💾 Zapisz wynik';
+
+            lastGameResult = {
+                game: 'milionerzy',
+                score: prize,
+                won,
+                mode: currentSetSource,
+                sourceSetId: currentSet?.id || '',
+                sourceSetName: currentSet?.name || 'Nieznany zestaw',
+                details: {
+                    walkedAway,
+                    questionReached: currentQuestionIndex,
+                    questionCount: currentSet?.questions?.length || 0
+                }
+            };
 
             hideAll();
             document.getElementById('resultScreen').classList.add('active');
+        }
+
+        async function saveCurrentResult() {
+            if (!lastGameResult) return;
+
+            const saveBtn = document.getElementById('saveResultBtn');
+            if (saveBtn.disabled) return;
+
+            const savedName = localStorage.getItem('milionerzy_player_name') || '';
+            const playerName = prompt('Podaj pseudonim do zapisu wyniku:', savedName) || '';
+            const normalizedName = GameResultsUtils.normalizePlayerName(playerName);
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Zapisywanie...';
+
+            const result = await GameResultsUtils.save({
+                ...lastGameResult,
+                playerName: normalizedName
+            });
+
+            if (playerName.trim()) {
+                localStorage.setItem('milionerzy_player_name', playerName.trim());
+            }
+
+            if (result.ok) {
+                saveBtn.textContent = '✅ Wynik zapisany';
+            } else {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Zapisz wynik';
+                alert('Nie udało się zapisać wyniku. Spróbuj ponownie.');
+            }
         }
 
         // Lifelines

@@ -745,6 +745,23 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAygGONZCA15Z8L_7RZoFksVf7J_DKQLxw",
+            authDomain: "turniej-tabliczka.firebaseapp.com",
+            databaseURL: "https://turniej-tabliczka-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "turniej-tabliczka",
+            storageBucket: "turniej-tabliczka.firebasestorage.app",
+            messagingSenderId: "311789887392",
+            appId: "1:311789887392:web:7b9005f32ba6e80e280ec5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        GameResultsUtils.configure(firebase.database());
+    </script>
+
     <script>
         // Game state
         let board = ['', '', '', '', '', '', '', '', ''];
@@ -1486,7 +1503,7 @@
         }
 
         // Ranking functions
-        function saveWinner() {
+        async function saveWinner() {
             const initials = document.getElementById('winnerInitials').value.trim().toUpperCase();
             const playerClass = document.getElementById('winnerClass').value.trim().toLowerCase();
 
@@ -1520,9 +1537,35 @@
             localStorage.setItem('ttt-ranking', JSON.stringify(ranking));
             loadRanking();
 
+            const topicName = TOPICS[topic]?.name || 'Tabliczka mnożenia';
+            const levelName = topic && TOPICS[topic]?.levels?.[level]
+                ? TOPICS[topic].levels[level].name
+                : (LEVELS[level]?.name || level);
+
+            const remoteResult = await GameResultsUtils.save({
+                game: 'tabliczka-kolko-krzyzyk',
+                playerName: initials,
+                score: 1,
+                won: true,
+                mode: 'solo',
+                sourceSetId: topic,
+                sourceSetName: topicName,
+                details: {
+                    class: playerClass || '-',
+                    topic,
+                    topicName,
+                    level,
+                    levelName
+                }
+            });
+
             document.getElementById('winnerForm').classList.remove('visible');
             document.getElementById('winnerInitials').value = '';
             document.getElementById('winnerClass').value = '';
+
+            if (!remoteResult.ok) {
+                alert('Zwycięstwo zapisano lokalnie, ale nie udało się wysłać wyniku do bazy.');
+            }
         }
 
         function getRanking() {

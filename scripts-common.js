@@ -620,6 +620,68 @@ const StorageUtils = {
 };
 
 /* ============================================
+   GAME RESULTS
+   Wspólny zapis wyników gier do Firebase
+   ============================================ */
+
+const GameResultsUtils = {
+    _db: null,
+
+    configure(db) {
+        this._db = db;
+    },
+
+    getDb() {
+        if (this._db) return this._db;
+        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            try {
+                this._db = firebase.database();
+                return this._db;
+            } catch (e) {
+                console.warn('GameResultsUtils: Nie udało się pobrać firebase.database()', e);
+            }
+        }
+        return null;
+    },
+
+    normalizePlayerName(name) {
+        const value = String(name || '').trim();
+        return value || 'Anonimowy';
+    },
+
+    async save(result) {
+        const db = this.getDb();
+        if (!db) {
+            return { ok: false, reason: 'missing-db' };
+        }
+
+        const payload = {
+            game: String(result.game || '').trim(),
+            playerName: this.normalizePlayerName(result.playerName),
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
+            score: Number(result.score || 0),
+            won: !!result.won,
+            mode: String(result.mode || 'default').trim(),
+            sourceSetId: String(result.sourceSetId || ''),
+            sourceSetName: String(result.sourceSetName || ''),
+            details: result.details && typeof result.details === 'object' ? result.details : {}
+        };
+
+        if (!payload.game) {
+            return { ok: false, reason: 'missing-game' };
+        }
+
+        try {
+            await db.ref('gameResults/' + payload.game).push(payload);
+            return { ok: true };
+        } catch (e) {
+            console.error('GameResultsUtils: Błąd zapisu wyniku', e);
+            return { ok: false, reason: 'write-failed', error: e };
+        }
+    }
+};
+
+/* ============================================
    EXPORT (dla modułów ES6) / GLOBAL (dla zwykłych skryptów)
    ============================================ */
 
@@ -631,6 +693,7 @@ if (typeof window !== 'undefined') {
     window.DOMUtils = DOMUtils;
     window.AnnouncementUtils = AnnouncementUtils;
     window.StorageUtils = StorageUtils;
+    window.GameResultsUtils = GameResultsUtils;
 }
 
 // Dla ES6 modules (jeśli używane)
@@ -641,6 +704,7 @@ if (typeof module !== 'undefined' && module.exports) {
         TimerUtils,
         DOMUtils,
         AnnouncementUtils,
-        StorageUtils
+        StorageUtils,
+        GameResultsUtils
     };
 }

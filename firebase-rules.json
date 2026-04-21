@@ -215,6 +215,38 @@
     },
 
     // ==========================================
+    // WYNIKI GIER
+    // ==========================================
+    "gameResults": {
+      ".read": true,
+      ".write": true,
+
+      "$game": {
+        ".read": true,
+        "$resultId": {
+          ".validate": "
+            newData.hasChildren(['game', 'playerName', 'createdAt', 'score', 'won', 'mode', 'sourceSetId', 'sourceSetName', 'details'])
+            && newData.child('game').isString()
+            && newData.child('game').val() == $game
+            && newData.child('playerName').isString()
+            && newData.child('playerName').val().length >= 1
+            && newData.child('playerName').val().length <= 50
+            && newData.child('score').isNumber()
+            && newData.child('won').isBoolean()
+            && newData.child('mode').isString()
+            && newData.child('mode').val().length >= 1
+            && newData.child('mode').val().length <= 30
+            && newData.child('sourceSetId').isString()
+            && newData.child('sourceSetId').val().length <= 100
+            && newData.child('sourceSetName').isString()
+            && newData.child('sourceSetName').val().length <= 150
+            && newData.child('details').isString() == false
+          "
+        }
+      }
+    },
+
+    // ==========================================
     // KONFIGURACJA ADMINA
     // ==========================================
     "adminConfig": {

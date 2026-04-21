@@ -9,6 +9,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script src="scripts-common.js"></script>
     <style>
         :root {
             --gapfill-primary: #6f42c1;
@@ -526,6 +527,7 @@
                 <div class="results-details" id="resultsDetails"></div>
 
                 <div class="btn-group">
+                    <button class="btn btn-success" id="saveGapfillBtn" onclick="saveGapfillResult()">💾 Zapisz wynik</button>
                     <button class="btn btn-white" onclick="restartSet()">Powtórz zestaw</button>
                     <button class="btn btn-secondary" onclick="showStartScreen()">Wybierz inny</button>
                 </div>
@@ -540,6 +542,23 @@
             <a href="https://grzegorz-nauczyciel.goatcounter.com" target="_blank">Statystyki</a>
         </div>
     </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAygGONZCA15Z8L_7RZoFksVf7J_DKQLxw",
+            authDomain: "turniej-tabliczka.firebaseapp.com",
+            databaseURL: "https://turniej-tabliczka-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "turniej-tabliczka",
+            storageBucket: "turniej-tabliczka.firebasestorage.app",
+            messagingSenderId: "311789887392",
+            appId: "1:311789887392:web:7b9005f32ba6e80e280ec5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        GameResultsUtils.configure(firebase.database());
+    </script>
 
     <script>
         // Exercise sets - matching the Fiszki structure
@@ -710,6 +729,7 @@
         let currentExerciseIndex = 0;
         let exercises = [];
         let results = [];
+        let gapfillResultSaved = false;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -754,10 +774,13 @@
             exercises = shuffleArray([...currentSet.exercises]);
             currentExerciseIndex = 0;
             results = [];
+            gapfillResultSaved = false;
 
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('resultsPanel').classList.remove('active');
             document.getElementById('exercisePanel').classList.add('active');
+            document.getElementById('saveGapfillBtn').disabled = false;
+            document.getElementById('saveGapfillBtn').textContent = '💾 Zapisz wynik';
 
             showExercise();
         }
@@ -903,6 +926,50 @@
                     </span>
                 </div>
             `).join('');
+        }
+
+        async function saveGapfillResult() {
+            if (!currentSet || gapfillResultSaved) return;
+
+            const saveBtn = document.getElementById('saveGapfillBtn');
+            const correct = results.filter(r => r.isCorrect).length;
+            const total = results.length;
+            const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
+            const savedName = localStorage.getItem('gapfill_player_name') || '';
+            const playerName = prompt('Podaj pseudonim do zapisu wyniku:', savedName) || '';
+            const normalizedName = GameResultsUtils.normalizePlayerName(playerName);
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Zapisywanie...';
+
+            const result = await GameResultsUtils.save({
+                game: 'uzupelnij-luki',
+                playerName: normalizedName,
+                score: correct,
+                won: percent >= 90,
+                mode: currentSet.level || 'default',
+                sourceSetId: currentSet.id || '',
+                sourceSetName: currentSet.name || 'Uzupełnij luki',
+                details: {
+                    percent,
+                    correctAnswers: correct,
+                    wrongAnswers: total - correct,
+                    totalQuestions: total
+                }
+            });
+
+            if (playerName.trim()) {
+                localStorage.setItem('gapfill_player_name', playerName.trim());
+            }
+
+            if (result.ok) {
+                gapfillResultSaved = true;
+                saveBtn.textContent = '✅ Wynik zapisany';
+            } else {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Zapisz wynik';
+                alert('Nie udało się zapisać wyniku. Spróbuj ponownie.');
+            }
         }
 
         function shuffleArray(array) {
