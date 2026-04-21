@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wyniki Gier - Narzędzia dla Nauczycieli</title>
+    <meta name="theme-color" content="#1f3c88">
+    <link rel="stylesheet" href="styles-common.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <style>
+        :root {
+            --results-bg: linear-gradient(135deg, #1f3c88 0%, #39a0ed 100%);
+            --results-card: rgba(255,255,255,0.96);
+            --results-text: #1f2937;
+            --results-muted: #6b7280;
+            --results-accent: #0f766e;
+        }
+
+        body {
+            background: var(--results-bg);
+            color: white;
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: var(--spacing-sm);
+            color: white;
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.9;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .summary-card {
+            background: rgba(255,255,255,0.12);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .summary-card .value {
+            display: block;
+            font-size: 2rem;
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .tabs,
+        .view-switch {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .tab-btn,
+        .view-btn {
+            border: none;
+            border-radius: var(--radius-full);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            cursor: pointer;
+            font-weight: var(--font-weight-semibold);
+            transition: var(--transition-normal);
+            min-height: 44px;
+        }
+
+        .tab-btn {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+
+        .view-btn {
+            background: rgba(0,0,0,0.15);
+            color: white;
+        }
+
+        .tab-btn.active,
+        .view-btn.active {
+            background: white;
+            color: #1f3c88;
+        }
+
+        .results-panel {
+            background: var(--results-card);
+            color: var(--results-text);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .results-header h2 {
+            margin: 0;
+            color: #1f3c88;
+        }
+
+        .results-meta {
+            color: var(--results-muted);
+            font-size: var(--font-size-sm);
+        }
+
+        .results-list {
+            display: grid;
+            gap: var(--spacing-md);
+        }
+
+        .result-card {
+            border: 1px solid rgba(31, 60, 136, 0.12);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            background: white;
+        }
+
+        .result-top {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .result-name {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            color: #111827;
+        }
+
+        .result-score {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--results-accent);
+        }
+
+        .result-subtitle,
+        .result-date,
+        .result-details {
+            color: var(--results-muted);
+            font-size: var(--font-size-sm);
+        }
+
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+            margin-top: var(--spacing-sm);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            background: rgba(31, 60, 136, 0.08);
+            color: #1f3c88;
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .empty-state,
+        .loading-state {
+            text-align: center;
+            color: var(--results-muted);
+            padding: var(--spacing-xl) var(--spacing-lg);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: var(--spacing-md);
+            }
+
+            .results-panel {
+                padding: var(--spacing-lg);
+            }
+
+            .result-score {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-btn">← Strona główna</a>
+        <h1>Wyniki Gier</h1>
+        <p class="subtitle">Centralny podgląd zapisanych wyników z quizów i gier z porównywalnym wynikiem.</p>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <span class="value" id="summaryTotal">0</span>
+                Wszystkie zapisane wyniki
+            </div>
+            <div class="summary-card">
+                <span class="value" id="summaryPlayers">0</span>
+                Unikalni gracze
+            </div>
+            <div class="summary-card">
+                <span class="value" id="summaryLatest">—</span>
+                Ostatnio aktywna gra
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="tabs" id="gameTabs"></div>
+            <div class="view-switch">
+                <button class="view-btn active" data-view="latest">Najnowsze</button>
+                <button class="view-btn" data-view="best">Najlepsze</button>
+            </div>
+        </div>
+
+        <section class="results-panel">
+            <div class="results-header">
+                <div>
+                    <h2 id="panelTitle">Milionerzy</h2>
+                    <div class="results-meta" id="panelMeta">Ładowanie wyników...</div>
+                </div>
+            </div>
+            <div class="results-list" id="resultsList">
+                <div class="loading-state">Ładowanie wyników...</div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAygGONZCA15Z8L_7RZoFksVf7J_DKQLxw",
+            authDomain: "turniej-tabliczka.firebaseapp.com",
+            databaseURL: "https://turniej-tabliczka-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "turniej-tabliczka",
+            storageBucket: "turniej-tabliczka.firebasestorage.app",
+            messagingSenderId: "311789887392",
+            appId: "1:311789887392:web:7b9005f32ba6e80e280ec5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const GAME_CONFIG = {
+            'milionerzy': { label: 'Milionerzy', icon: '💰' },
+            'tabliczka-kolko-krzyzyk': { label: 'Kółko i krzyżyk', icon: '❌' },
+            'mapa-polski': { label: 'Mapa Polski', icon: '🗺️' },
+            'uzupelnij-luki': { label: 'Uzupełnij luki', icon: '✏️' }
+        };
+
+        const gameKeys = Object.keys(GAME_CONFIG);
+        const resultsByGame = {};
+        let activeGame = 'milionerzy';
+        let activeView = 'latest';
+
+        function formatDate(ts) {
+            if (!ts) return 'Brak daty';
+            return new Date(ts).toLocaleString('pl-PL', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function renderTabs() {
+            const tabs = document.getElementById('gameTabs');
+            tabs.innerHTML = gameKeys.map(key => `
+                <button class="tab-btn ${key === activeGame ? 'active' : ''}" data-game="${key}">
+                    ${GAME_CONFIG[key].icon} ${GAME_CONFIG[key].label}
+                </button>
+            `).join('');
+
+            tabs.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeGame = btn.dataset.game;
+                    renderTabs();
+                    renderResults();
+                });
+            });
+        }
+
+        function renderSummary() {
+            const allResults = gameKeys.flatMap(key => resultsByGame[key] || []);
+            const players = new Set(allResults.map(item => item.playerName));
+            const latest = allResults.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+
+            document.getElementById('summaryTotal').textContent = allResults.length;
+            document.getElementById('summaryPlayers').textContent = players.size;
+            document.getElementById('summaryLatest').textContent = latest ? GAME_CONFIG[latest.game]?.label || latest.game : '—';
+        }
+
+        function getMilionerzyBest(results) {
+            return results.slice().sort((a, b) => {
+                const byScore = (b.score || 0) - (a.score || 0);
+                if (byScore !== 0) return byScore;
+                return (b.details?.questionReached || 0) - (a.details?.questionReached || 0);
+            });
+        }
+
+        function getSimpleBest(results) {
+            return results.slice().sort((a, b) => {
+                const byScore = (b.score || 0) - (a.score || 0);
+                if (byScore !== 0) return byScore;
+                return (b.details?.percent || 0) - (a.details?.percent || 0);
+            });
+        }
+
+        function getTicTacToeBest(results) {
+            const grouped = new Map();
+
+            results.forEach(result => {
+                const topic = result.details?.topicName || result.details?.topic || 'Tabliczka mnożenia';
+                const level = result.details?.levelName || result.details?.level || 'domyślny';
+                const key = [result.playerName, topic, level].join('|');
+
+                if (!grouped.has(key)) {
+                    grouped.set(key, {
+                        game: result.game,
+                        playerName: result.playerName,
+                        createdAt: result.createdAt,
+                        score: 0,
+                        won: true,
+                        mode: result.mode,
+                        sourceSetId: result.sourceSetId,
+                        sourceSetName: result.sourceSetName,
+                        details: {
+                            ...result.details,
+                            topicName: topic,
+                            levelName: level,
+                            wins: 0
+                        }
+                    });
+                }
+
+                const entry = grouped.get(key);
+                entry.score += 1;
+                entry.details.wins += 1;
+                entry.createdAt = Math.max(entry.createdAt || 0, result.createdAt || 0);
+            });
+
+            return Array.from(grouped.values()).sort((a, b) => {
+                const byScore = (b.score || 0) - (a.score || 0);
+                if (byScore !== 0) return byScore;
+                return (b.createdAt || 0) - (a.createdAt || 0);
+            });
+        }
+
+        function getResultsForView(game, results) {
+            if (activeView === 'latest') {
+                return results.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+
+            if (game === 'milionerzy') return getMilionerzyBest(results);
+            if (game === 'tabliczka-kolko-krzyzyk') return getTicTacToeBest(results);
+            return getSimpleBest(results);
+        }
+
+        function formatScore(game, result) {
+            if (game === 'milionerzy') {
+                return (result.score || 0).toLocaleString('pl-PL') + ' zł';
+            }
+            if (game === 'tabliczka-kolko-krzyzyk') {
+                return `${result.score || 0} wygr.`;
+            }
+            return `${result.score || 0} pkt`;
+        }
+
+        function getSubtitle(game, result) {
+            if (game === 'milionerzy') {
+                const modeMap = {
+                    builtin: 'Zestaw wbudowany',
+                    custom: 'Zestaw własny',
+                    community: 'Zestaw społeczności'
+                };
+                return modeMap[result.mode] || result.mode;
+            }
+            if (game === 'tabliczka-kolko-krzyzyk') {
+                return result.details?.class && result.details.class !== '-'
+                    ? `Klasa: ${result.details.class}`
+                    : 'Zwycięstwo zapisane w rankingu';
+            }
+            return result.sourceSetName || 'Wynik gry';
+        }
+
+        function getBadges(game, result) {
+            const badges = [];
+
+            if (game === 'milionerzy') {
+                if (result.details?.walkedAway) badges.push('Odejście z wygraną');
+                if (result.details?.questionReached != null) badges.push(`Pytanie: ${result.details.questionReached}`);
+                if (result.sourceSetName) badges.push(result.sourceSetName);
+            } else if (game === 'tabliczka-kolko-krzyzyk') {
+                if (result.details?.topicName) badges.push(result.details.topicName);
+                if (result.details?.levelName) badges.push(result.details.levelName);
+            } else {
+                if (result.details?.percent != null) badges.push(`Wynik: ${result.details.percent}%`);
+                if (result.details?.totalQuestions != null) badges.push(`Pytań: ${result.details.totalQuestions}`);
+            }
+
+            return badges;
+        }
+
+        function renderResults() {
+            const panelTitle = document.getElementById('panelTitle');
+            const panelMeta = document.getElementById('panelMeta');
+            const list = document.getElementById('resultsList');
+            const gameResults = resultsByGame[activeGame] || [];
+            const ordered = getResultsForView(activeGame, gameResults).slice(0, 30);
+
+            panelTitle.textContent = GAME_CONFIG[activeGame].label;
+            panelMeta.textContent = activeView === 'latest'
+                ? `Najnowsze wyniki: ${gameResults.length}`
+                : `Najlepsze wyniki: ${gameResults.length}`;
+
+            if (ordered.length === 0) {
+                list.innerHTML = '<div class="empty-state">Brak zapisanych wyników dla tej gry.</div>';
+                return;
+            }
+
+            list.innerHTML = ordered.map(result => `
+                <article class="result-card">
+                    <div class="result-top">
+                        <div>
+                            <div class="result-name">${result.playerName}</div>
+                            <div class="result-subtitle">${getSubtitle(activeGame, result)}</div>
+                        </div>
+                        <div>
+                            <div class="result-score">${formatScore(activeGame, result)}</div>
+                            <div class="result-date">${formatDate(result.createdAt)}</div>
+                        </div>
+                    </div>
+                    <div class="result-details">${result.won ? 'Wynik zwycięski / bardzo dobry' : 'Zapisany wynik próby'}</div>
+                    <div class="badges">
+                        ${getBadges(activeGame, result).map(badge => `<span class="badge">${badge}</span>`).join('')}
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        async function loadResults() {
+            document.getElementById('resultsList').innerHTML = '<div class="loading-state">Ładowanie wyników...</div>';
+
+            try {
+                await Promise.all(gameKeys.map(async key => {
+                    const snapshot = await db.ref('gameResults/' + key).once('value');
+                    const results = [];
+                    snapshot.forEach(child => {
+                        results.push({ id: child.key, ...child.val() });
+                    });
+                    resultsByGame[key] = results;
+                }));
+
+                renderTabs();
+                renderSummary();
+                renderResults();
+            } catch (error) {
+                console.error('Błąd ładowania wyników:', error);
+                document.getElementById('resultsList').innerHTML = '<div class="empty-state">Nie udało się załadować wyników. Sprawdź połączenie z internetem.</div>';
+                document.getElementById('panelMeta').textContent = 'Błąd połączenia z bazą';
+            }
+        }
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeView = btn.dataset.view;
+                document.querySelectorAll('.view-btn').forEach(item => item.classList.remove('active'));
+                btn.classList.add('active');
+                renderResults();
+            });
+        });
+
+        loadResults();
+    </script>
+
+    <script data-goatcounter="https://grzegorz-nauczyciel.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
