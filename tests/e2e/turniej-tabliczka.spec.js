@@ -242,6 +242,282 @@ test('host moze zasymulowac lige i final do konca', async ({ page }) => {
   await expect(page.locator('#championName')).not.toHaveText('---');
 });
 
+test('remote 1v1: autorytet X + intencje O synchronizują mecz do wygranej', async ({ page }) => {
+  await installMocks(page);
+  // Ta przeglądarka ma stałą tożsamość P1 (= gracz X, autorytet)
+  await page.addInitScript(() => {
+    try { localStorage.setItem('turniej_tabliczka_client_id', 'P1'); } catch (e) {}
+  });
+  await page.goto('/turniej-tabliczka.html');
+
+  const code = 'REMOTE';
+  const KEY = 'b_0_m0';
+
+  // Turniej pucharowy z gotowym meczem P1 vs P2
+  await page.evaluate((code) => {
+    const bracket = [[{
+      id: 'm0',
+      player1: { id: 'P1', name: 'Ala', points: 0, wins: 0, played: 0 },
+      player2: { id: 'P2', name: 'Bartek', points: 0, wins: 0, played: 0 },
+      score1: 0, score2: 0, winner: null, status: 'ready'
+    }]];
+    return firebase.database().ref('tournaments/' + code).set({
+      code, name: 'Remote', mode: 'knockout', groupCount: 0, level: 'medium',
+      pointsToWin: 1, timePressure: false, status: 'knockout',
+      participants: { P1: { name: 'Ala', joinedAt: 1 }, P2: { name: 'Bartek', joinedAt: 1 } },
+      bracket, host: 'host_x', createdAt: 1
+    });
+  }, code);
+
+  // Wejście jako gracz P1 → auto-wejście do meczu, autorytet inicjalizuje live
+  await page.evaluate((code) => {
+    isHost = false;
+    currentPlayer = { id: 'P1', name: 'Ala' };
+    return firebase.database().ref('tournaments/' + code).once('value').then(s => {
+      currentTournament = { ...s.val(), code };
+      listenToTournament(code);
+    });
+  }, code);
+
+  await expect(page.locator('#gameModal')).toHaveClass(/active/);
+  await expect(page.locator('#gamePlayerX')).toHaveText('Ala');
+  await expect(page.locator('#gameStatusLine')).toHaveText('➡️ Twoja tura');
+
+  // X (autorytet): wybór komórki + poprawna odpowiedź
+  async function xPlay(cell) {
+    await page.locator('.game-cell[data-index="' + cell + '"]').click();
+    await expect(page.locator('#questionPanel')).toBeVisible();
+    const correct = await page.evaluate(() => liveState.question.correct);
+    await page.locator('.answer-btn[data-answer="' + correct + '"]').first().click();
+  }
+  // O (przeciwnik): ruch przez intencje w Firebase
+  async function oPlay(cell) {
+    await page.evaluate(({ cell, code, KEY }) =>
+      firebase.database().ref('tournaments/' + code + '/matches/' + KEY + '/intent')
+        .set({ type: 'select', cell, by: 'P2', seq: Date.now() }), { cell, code, KEY });
+    await page.waitForFunction(() => liveState && liveState.phase === 'question');
+    const correct = await page.evaluate(() => liveState.question.correct);
+    await page.evaluate(({ correct, code, KEY }) =>
+      firebase.database().ref('tournaments/' + code + '/matches/' + KEY + '/intent')
+        .set({ type: 'answer', value: correct, by: 'P2', seq: Date.now() }), { correct, code, KEY });
+    await page.waitForFunction(() => liveState && liveState.phase === 'playing');
+  }
+
+  await xPlay(0);
+  await page.waitForFunction(() => liveState.turn === 'O');
+  await oPlay(3);
+  await page.waitForFunction(() => liveState.turn === 'X');
+  await xPlay(1);
+  await page.waitForFunction(() => liveState.turn === 'O');
+  await oPlay(4);
+  await page.waitForFunction(() => liveState.turn === 'X');
+  await xPlay(2); // X: górny rząd 0,1,2 → wygrana
+
+  await expect(page.locator('#matchResult')).toBeVisible();
+  await expect(page.locator('#matchResultText')).toContainText('Ala wygrywa mecz');
+  // Plansza zsynchronizowana: X@0,1,2 oraz O@3,4
+  const board = await page.evaluate(() => liveState.board);
+  expect(board.slice(0, 3)).toEqual(['X', 'X', 'X']);
+  expect(board[3]).toBe('O');
+  expect(board[4]).toBe('O');
+});
+
+test('harmonogram round-robin: każda para raz, brak gracza dwa razy w rundzie (nieparzyste)', async ({ page }) => {
+  await installMocks(page);
+  await page.goto('/turniej-tabliczka.html');
+
+  const res = await page.evaluate(() => {
+    const ids = ['A', 'B', 'C', 'D', 'E']; // 5 = nieparzyste
+    const rounds = computeRoundRobinRounds(ids);
+    // Zbierz pary i sprawdź duplikaty w rundzie
+    const seenPairs = {};
+    let dupInRound = false;
+    rounds.forEach(pairs => {
+      const used = new Set();
+      pairs.forEach(([a, b]) => {
+        if (used.has(a) || used.has(b)) dupInRound = true;
+        used.add(a); used.add(b);
+        const k = a < b ? a + b : b + a;
+        seenPairs[k] = (seenPairs[k] || 0) + 1;
+      });
+    });
+    return {
+      roundCount: rounds.length,
+      totalPairs: Object.keys(seenPairs).length,
+      anyPairTwice: Object.values(seenPairs).some(c => c > 1),
+      dupInRound
+    };
+  });
+
+  expect(res.roundCount).toBe(5);   // n=6 (z bye) → 5 rund
+  expect(res.totalPairs).toBe(10);  // C(5,2)
+  expect(res.anyPairTwice).toBe(false);
+  expect(res.dupInRound).toBe(false);
+});
+
+test('auto-wejście ligi respektuje rundy (nie wchodzi do rundy 2 przed końcem rundy 1)', async ({ page }) => {
+  await installMocks(page);
+  await page.addInitScript(() => {
+    try { localStorage.setItem('turniej_tabliczka_client_id', 'P1'); } catch (e) {}
+  });
+  await page.goto('/turniej-tabliczka.html');
+
+  const mk = (id, round, a, b, status) => ({
+    id, round, player1: { id: a, name: a }, player2: { id: b, name: b },
+    score1: 0, score2: 0, winner: null, status
+  });
+
+  // Runda 1: P1-P2, P3-P4 ; Runda 2: P1-P3
+  const r1 = await page.evaluate(({ mkArgs }) => {
+    isHost = false;
+    isModalOpen = false;
+    lastClosedMatchKey = null;
+    currentTournament = {
+      code: 'L', status: 'league', pointsToWin: 1, level: 'medium',
+      leagueMatches: mkArgs
+    };
+    const m = findMyPlayableMatch();
+    return m ? { id: m.id } : null;
+  }, {
+    mkArgs: [
+      mk('lm0', 1, 'P1', 'P2', 'pending'),
+      mk('lm1', 1, 'P3', 'P4', 'pending'),
+      mk('lm2', 2, 'P1', 'P3', 'pending')
+    ]
+  });
+  expect(r1?.id).toBe('lm0'); // moja gra rundy 1
+
+  // P1-P2 zakończony, ale P3-P4 (runda 1) wciąż trwa → P1 czeka (brak meczu rundy 1)
+  const r2 = await page.evaluate(({ mkArgs }) => {
+    currentTournament.leagueMatches = mkArgs;
+    const m = findMyPlayableMatch();
+    return m ? { id: m.id } : null;
+  }, {
+    mkArgs: [
+      mk('lm0', 1, 'P1', 'P2', 'completed'),
+      mk('lm1', 1, 'P3', 'P4', 'pending'),
+      mk('lm2', 2, 'P1', 'P3', 'pending')
+    ]
+  });
+  expect(r2).toBeNull(); // NIE wchodzi do rundy 2
+
+  // Cała runda 1 zakończona → P1 wchodzi do meczu rundy 2
+  const r3 = await page.evaluate(({ mkArgs }) => {
+    currentTournament.leagueMatches = mkArgs;
+    const m = findMyPlayableMatch();
+    return m ? { id: m.id } : null;
+  }, {
+    mkArgs: [
+      mk('lm0', 1, 'P1', 'P2', 'completed'),
+      mk('lm1', 1, 'P3', 'P4', 'completed'),
+      mk('lm2', 2, 'P1', 'P3', 'pending')
+    ]
+  });
+  expect(r3?.id).toBe('lm2');
+});
+
+// Wspólny helper: wejście do meczu pucharowego P1 vs P2 (P1 = ta przeglądarka)
+async function enterKnockoutMatch(page, { timePressure = false } = {}) {
+  const code = 'STAB';
+  await page.evaluate(({ code, timePressure }) => {
+    const bracket = [[{
+      id: 'm0',
+      player1: { id: 'P1', name: 'Ala', points: 0, wins: 0, played: 0 },
+      player2: { id: 'P2', name: 'Bartek', points: 0, wins: 0, played: 0 },
+      score1: 0, score2: 0, winner: null, status: 'ready'
+    }]];
+    return firebase.database().ref('tournaments/' + code).set({
+      code, name: 'Stab', mode: 'knockout', groupCount: 0, level: 'medium',
+      pointsToWin: 1, timePressure, status: 'knockout',
+      participants: { P1: { name: 'Ala', joinedAt: 1 }, P2: { name: 'Bartek', joinedAt: 1 } },
+      bracket, host: 'host_x', createdAt: 1
+    });
+  }, { code, timePressure });
+  await page.evaluate((code) => {
+    isHost = false; currentPlayer = { id: 'P1', name: 'Ala' };
+    return firebase.database().ref('tournaments/' + code).once('value').then(s => {
+      currentTournament = { ...s.val(), code };
+      listenToTournament(code);
+    });
+  }, code);
+  return code;
+}
+
+test('timer tury: brak odpowiedzi = utrata tury (timeout)', async ({ page }) => {
+  await installMocks(page);
+  await page.addInitScript(() => { try { localStorage.setItem('turniej_tabliczka_client_id', 'P1'); } catch (e) {} });
+  await page.goto('/turniej-tabliczka.html');
+  await enterKnockoutMatch(page, { timePressure: true });
+
+  await expect(page.locator('#gameModal')).toHaveClass(/active/);
+  await page.locator('.game-cell[data-index="0"]').click();
+  await expect(page.locator('#questionPanel')).toBeVisible();
+  await expect(page.locator('#timerDisplay')).toBeVisible();
+
+  // Nie odpowiadamy — po deadline (final: 3s) autorytet odbiera turę
+  await page.waitForFunction(() => liveState && liveState.turn === 'O' && liveState.phase === 'playing', null, { timeout: 8000 });
+  const board = await page.evaluate(() => liveState.board);
+  expect(board[0]).toBe(''); // po timeoucie znacznik nie jest stawiany
+});
+
+test('presence: wskaźnik rozłączenia przeciwnika i jego powrót', async ({ page }) => {
+  await installMocks(page);
+  await page.addInitScript(() => { try { localStorage.setItem('turniej_tabliczka_client_id', 'P1'); } catch (e) {} });
+  await page.goto('/turniej-tabliczka.html');
+  const code = await enterKnockoutMatch(page);
+
+  await expect(page.locator('#gameModal')).toHaveClass(/active/);
+  // P2 nieobecny → ostrzeżenie
+  await expect(page.locator('#gameConnLine')).toContainText('rozłączony');
+  // Symuluj obecność P2 → ostrzeżenie znika
+  await page.evaluate((code) => firebase.database().ref('tournaments/' + code + '/matches/b_0_m0/presence/P2').set(true), code);
+  await expect(page.locator('#gameConnLine')).toHaveText('');
+});
+
+test('wznowienie: wejście do trwającego meczu nie resetuje stanu', async ({ page }) => {
+  await installMocks(page);
+  await page.addInitScript(() => { try { localStorage.setItem('turniej_tabliczka_client_id', 'P1'); } catch (e) {} });
+  await page.goto('/turniej-tabliczka.html');
+  const code = 'RESUME';
+
+  await page.evaluate((code) => {
+    const bracket = [[{
+      id: 'm0',
+      player1: { id: 'P1', name: 'Ala' }, player2: { id: 'P2', name: 'Bartek' },
+      score1: 0, score2: 0, winner: null, status: 'ready'
+    }]];
+    return firebase.database().ref('tournaments/' + code).set({
+      code, name: 'Resume', mode: 'knockout', groupCount: 0, level: 'medium',
+      pointsToWin: 1, timePressure: false, status: 'knockout',
+      participants: { P1: { name: 'Ala', joinedAt: 1 }, P2: { name: 'Bartek', joinedAt: 1 } },
+      bracket, host: 'host_x', createdAt: 1,
+      // Trwający mecz zapisany w Firebase (jak po rozłączeniu)
+      matches: { b_0_m0: { live: {
+        board: ['X', '', '', '', 'O', '', '', '', ''],
+        turn: 'O', phase: 'playing', score1: 0, score2: 0,
+        selectedCell: null, question: null, deadline: null,
+        roundWinnerRole: null, matchWinnerRole: null, seq: 5, updatedAt: 1
+      } } }
+    });
+  }, code);
+
+  await page.evaluate((code) => {
+    isHost = false; currentPlayer = { id: 'P1', name: 'Ala' };
+    return firebase.database().ref('tournaments/' + code).once('value').then(s => {
+      currentTournament = { ...s.val(), code };
+      listenToTournament(code);
+    });
+  }, code);
+
+  await expect(page.locator('#gameModal')).toHaveClass(/active/);
+  // Stan wczytany, NIE zresetowany do początkowego
+  const state = await page.evaluate(() => ({ turn: liveState.turn, board: liveState.board, seq: liveState.seq }));
+  expect(state.turn).toBe('O');
+  expect(state.board[0]).toBe('X');
+  expect(state.board[4]).toBe('O');
+  expect(state.seq).toBe(5);
+});
+
 test('awaryjny reset meczu zwraca mecz do listy w pucharze', async ({ page }) => {
   await installMocks(page);
   await page.goto('/turniej-tabliczka.html');

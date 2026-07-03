@@ -957,9 +957,11 @@
             <div id="addedParticipants" style="margin: 15px 0;"></div>
             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                 <button class="btn btn-primary" onclick="joinTournament()">Dołącz i czekaj</button>
-                <button class="btn" onclick="addAnotherPlayer()" style="background: #27ae60; color: white;">+ Dodaj kolejną osobę</button>
                 <button class="btn btn-secondary" onclick="showStartScreen()">Anuluj</button>
             </div>
+            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 12px;">
+                Każdy gracz dołącza ze swojego komputera. Jedno urządzenie = jeden gracz.
+            </p>
         </div>
 
         <!-- Lobby Panel -->
@@ -1076,7 +1078,10 @@
 
             <div class="help-box">
                 <h3>1. Jak rozpocząć</h3>
-                <div>Wybierz „Utwórz nowy turniej”, podaj uczniom kod i uruchom rozgrywkę po dołączeniu graczy.</div>
+                <div>Prowadzący wybiera „Utwórz nowy turniej” i podaje uczniom kod. Każdy uczeń dołącza
+                ze swojego komputera (jedno urządzenie = jeden gracz). Po dołączeniu graczy prowadzący
+                klika „Rozpocznij”. Mecze 1 na 1 uruchamiają się automatycznie u obu graczy i są
+                synchronizowane na żywo — każdy gra u siebie.</div>
             </div>
 
             <div class="help-box">
@@ -1124,6 +1129,8 @@
                 <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">
                     Do <span id="pointsToWinDisplay">1</span> wygranych
                 </div>
+                <div id="gameStatusLine" style="font-size: 1rem; font-weight: bold; color: #ffd700; margin-top: 6px; min-height: 1.2em;"></div>
+                <div id="gameConnLine" style="font-size: 0.85rem; color: #e74c3c; min-height: 1em;"></div>
             </div>
 
             <div id="gameBoard" class="game-board">
@@ -1214,6 +1221,40 @@
         let gameState = null;
         let addedPlayersFromDevice = [];
         let timerInterval = null;
+
+        // --- Remote 1v1: tożsamość gracza (stała per przeglądarka) ---
+        const CLIENT_ID_KEY = 'turniej_tabliczka_client_id';
+        function getClientId() {
+            try {
+                let id = localStorage.getItem(CLIENT_ID_KEY);
+                if (!id) {
+                    id = 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+                    localStorage.setItem(CLIENT_ID_KEY, id);
+                }
+                return id;
+            } catch (e) {
+                // Fallback gdy localStorage niedostępny (tryb prywatny)
+                return 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+            }
+        }
+        const myClientId = getClientId();
+
+        // --- Remote 1v1: stan meczu synchronizowany przez Firebase ---
+        let myRole = null;         // 'X' | 'O' | null (obserwator/host)
+        let isAuthority = false;   // true = ta przeglądarka prowadzi „silnik" gry (player1 = X)
+        let matchKey = null;       // klucz węzła meczu w Firebase
+        let liveRef = null;        // ref: tournaments/{code}/matches/{key}/live
+        let liveListener = null;
+        let intentRef = null;      // ref: tournaments/{code}/matches/{key}/intent
+        let intentListener = null;
+        let liveState = null;      // ostatni snapshot stanu meczu
+        let localSeq = 0;
+        let lastClosedMatchKey = null;
+        // Presence + timer tury
+        let presenceRef = null;
+        let presenceListener = null;
+        let opponentPresent = true;
+        let turnEnforceTimeout = null;
         let askedQuestions = [];
         let tournamentQuestionsKey = null;
         let isProcessing = false; // Blokada podczas przetwarzania odpowiedzi
@@ -1372,6 +1413,7 @@
         }
         let isModalOpen = false; // Czy modal gry jest otwarty
         let lastTournamentStatus = null;
+        let phaseAdvancing = false; // Blokada podwójnego auto-przejścia fazy
 
         // Bezpieczne czyszczenie timera
         function clearTimer() {
@@ -1478,7 +1520,7 @@
         function showJoinTournament() {
             hideAllPanels();
             addedPlayersFromDevice = [];
-            updateAddedPlayersList();
+            document.getElementById('addedParticipants').innerHTML = '';
             document.getElementById('joinCode').value = '';
             document.getElementById('playerName').value = '';
             document.getElementById('joinPanel').classList.remove('hidden');
@@ -1549,16 +1591,15 @@
             }
         }
 
-        // Add another player from same device
-        async function addAnotherPlayer() {
+        // Join Tournament — remote: 1 przeglądarka = 1 uczestnik (playerId = clientId)
+        async function joinTournament() {
             const code = document.getElementById('joinCode').value.trim().toUpperCase();
             const name = document.getElementById('playerName').value.trim();
 
             if (!code || code.length !== 6) {
-                alert('Najpierw podaj kod turnieju');
+                alert('Podaj prawidłowy 6-znakowy kod turnieju');
                 return;
             }
-
             if (!name) {
                 alert('Podaj imię uczestnika');
                 return;
@@ -1577,87 +1618,21 @@
                     return;
                 }
 
-                const playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-
+                // Ten sam clientId = ten sam uczestnik (ponowne dołączenie aktualizuje imię)
+                const playerId = myClientId;
                 await db.ref('tournaments/' + code + '/participants/' + playerId).set({
                     name: name,
                     joinedAt: firebase.database.ServerValue.TIMESTAMP
                 });
 
-                addedPlayersFromDevice.push({ id: playerId, name: name });
-                saveSession({
-                    code,
-                    isHost: false,
-                    playerId: addedPlayersFromDevice[0]?.id || playerId,
-                    playerName: addedPlayersFromDevice[0]?.name || name,
-                    addedPlayersFromDevice
-                });
-                updateAddedPlayersList();
-                document.getElementById('playerName').value = '';
-                document.getElementById('playerName').focus();
-
-            } catch (error) {
-                alert('Błąd dodawania: ' + error.message);
-            }
-        }
-
-        function updateAddedPlayersList() {
-            const container = document.getElementById('addedParticipants');
-            if (addedPlayersFromDevice.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-            container.innerHTML = `
-                <div style="color: #27ae60; font-size: 0.9rem; margin-bottom: 5px;">
-                    ✓ Dodani z tego urządzenia (${addedPlayersFromDevice.length}):
-                </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    ${addedPlayersFromDevice.map(p => `
-                        <span style="background: rgba(39,174,96,0.3); padding: 5px 12px; border-radius: 15px; font-size: 0.85rem;">
-                            ${p.name}
-                        </span>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        // Join Tournament
-        async function joinTournament() {
-            const code = document.getElementById('joinCode').value.trim().toUpperCase();
-            const name = document.getElementById('playerName').value.trim();
-
-            if (!code || code.length !== 6) {
-                alert('Podaj prawidłowy 6-znakowy kod turnieju');
-                return;
-            }
-
-            // If name provided, add this player too
-            if (name) {
-                await addAnotherPlayer();
-            }
-
-            if (addedPlayersFromDevice.length === 0) {
-                alert('Dodaj przynajmniej jednego uczestnika');
-                return;
-            }
-
-            try {
-                const snapshot = await db.ref('tournaments/' + code).once('value');
-                if (!snapshot.exists()) {
-                    alert('Nie znaleziono turnieju o podanym kodzie');
-                    return;
-                }
-
-                const tournament = snapshot.val();
                 currentTournament = { ...tournament, code };
-                currentPlayer = addedPlayersFromDevice[0];
+                currentPlayer = { id: playerId, name };
                 isHost = false;
                 saveSession({
                     code,
                     isHost: false,
-                    playerId: currentPlayer?.id || null,
-                    playerName: currentPlayer?.name || null,
-                    addedPlayersFromDevice
+                    playerId,
+                    playerName: name
                 });
 
                 showLobby(code);
@@ -1824,6 +1799,50 @@
             }
         }
 
+        // --- Harmonogram round-robin (metoda koła) ---
+        // Zwraca tablicę rund; każda runda = lista par [idA, idB]. Nieparzyste → jeden pauzuje (bye).
+        function computeRoundRobinRounds(ids) {
+            const arr = ids.slice();
+            if (arr.length % 2 === 1) arr.push('__bye__');
+            const n = arr.length;
+            if (n < 2) return [];
+            const half = n / 2;
+            const roundsCount = n - 1;
+            const rounds = [];
+            let list = arr.slice();
+            for (let r = 0; r < roundsCount; r++) {
+                const pairs = [];
+                for (let i = 0; i < half; i++) {
+                    const a = list[i], b = list[n - 1 - i];
+                    if (a !== '__bye__' && b !== '__bye__') pairs.push([a, b]);
+                }
+                rounds.push(pairs);
+                const fixed = list[0];
+                const rest = list.slice(1);
+                rest.unshift(rest.pop()); // rotacja
+                list = [fixed, ...rest];
+            }
+            return rounds;
+        }
+
+        function pairKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
+
+        // Mapa: klucz pary -> numer rundy (1-based)
+        function roundMapFor(ids) {
+            const rounds = computeRoundRobinRounds(ids);
+            const map = {};
+            rounds.forEach((pairs, r) => pairs.forEach(([a, b]) => { map[pairKey(a, b)] = r + 1; }));
+            return map;
+        }
+
+        // Bieżąca runda = najniższy numer rundy z niezakończonym meczem (null gdy koniec)
+        function currentRoundOf(matches) {
+            if (!Array.isArray(matches)) return null;
+            const pending = matches.filter(m => m && m.status !== 'completed' && m.round);
+            if (pending.length === 0) return null;
+            return Math.min(...pending.map(m => m.round));
+        }
+
         // Start League Stage
         async function startLeague(participants) {
             const players = participants.map(p => ({
@@ -1834,13 +1853,17 @@
                 played: 0
             }));
 
-            // Generuj mecze: każdy z każdym
+            // Harmonogram rundowy (metoda koła)
+            const roundMap = roundMapFor(players.map(p => p.id));
+
+            // Generuj mecze: każdy z każdym, z numerem rundy
             const leagueMatches = [];
             let matchId = 0;
             for (let i = 0; i < players.length; i++) {
                 for (let j = i + 1; j < players.length; j++) {
                     leagueMatches.push({
                         id: `lm${matchId++}`,
+                        round: roundMap[pairKey(players[i].id, players[j].id)] || 1,
                         player1: players[i],
                         player2: players[j],
                         score1: 0,
@@ -1872,15 +1895,17 @@
                 groups[i % groupCount].players.push(p);
             });
 
-            // Generate matches for each group (round-robin)
+            // Generate matches for each group (round-robin z numerem rundy w obrębie grupy)
             let matchId = 0;
             groups.forEach((group, groupIndex) => {
                 const players = group.players;
+                const roundMap = roundMapFor(players.map(p => p.id));
                 for (let i = 0; i < players.length; i++) {
                     for (let j = i + 1; j < players.length; j++) {
                         groupMatches.push({
                             id: `gm${matchId++}`,
                             groupIndex,
+                            round: roundMap[pairKey(players[i].id, players[j].id)] || 1,
                             player1: players[i],
                             player2: players[j],
                             score1: 0,
@@ -2007,6 +2032,7 @@
 
             renderGroups();
             renderGroupMatches();
+            maybeAutoEnterMatch();
         }
 
         function renderGroups() {
@@ -2073,14 +2099,30 @@
             const pending = matches.filter(m => m.status !== 'completed');
             const completed = matches.filter(m => m.status === 'completed');
 
-            // Check if all matches done
-            if (pending.length === 0 && completed.length > 0 && isHost) {
+            // Bieżąca runda fazy grupowej
+            const curRound = currentRoundOf(matches);
+            const totalRounds = matches.reduce((mx, m) => Math.max(mx, m.round || 0), 0);
+            const phaseInd = document.getElementById('phaseIndicator');
+            if (phaseInd) {
+                phaseInd.textContent = curRound
+                    ? `Faza grupowa — Runda ${curRound} z ${totalRounds}`
+                    : 'Faza grupowa — zakończona';
+            }
+
+            // Wszystkie mecze grupowe zakończone → automatyczne przejście do pucharu (wyzwala host)
+            if (pending.length === 0 && completed.length > 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 20px;">
                         <p style="margin-bottom: 15px;">Wszystkie mecze grupowe zakończone!</p>
-                        <button class="btn btn-primary" onclick="startPlayoffs()">Rozpocznij fazę pucharową</button>
+                        <p style="color: rgba(255,255,255,0.6);">Przechodzę do fazy pucharowej…</p>
                     </div>
                 `;
+                if (isHost && !phaseAdvancing && currentTournament.status === 'groups') {
+                    phaseAdvancing = true;
+                    Promise.resolve(startPlayoffs())
+                        .catch(e => console.error('Błąd przejścia do pucharu:', e))
+                        .finally(() => { phaseAdvancing = false; });
+                }
                 return;
             }
 
@@ -2171,6 +2213,7 @@
 
             renderLeagueStandings();
             renderLeagueMatches();
+            maybeAutoEnterMatch();
         }
 
         // Render league standings table
@@ -2286,22 +2329,25 @@
 
             document.getElementById('leagueMatchList').innerHTML = html;
 
-            // Postęp
+            // Postęp + bieżąca runda
+            const curRound = currentRoundOf(matches);
+            const totalRounds = matches.reduce((mx, m) => Math.max(mx, m.round || 0), 0);
+            const roundInfo = curRound ? `Runda ${curRound} z ${totalRounds}` : 'Wszystkie rundy rozegrane';
             document.getElementById('leagueProgress').innerHTML = `
+                <p style="color: #ffd700; font-weight: bold;">${roundInfo}</p>
                 <p style="color: rgba(255,255,255,0.7);">Rozegrano: ${completed.length} / ${matches.length} meczów</p>
             `;
 
-            // Sprawdź czy wszystkie mecze rozegrane - pokaż przycisk finału
-            if (pending.length === 0 && completed.length > 0 && isHost) {
-                showStartFinalButton();
+            // Wszystkie mecze rozegrane → automatyczne przejście do finału (wyzwala host)
+            if (pending.length === 0 && completed.length > 0) {
+                showFinalTransition();
             }
         }
 
-        // Show button to start the final
-        function showStartFinalButton() {
+        // Wyświetl finalistów i automatycznie uruchom finał (host)
+        function showFinalTransition() {
             const standings = renderLeagueStandings();
             const top2 = standings.slice(0, 2);
-
             if (top2.length < 2) return;
 
             document.getElementById('leagueProgress').innerHTML = `
@@ -2309,11 +2355,16 @@
                     <h3>🏆 Finaliści wyłonieni!</h3>
                     <p class="finalist">🥇 ${top2[0].name} (${top2[0].points} pkt)</p>
                     <p class="finalist">🥈 ${top2[1].name} (${top2[1].points} pkt)</p>
-                    <button class="btn-final" onclick="startLeagueFinal()">
-                        Rozpocznij Wielki Finał!
-                    </button>
+                    <p style="color: rgba(255,255,255,0.7);">Rozpoczynam Wielki Finał…</p>
                 </div>
             `;
+
+            if (isHost && !phaseAdvancing && currentTournament.status === 'league') {
+                phaseAdvancing = true;
+                Promise.resolve(startLeagueFinal())
+                    .catch(e => console.error('Błąd przejścia do finału:', e))
+                    .finally(() => { phaseAdvancing = false; });
+            }
         }
 
         // Start league match
@@ -2406,6 +2457,7 @@
                     </button>
                 `;
             }
+            maybeAutoEnterMatch();
         }
 
         // Play the final match
@@ -2437,6 +2489,7 @@
             if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderBracket(currentTournament.bracket);
+            maybeAutoEnterMatch();
         }
 
         function createSimulatedResult(pointsToWin) {
@@ -2760,35 +2813,103 @@
         }
 
         // Initialize Game
-        function initializeGame() {
-            // Zabezpieczenie przed podwójnym otwarciem
-            if (isModalOpen) return;
+        // ============================================================
+        // REMOTE MATCH ENGINE (etap 2+3) — mecz synchronizowany przez Firebase
+        // Autorytet = player1 (rola X). player2 (O) wysyła intencje, autorytet stosuje.
+        // Obie przeglądarki renderują z węzła live.
+        // ============================================================
 
+        function getMatchKey(m) {
+            if (!m) return null;
+            if (m.isGroupMatch) return 'g_' + m.id;
+            if (m.isLeagueMatch) return 'l_' + m.id;
+            if (m.isFinal) return 'final';
+            return 'b_' + m.roundIndex + '_' + m.id;
+        }
+
+        function normalizeBoard(b) {
+            const out = ['', '', '', '', '', '', '', '', ''];
+            if (Array.isArray(b) || (b && typeof b === 'object')) {
+                for (let i = 0; i < 9; i++) out[i] = b[i] || '';
+            }
+            return out;
+        }
+
+        function computeRole(m) {
+            myRole = null;
+            if (m?.player1 && m.player1.id === myClientId) myRole = 'X';
+            else if (m?.player2 && m.player2.id === myClientId) myRole = 'O';
+            isAuthority = (myRole === 'X');
+        }
+
+        function checkWinPure(board, mark) {
+            return WIN_PATTERNS.some(p => p.every(i => board[i] === mark));
+        }
+
+        // Autorytet buduje pytanie: treść + 4 opcje + poprawna odpowiedź
+        function buildQuestion() {
+            const level = LEVELS[currentTournament.level] || LEVELS.medium;
+            const { a, b } = generateUniqueQuestion(level);
+            const correct = a * b;
+            const answers = [correct];
+            let attempts = 0;
+            while (answers.length < 4 && attempts < 30) {
+                attempts++;
+                let wrong;
+                const t = Math.random();
+                if (t < 0.3) wrong = a * (b + 1);
+                else if (t < 0.6) wrong = (a + 1) * b;
+                else if (t < 0.8) wrong = correct + Math.floor(Math.random() * 10) - 5;
+                else wrong = correct + a;
+                if (wrong > 0 && wrong !== correct && !answers.includes(wrong)) answers.push(wrong);
+            }
+            while (answers.length < 4) {
+                const w = correct + answers.length * 2;
+                answers.push(answers.includes(w) ? w + 1 : w);
+            }
+            answers.sort(() => Math.random() - 0.5);
+            return { text: `${a} × ${b} = ?`, options: answers, correct };
+        }
+
+        function initialLiveState() {
+            return {
+                board: ['', '', '', '', '', '', '', '', ''],
+                turn: 'X',
+                phase: 'playing',
+                score1: 0,
+                score2: 0,
+                selectedCell: null,
+                question: null,
+                deadline: null,
+                roundWinnerRole: null,
+                matchWinnerRole: null,
+                seq: 0,
+                updatedAt: Date.now()
+            };
+        }
+
+        // Zapis stanu (tylko autorytet)
+        function writeLive(patch) {
+            if (!liveRef || !isAuthority) return;
+            const base = liveState || initialLiveState();
+            const next = { ...base, ...patch, seq: (base.seq || 0) + 1, updatedAt: Date.now() };
+            liveState = next;
+            liveRef.set(next).catch(e => console.error('Błąd zapisu live:', e));
+        }
+
+        function initializeGame() {
+            if (isModalOpen) return;
             clearTimer();
             clearAllGameTimeouts();
             setProcessing(false);
             isModalOpen = true;
             startGameWatchdog();
 
-            // Wstrzymaj nasłuchiwanie zmian turnieju na czas meczu
-            if (tournamentRef && tournamentListener) {
-                tournamentRef.off('value', tournamentListener);
-            }
+            matchKey = getMatchKey(currentMatch);
+            computeRole(currentMatch);
+            liveState = null;
 
-            gameState = {
-                board: ['', '', '', '', '', '', '', '', ''],
-                currentPlayer: 'X',
-                score1: 0,
-                score2: 0,
-                selectedCell: null,
-                correctAnswer: null,
-                isSelectingCell: false,
-                clickedCells: [],
-                boardActive: false
-            };
-
-            // Pytania są ładowane per turniej, nie resetujemy ich per mecz
-
+            // Nagłówek meczu
             const gamePlayerX = document.getElementById('gamePlayerX');
             const gamePlayerO = document.getElementById('gamePlayerO');
             const gameScoreX = document.getElementById('gameScoreX');
@@ -2797,183 +2918,406 @@
             const gameModal = document.getElementById('gameModal');
             const resetBtn = document.getElementById('resetMatchBtn');
             const resetBtnInline = document.getElementById('resetMatchBtnInline');
-
-            if (gamePlayerX) gamePlayerX.textContent = currentMatch.player1.name;
-            if (gamePlayerO) gamePlayerO.textContent = currentMatch.player2.name;
+            if (gamePlayerX) gamePlayerX.textContent = currentMatch.player1?.name || 'Gracz X';
+            if (gamePlayerO) gamePlayerO.textContent = currentMatch.player2?.name || 'Gracz O';
             if (gameScoreX) gameScoreX.textContent = '0';
             if (gameScoreO) gameScoreO.textContent = '0';
             if (pointsToWinDisplay) pointsToWinDisplay.textContent = currentTournament.pointsToWin;
             if (resetBtn) resetBtn.style.display = isHost ? 'inline-block' : 'none';
             if (resetBtnInline) resetBtnInline.style.display = isHost ? 'inline-block' : 'none';
-
             if (gameModal) gameModal.classList.add('active');
-            resetBoard(true); // Show announcement
-            updateGamePlayerHighlight();
 
-            // Awaryjne odblokowanie planszy, gdyby ogłoszenie się zawiesiło
-            safeGameTimeout(() => {
-                if (gameState && isModalOpen && !gameState.boardActive) {
-                    gameState.boardActive = true;
+            // Minimalny mirror dla watchdog/recover
+            gameState = { board: ['', '', '', '', '', '', '', '', ''], currentPlayer: 'X', score1: 0, score2: 0, boardActive: false, isSelectingCell: false, clickedCells: [] };
+
+            // Subskrypcja stanu meczu
+            liveRef = db.ref('tournaments/' + currentTournament.code + '/matches/' + matchKey + '/live');
+            intentRef = db.ref('tournaments/' + currentTournament.code + '/matches/' + matchKey + '/intent');
+
+            liveListener = liveRef.on('value', (snap) => {
+                const live = snap.val();
+                if (!live) {
+                    if (isAuthority) {
+                        liveState = initialLiveState();
+                        liveRef.set(liveState).catch(e => console.error('Błąd init live:', e));
+                    } else {
+                        renderWaitingForOpponent();
+                    }
+                    return;
                 }
-            }, 2500);
+                live.board = normalizeBoard(live.board);
+                liveState = live;
+                renderLive(live);
+            });
+
+            if (isAuthority) {
+                intentListener = intentRef.on('value', (snap) => {
+                    const intent = snap.val();
+                    if (!intent) return;
+                    try { handleOpponentIntent(intent); }
+                    catch (e) { console.error('Błąd obsługi intencji:', e); }
+                    intentRef.remove().catch(() => {});
+                });
+            }
+
+            // Presence (obecność) — tylko gdy jestem graczem
+            opponentPresent = true;
+            if (myRole !== null) {
+                const base = 'tournaments/' + currentTournament.code + '/matches/' + matchKey + '/presence';
+                presenceRef = db.ref(base);
+                const myPres = db.ref(base + '/' + myClientId);
+                try {
+                    if (typeof myPres.onDisconnect === 'function') myPres.onDisconnect().remove();
+                } catch (e) {}
+                myPres.set(true).catch(() => {});
+                presenceListener = presenceRef.on('value', (snap) => {
+                    const p = snap.val() || {};
+                    const oppId = myRole === 'X' ? currentMatch.player2?.id : currentMatch.player1?.id;
+                    opponentPresent = !!(oppId && p[oppId]);
+                    updateConnIndicator();
+                });
+            }
         }
 
-        function resetBoard(showAnnouncement = true) {
-            if (!gameState) return;
+        function updateConnIndicator() {
+            const el = document.getElementById('gameConnLine');
+            if (!el) return;
+            const over = liveState && liveState.phase === 'matchOver';
+            el.textContent = (!over && myRole !== null && !opponentPresent)
+                ? '⚠️ Przeciwnik rozłączony — czekam na powrót…'
+                : '';
+        }
 
-            clearTimer();
-            setProcessing(false);
+        // --- Render ---
+        function renderWaitingForOpponent() {
+            const gameBoard = document.getElementById('gameBoard');
+            const questionPanel = document.getElementById('questionPanel');
+            const roundResult = document.getElementById('roundResult');
+            const matchResult = document.getElementById('matchResult');
+            if (questionPanel) questionPanel.classList.add('hidden');
+            if (roundResult) roundResult.classList.add('hidden');
+            if (matchResult) matchResult.classList.add('hidden');
+            if (gameBoard) {
+                gameBoard.style.display = 'grid';
+                gameBoard.querySelectorAll('.game-cell').forEach(c => { c.textContent = ''; c.className = 'game-cell'; c.disabled = true; });
+            }
+            const status = document.getElementById('gameStatusLine');
+            if (status) status.textContent = 'Czekaj na rywala (gospodarza meczu)…';
+        }
 
-            gameState.board = ['', '', '', '', '', '', '', '', ''];
-            gameState.currentPlayer = 'X';
-            gameState.isSelectingCell = false;
-            gameState.clickedCells = [];
-            gameState.boardActive = false; // Disable board until announcement
+        function renderLive(live) {
+            // Mirror dla watchdog/recover
+            gameState = gameState || {};
+            gameState.board = live.board;
+            gameState.currentPlayer = live.turn;
+            gameState.score1 = live.score1;
+            gameState.score2 = live.score2;
+            gameState.boardActive = live.phase === 'playing';
 
+            const gameScoreX = document.getElementById('gameScoreX');
+            const gameScoreO = document.getElementById('gameScoreO');
+            if (gameScoreX) gameScoreX.textContent = live.score1;
+            if (gameScoreO) gameScoreO.textContent = live.score2;
+
+            document.getElementById('gamePlayerX')?.classList.toggle('active', live.turn === 'X');
+            document.getElementById('gamePlayerO')?.classList.toggle('active', live.turn === 'O');
+
+            const myTurn = (myRole !== null && myRole === live.turn);
+
+            const status = document.getElementById('gameStatusLine');
+            if (status) {
+                if (live.phase === 'matchOver') {
+                    status.textContent = '';
+                } else if (myRole === null) {
+                    const nm = live.turn === 'X' ? currentMatch.player1?.name : currentMatch.player2?.name;
+                    status.textContent = 'Tura: ' + (nm || live.turn);
+                } else {
+                    status.textContent = myTurn ? '➡️ Twoja tura' : '⏳ Tura przeciwnika…';
+                }
+            }
+
+            // Plansza
+            const gameBoard = document.getElementById('gameBoard');
             document.querySelectorAll('.game-cell').forEach(cell => {
-                cell.textContent = '';
-                cell.className = 'game-cell';
-                cell.onclick = () => {
-                    if (gameState && gameState.boardActive) {
-                        handleGameCellClick(parseInt(cell.dataset.index));
-                    }
-                };
+                const i = parseInt(cell.dataset.index);
+                const v = live.board[i] || '';
+                cell.textContent = v;
+                cell.className = 'game-cell' + (v ? ' taken ' + v.toLowerCase() : '');
+                if (i === live.selectedCell && live.phase === 'question') cell.classList.add('selected');
+                cell.disabled = !(live.phase === 'playing' && myTurn && v === '');
+                cell.onclick = () => onCellClick(i);
             });
 
             const questionPanel = document.getElementById('questionPanel');
             const roundResult = document.getElementById('roundResult');
             const matchResult = document.getElementById('matchResult');
-            const gameBoard = document.getElementById('gameBoard');
 
-            if (questionPanel) questionPanel.classList.add('hidden');
-            if (roundResult) roundResult.classList.add('hidden');
-            if (matchResult) matchResult.classList.add('hidden');
-            if (gameBoard) gameBoard.style.display = 'grid';
-
-            // Zaktualizuj podświetlenie gracza po zresetowaniu (zawsze X zaczyna rundę)
-            updateGamePlayerHighlight();
-
-            if (showAnnouncement && currentMatch?.player1?.name && !document.body.classList.contains('edge-lite')) {
-                showTournamentAnnouncement('X', currentMatch.player1.name, () => {
-                    if (gameState) gameState.boardActive = true;
-                });
-            } else {
-                gameState.boardActive = true;
-            }
-        }
-
-        function updateGamePlayerHighlight() {
-            if (!gameState || !currentMatch) return;
-
-            const gamePlayerX = document.getElementById('gamePlayerX');
-            const gamePlayerO = document.getElementById('gamePlayerO');
-            const questionPlayerTurn = document.getElementById('questionPlayerTurn');
-
-            if (gamePlayerX) gamePlayerX.classList.toggle('active', gameState.currentPlayer === 'X');
-            if (gamePlayerO) gamePlayerO.classList.toggle('active', gameState.currentPlayer === 'O');
-
-            const currentName = gameState.currentPlayer === 'X' ? currentMatch.player1?.name : currentMatch.player2?.name;
-            if (questionPlayerTurn && currentName) {
-                questionPlayerTurn.textContent = `Odpowiada: ${currentName}`;
-            }
-        }
-
-        function showTournamentAnnouncement(playerSymbol, playerName, callback) {
-            // Usuń poprzednie ogłoszenia przed utworzeniem nowego
-            document.querySelectorAll('.round-announcement').forEach(el => el.remove());
-
-            const announcement = document.createElement('div');
-            announcement.className = 'round-announcement';
-            announcement.innerHTML = `
-                <div class="announcement-content">
-                    <div class="player-symbol ${playerSymbol.toLowerCase()}">${playerSymbol}</div>
-                    <div class="player-text">${playerName}</div>
-                    <div class="start-text">zaczyna rundę!</div>
-                </div>
-            `;
-            document.body.appendChild(announcement);
-
-            safeGameTimeout(() => {
-                if (announcement.parentNode) {
-                    announcement.style.opacity = '0';
-                    announcement.style.transition = 'opacity 0.3s';
-                    safeGameTimeout(() => {
-                        if (announcement.parentNode) {
-                            announcement.remove();
-                        }
-                        if (callback) callback();
-                    }, document.body.classList.contains('edge-lite') ? 10 : 300);
-                } else if (callback) {
-                    callback();
-                }
-            }, 1500);
-        }
-
-        function handleGameCellClick(index) {
-            // Zabezpieczenia przed błędami
-            if (!gameState || !gameState.boardActive || isProcessing) return;
-            if (gameState.board[index] !== '') return;
-
-            // Check for cheating - clicking multiple cells
-            if (gameState.isSelectingCell) {
-                // Player clicked another cell while question is shown - PENALTY!
-                gameState.clickedCells.push(index);
-                if (gameState.clickedCells.length >= 2) {
-                    penalizeGamePlayer();
-                    return;
-                }
-                return; // Ignore additional clicks
+            if (live.phase === 'playing') {
+                if (gameBoard) gameBoard.style.display = 'grid';
+                if (questionPanel) questionPanel.classList.add('hidden');
+                if (roundResult) roundResult.classList.add('hidden');
+                if (matchResult) matchResult.classList.add('hidden');
+            } else if (live.phase === 'question' && live.question) {
+                if (gameBoard) gameBoard.style.display = 'grid';
+                if (roundResult) roundResult.classList.add('hidden');
+                if (matchResult) matchResult.classList.add('hidden');
+                renderQuestion(live.question, myTurn);
+            } else if (live.phase === 'roundOver') {
+                renderRoundResult(live);
+            } else if (live.phase === 'matchOver') {
+                renderMatchResult(live);
             }
 
-            gameState.isSelectingCell = true;
-            gameState.clickedCells = [index];
-            gameState.selectedCell = index;
-            showGameQuestion();
+            manageTurnTimer(live, myTurn);
+            updateConnIndicator();
         }
 
-        function penalizeGamePlayer() {
-            if (isProcessing) return;
-            setProcessing(true);
+        // Timer tury: wyświetlanie odliczania (obaj) + egzekwowanie timeoutu (autorytet)
+        function manageTurnTimer(live, myTurn) {
+            const timerDisplay = document.getElementById('timerDisplay');
+            const active = live.phase === 'question' && live.deadline;
 
-            clearTimer();
-
-            const questionPanel = document.getElementById('questionPanel');
-            if (questionPanel) questionPanel.classList.add('hidden');
-
-            // Reset selection state
-            if (gameState) {
-                gameState.isSelectingCell = false;
-                gameState.clickedCells = [];
-            }
-
-            // Show penalty message
-            const currentName = gameState?.currentPlayer === 'X' ? currentMatch?.player1?.name : currentMatch?.player2?.name;
-            if (!currentName) {
-                setProcessing(false);
+            if (!active) {
+                clearTimer(); // czyści timerInterval + ukrywa #timerDisplay
+                if (turnEnforceTimeout) { clearTimeout(turnEnforceTimeout); turnEnforceTimeout = null; }
                 return;
             }
 
-            // Usuń poprzednie kary
-            document.querySelectorAll('.penalty-message').forEach(el => el.remove());
+            // Wyświetlanie odliczania (oboje)
+            clearTimer();
+            const tick = () => {
+                if (!timerDisplay) return;
+                const left = Math.max(0, Math.ceil((live.deadline - Date.now()) / 1000));
+                timerDisplay.textContent = left;
+                timerDisplay.style.display = 'block';
+                timerDisplay.className = 'timer-display' + (left <= 2 ? ' warning' : '');
+                if (left <= 0) { clearTimer(); }
+            };
+            tick();
+            timerInterval = setInterval(tick, 250);
 
-            const penaltyDiv = document.createElement('div');
-            penaltyDiv.className = 'penalty-message';
-            penaltyDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #e74c3c; color: white; padding: 20px 40px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; z-index: 2000; text-align: center;';
-            penaltyDiv.innerHTML = `${currentName} kliknął wiele pól!<br><span style="font-size: 0.9rem;">Traci turę ❌</span>`;
-            document.body.appendChild(penaltyDiv);
-
-            // Switch player after delay
-            safeGameTimeout(() => {
-                if (penaltyDiv.parentNode) penaltyDiv.remove();
-                if (gameState) {
-                    gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
-                    updateGamePlayerHighlight();
-                }
-                setProcessing(false);
-            }, 1500);
+            // Egzekwowanie timeoutu — tylko autorytet
+            if (isAuthority) {
+                if (turnEnforceTimeout) clearTimeout(turnEnforceTimeout);
+                const seqAtSchedule = live.seq;
+                const ms = Math.max(0, live.deadline - Date.now());
+                turnEnforceTimeout = setTimeout(() => {
+                    if (isAuthority && liveState && liveState.phase === 'question' && liveState.seq === seqAtSchedule) {
+                        applyTimeout();
+                    }
+                }, ms + 150);
+            }
         }
 
-        // Get time limit based on phase
+        function applyTimeout() {
+            if (!isAuthority || !liveState || liveState.phase !== 'question') return;
+            const turn = liveState.turn;
+            // Timeout = utrata tury (jak błędna odpowiedź)
+            writeLive({ phase: 'playing', turn: turn === 'X' ? 'O' : 'X', selectedCell: null, question: null, deadline: null });
+        }
+
+        function renderQuestion(q, myTurn) {
+            const questionText = document.getElementById('questionText');
+            const answersContainer = document.getElementById('answersContainer');
+            const questionPanel = document.getElementById('questionPanel');
+            const turnEl = document.getElementById('questionPlayerTurn');
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (turnEl) {
+                const nm = liveState.turn === 'X' ? currentMatch.player1?.name : currentMatch.player2?.name;
+                turnEl.textContent = myRole === null ? ('Odpowiada: ' + (nm || '')) : (myTurn ? 'Odpowiadasz TY' : 'Odpowiada przeciwnik');
+            }
+            if (questionText) questionText.textContent = q.text;
+            if (answersContainer) {
+                answersContainer.innerHTML = (q.options || []).map(a =>
+                    `<button class="answer-btn" data-answer="${a}" ${myTurn ? '' : 'disabled'}>${a}</button>`
+                ).join('');
+                if (myTurn) {
+                    answersContainer.querySelectorAll('.answer-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            answersContainer.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+                            onAnswer(parseInt(this.dataset.answer));
+                        }, { once: true });
+                    });
+                }
+            }
+            // odliczanie steruje manageTurnTimer()
+            if (questionPanel) questionPanel.classList.remove('hidden');
+        }
+
+        function renderRoundResult(live) {
+            const questionPanel = document.getElementById('questionPanel');
+            const roundResult = document.getElementById('roundResult');
+            const matchResult = document.getElementById('matchResult');
+            const textEl = document.getElementById('roundResultText');
+            if (questionPanel) questionPanel.classList.add('hidden');
+            if (matchResult) matchResult.classList.add('hidden');
+            if (textEl) {
+                if (!live.roundWinnerRole) {
+                    textEl.textContent = 'Remis! Gramy dalej.';
+                } else {
+                    const nm = live.roundWinnerRole === 'X' ? currentMatch.player1?.name : currentMatch.player2?.name;
+                    textEl.textContent = (nm || '') + ' wygrywa rundę!';
+                }
+                if (!isAuthority) textEl.textContent += ' (czekaj na gospodarza)';
+            }
+            const nextBtn = roundResult ? roundResult.querySelector('button') : null;
+            if (nextBtn) nextBtn.style.display = isAuthority ? 'inline-block' : 'none';
+            if (roundResult) roundResult.classList.remove('hidden');
+        }
+
+        function renderMiniBoard(board) {
+            return `<div style="display:grid;grid-template-columns:repeat(3,40px);gap:4px;justify-content:center;">` +
+                board.map(cell => `<div style="width:40px;height:40px;background:rgba(255,255,255,0.1);border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;color:${cell === 'X' ? '#e74c3c' : cell === 'O' ? '#3498db' : 'rgba(255,255,255,0.2)'};">${cell || '·'}</div>`).join('') +
+                `</div>`;
+        }
+
+        function renderMatchResult(live) {
+            const questionPanel = document.getElementById('questionPanel');
+            const roundResult = document.getElementById('roundResult');
+            const matchResult = document.getElementById('matchResult');
+            const matchResultText = document.getElementById('matchResultText');
+            const finalBoardDisplay = document.getElementById('finalBoardDisplay');
+            const gameBoard = document.getElementById('gameBoard');
+            if (questionPanel) questionPanel.classList.add('hidden');
+            if (roundResult) roundResult.classList.add('hidden');
+            const winner = live.matchWinnerRole === 'X' ? currentMatch.player1 : currentMatch.player2;
+            if (matchResultText) matchResultText.textContent = (winner?.name || '') + ' wygrywa mecz!';
+            if (finalBoardDisplay) {
+                finalBoardDisplay.innerHTML = '<div style="font-size:0.85rem;color:rgba(255,255,255,0.7);margin-bottom:8px;">Plansza (weryfikacja):</div>' + renderMiniBoard(live.board);
+            }
+            if (gameBoard) gameBoard.style.display = 'none';
+            if (matchResult) matchResult.classList.remove('hidden');
+        }
+
+        // --- Interakcja (obie strony) ---
+        function onCellClick(index) {
+            if (!liveState || liveState.phase !== 'playing') return;
+            if (myRole === null || myRole !== liveState.turn) return;
+            if (liveState.board[index] !== '') return;
+            if (isAuthority) applySelect(index);
+            else sendIntent({ type: 'select', cell: index });
+        }
+
+        function onAnswer(value) {
+            if (!liveState || liveState.phase !== 'question') return;
+            if (myRole === null || myRole !== liveState.turn) return;
+            if (isAuthority) applyAnswer(value);
+            else sendIntent({ type: 'answer', value: value });
+        }
+
+        function sendIntent(obj) {
+            if (!intentRef) return;
+            localSeq++;
+            intentRef.set({ ...obj, by: myClientId, seq: localSeq, at: Date.now() })
+                .catch(e => console.error('Błąd wysłania intencji:', e));
+        }
+
+        function handleOpponentIntent(intent) {
+            if (!liveState) return;
+            if (liveState.turn !== 'O') return; // intencje tylko gdy tura przeciwnika (O)
+            if (intent.type === 'select') applySelect(intent.cell);
+            else if (intent.type === 'answer') applyAnswer(intent.value);
+        }
+
+        // --- Logika autorytetu (player1) ---
+        function applySelect(index) {
+            if (!isAuthority || !liveState || liveState.phase !== 'playing') return;
+            if (liveState.board[index] !== '') return;
+            const q = buildQuestion();
+            const limit = getTimeLimit();
+            const deadline = limit > 0 ? Date.now() + limit * 1000 : null;
+            writeLive({ phase: 'question', selectedCell: index, question: q, deadline });
+        }
+
+        function applyAnswer(value) {
+            if (!isAuthority || !liveState || liveState.phase !== 'question') return;
+            const q = liveState.question;
+            const turn = liveState.turn;
+            const board = liveState.board.slice();
+            const correct = q && value === q.correct;
+
+            if (!correct) {
+                writeLive({ phase: 'playing', turn: turn === 'X' ? 'O' : 'X', selectedCell: null, question: null, deadline: null });
+                return;
+            }
+
+            board[liveState.selectedCell] = turn;
+
+            if (checkWinPure(board, turn)) {
+                let s1 = liveState.score1, s2 = liveState.score2;
+                if (turn === 'X') s1++; else s2++;
+                if (s1 >= currentTournament.pointsToWin || s2 >= currentTournament.pointsToWin) {
+                    writeLive({ board, score1: s1, score2: s2, phase: 'matchOver', matchWinnerRole: turn, selectedCell: null, question: null, deadline: null });
+                    const winner = turn === 'X' ? currentMatch.player1 : currentMatch.player2;
+                    updateMatchResult(winner).catch(e => console.error('Błąd zapisu wyniku:', e));
+                } else {
+                    writeLive({ board, score1: s1, score2: s2, phase: 'roundOver', roundWinnerRole: turn, selectedCell: null, question: null, deadline: null });
+                }
+            } else if (board.every(c => c !== '')) {
+                writeLive({ board, phase: 'roundOver', roundWinnerRole: null, selectedCell: null, question: null, deadline: null });
+            } else {
+                writeLive({ board, phase: 'playing', turn: turn === 'X' ? 'O' : 'X', selectedCell: null, question: null, deadline: null });
+            }
+        }
+
+        // „Następna runda" — nową rundę uruchamia autorytet, oboje widzą efekt
+        function nextRound() {
+            if (!isAuthority) return;
+            writeLive({ board: ['', '', '', '', '', '', '', '', ''], turn: 'X', phase: 'playing', selectedCell: null, question: null, deadline: null, roundWinnerRole: null });
+        }
+
+        // --- Auto-wejście do meczu (remote): gdy jest mój mecz gotowy, wchodzę automatycznie ---
+        function findMyPlayableMatch() {
+            const t = currentTournament;
+            if (!t) return null;
+            const pick = (m, flags) => {
+                if (!m || !m.player1 || !m.player2) return null;
+                if (m.status === 'completed') return null;
+                if (m.player1.id !== myClientId && m.player2.id !== myClientId) return null;
+                const match = { ...m, ...flags };
+                if (getMatchKey(match) === lastClosedMatchKey) return null;
+                return match;
+            };
+
+            if (t.status === 'groups' && Array.isArray(t.groupMatches)) {
+                const cur = currentRoundOf(t.groupMatches);
+                for (const m of t.groupMatches) {
+                    if (m && m.round && m.round !== cur) continue; // tylko bieżąca runda
+                    const r = pick(m, { isGroupMatch: true });
+                    if (r) return r;
+                }
+            }
+            if (t.status === 'league' && Array.isArray(t.leagueMatches)) {
+                const cur = currentRoundOf(t.leagueMatches);
+                for (const m of t.leagueMatches) {
+                    if (m && m.round && m.round !== cur) continue; // tylko bieżąca runda
+                    const r = pick(m, { isLeagueMatch: true });
+                    if (r) return r;
+                }
+            }
+            if (t.status === 'leagueFinal') {
+                const r = pick(t.leagueFinal, { isFinal: true, isLeagueMatch: false });
+                if (r) return r;
+            }
+            if (t.status === 'knockout' && Array.isArray(t.bracket)) {
+                for (let ri = 0; ri < t.bracket.length; ri++) {
+                    const round = t.bracket[ri];
+                    if (!Array.isArray(round)) continue;
+                    for (const m of round) { const r = pick(m, { roundIndex: ri, isGroupMatch: false }); if (r) return r; }
+                }
+            }
+            return null;
+        }
+
+        function maybeAutoEnterMatch() {
+            if (isHost || isModalOpen) return;   // host obserwuje; nie wchodź podwójnie
+            const m = findMyPlayableMatch();
+            if (!m) return;
+            currentMatch = m;
+            initializeGame();
+        }
+
+        // Get time limit based on phase (zachowane na etap 5 — presja czasu)
         function getTimeLimit() {
             if (!currentTournament.timePressure) return 0;
 
@@ -3030,291 +3374,6 @@
             }
         }
 
-        function showGameQuestion() {
-            if (!gameState || !currentTournament) {
-                // Reset stanu selekcji jeśli wyjście awaryjne
-                if (gameState) {
-                    gameState.isSelectingCell = false;
-                    gameState.clickedCells = [];
-                }
-                return;
-            }
-
-            clearTimer();
-
-            const level = LEVELS[currentTournament.level];
-            if (!level) {
-                if (gameState) {
-                    gameState.isSelectingCell = false;
-                    gameState.clickedCells = [];
-                }
-                return;
-            }
-
-            let questionData;
-            try {
-                questionData = generateUniqueQuestion(level);
-            } catch (e) {
-                console.error('Błąd generowania pytania:', e);
-                if (gameState) {
-                    gameState.isSelectingCell = false;
-                    gameState.clickedCells = [];
-                }
-                return;
-            }
-
-            const { a, b } = questionData;
-            gameState.correctAnswer = a * b;
-
-            const answers = [gameState.correctAnswer];
-            let attempts = 0;
-            while (answers.length < 4 && attempts < 20) {
-                attempts++;
-                let wrong;
-                const errorType = Math.random();
-                if (errorType < 0.3) wrong = a * (b + 1);
-                else if (errorType < 0.6) wrong = (a + 1) * b;
-                else if (errorType < 0.8) wrong = gameState.correctAnswer + Math.floor(Math.random() * 10) - 5;
-                else wrong = a * b + a;
-
-                if (wrong > 0 && wrong !== gameState.correctAnswer && !answers.includes(wrong)) {
-                    answers.push(wrong);
-                }
-            }
-
-            // Fill remaining with random if needed
-            while (answers.length < 4) {
-                const wrong = gameState.correctAnswer + answers.length * 2;
-                if (!answers.includes(wrong)) answers.push(wrong);
-            }
-
-            answers.sort(() => Math.random() - 0.5);
-
-            const questionText = document.getElementById('questionText');
-            const answersContainer = document.getElementById('answersContainer');
-            const questionPanel = document.getElementById('questionPanel');
-            const timerDisplay = document.getElementById('timerDisplay');
-
-            if (questionText) questionText.textContent = `${a} × ${b} = ?`;
-
-            if (answersContainer) {
-                answersContainer.innerHTML = answers.map(ans =>
-                    `<button class="answer-btn" data-answer="${ans}">${ans}</button>`
-                ).join('');
-
-                // Użyj { once: true } aby zapobiec wielokrotnemu kliknięciu
-                answersContainer.querySelectorAll('.answer-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        checkGameAnswer(parseInt(this.dataset.answer));
-                    }, { once: true });
-                });
-            }
-
-            if (questionPanel) questionPanel.classList.remove('hidden');
-            updateGamePlayerHighlight();
-
-            // Timer
-            const timeLimit = getTimeLimit();
-
-            if (timeLimit > 0 && timerDisplay) {
-                let timeLeft = timeLimit;
-                timerDisplay.textContent = timeLeft;
-                timerDisplay.style.display = 'block';
-                timerDisplay.className = 'timer-display';
-
-                timerInterval = setInterval(() => {
-                    timeLeft--;
-                    if (timerDisplay) timerDisplay.textContent = timeLeft;
-
-                    if (timeLeft <= 2 && timerDisplay) {
-                        timerDisplay.classList.add('warning');
-                    }
-
-                    if (timeLeft <= 0) {
-                        clearTimer();
-                        checkGameAnswer(-1);
-                    }
-                }, 1000);
-            } else if (timerDisplay) {
-                timerDisplay.style.display = 'none';
-            }
-        }
-
-        function checkGameAnswer(answer) {
-            // Zabezpieczenie przed wielokrotnym wywołaniem
-            if (isProcessing || !gameState) return;
-            setProcessing(true);
-
-            clearTimer();
-
-            // Reset selection tracking
-            gameState.isSelectingCell = false;
-            gameState.clickedCells = [];
-
-            const buttons = document.querySelectorAll('.answer-btn');
-            const isTimeout = answer === -1;
-
-            buttons.forEach(btn => {
-                btn.disabled = true;
-                const btnAnswer = parseInt(btn.dataset.answer || btn.textContent);
-                if (btnAnswer === gameState.correctAnswer) {
-                    btn.classList.add('correct');
-                } else if (btnAnswer === answer && answer !== gameState.correctAnswer) {
-                    btn.classList.add('wrong');
-                }
-            });
-
-            safeGameTimeout(() => {
-                const questionPanel = document.getElementById('questionPanel');
-                if (questionPanel) questionPanel.classList.add('hidden');
-
-                if (!gameState) {
-                    setProcessing(false);
-                    return;
-                }
-
-                if (answer === gameState.correctAnswer) {
-                    placeGameMarker();
-                } else {
-                    gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
-                    updateGamePlayerHighlight();
-                    setProcessing(false);
-                }
-            }, isTimeout ? 300 : 700);
-        }
-
-        function placeGameMarker() {
-            if (!gameState) {
-                setProcessing(false);
-                return;
-            }
-
-            try {
-                const index = gameState.selectedCell;
-                gameState.board[index] = gameState.currentPlayer;
-
-                const cell = document.querySelector(`.game-cell[data-index="${index}"]`);
-                if (cell) {
-                    cell.textContent = gameState.currentPlayer;
-                    cell.classList.add('taken', gameState.currentPlayer.toLowerCase());
-                }
-
-                if (checkGameWin()) {
-                    // Dezaktywuj planszę podczas wyświetlania wyniku
-                    gameState.boardActive = false;
-                    highlightGameWinningCells();
-
-                    if (gameState.currentPlayer === 'X') {
-                        gameState.score1++;
-                    } else {
-                        gameState.score2++;
-                    }
-
-                    const gameScoreX = document.getElementById('gameScoreX');
-                    const gameScoreO = document.getElementById('gameScoreO');
-                    if (gameScoreX) gameScoreX.textContent = gameState.score1;
-                    if (gameScoreO) gameScoreO.textContent = gameState.score2;
-
-                    if (gameState.score1 >= currentTournament.pointsToWin || gameState.score2 >= currentTournament.pointsToWin) {
-                        showMatchResult();
-                    } else {
-                        showRoundResult();
-                    }
-                } else if (gameState.board.every(c => c !== '')) {
-                    gameState.boardActive = false;
-                    showRoundResult(true);
-                } else {
-                    gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
-                    updateGamePlayerHighlight();
-                    setProcessing(false);
-                }
-            } catch (e) {
-                console.error('Błąd w placeGameMarker:', e);
-                setProcessing(false);
-                if (gameState) gameState.boardActive = true;
-            }
-        }
-
-        function checkGameWin() {
-            return WIN_PATTERNS.some(pattern =>
-                pattern.every(index => gameState.board[index] === gameState.currentPlayer)
-            );
-        }
-
-        function highlightGameWinningCells() {
-            if (!gameState) return;
-            WIN_PATTERNS.forEach(pattern => {
-                if (pattern.every(index => gameState.board[index] === gameState.currentPlayer)) {
-                    pattern.forEach(index => {
-                        const cell = document.querySelector(`.game-cell[data-index="${index}"]`);
-                        if (cell) cell.classList.add('winning');
-                    });
-                }
-            });
-        }
-
-        function showRoundResult(isDraw = false) {
-            setProcessing(false); // Odblokuj po zakończeniu rundy
-
-            const textEl = document.getElementById('roundResultText');
-            const roundResult = document.getElementById('roundResult');
-
-            if (textEl) {
-                if (isDraw) {
-                    textEl.textContent = 'Remis! Gramy dalej.';
-                } else {
-                    const winner = gameState?.currentPlayer === 'X' ? currentMatch?.player1?.name : currentMatch?.player2?.name;
-                    textEl.textContent = winner ? `${winner} wygrywa rundę!` : 'Wygrana!';
-                }
-            }
-
-            if (roundResult) roundResult.classList.remove('hidden');
-        }
-
-        function nextRound() {
-            setProcessing(false);
-            resetBoard();
-        }
-
-        function showMatchResult() {
-            setProcessing(false); // Odblokuj po zakończeniu meczu
-
-            if (!gameState || !currentTournament || !currentMatch) return;
-
-            // Dezaktywuj planszę
-            if (gameState) gameState.boardActive = false;
-
-            const winner = gameState.score1 >= currentTournament.pointsToWin ? currentMatch.player1 : currentMatch.player2;
-
-            const matchResultText = document.getElementById('matchResultText');
-            const finalBoardDisplay = document.getElementById('finalBoardDisplay');
-            const gameBoard = document.getElementById('gameBoard');
-            const matchResult = document.getElementById('matchResult');
-
-            if (matchResultText) matchResultText.textContent = `${winner.name} wygrywa mecz!`;
-
-            // Show final board
-            if (finalBoardDisplay) {
-                finalBoardDisplay.innerHTML = `
-                    <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px;">Plansza (weryfikacja):</div>
-                    <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; justify-content: center;">
-                        ${gameState.board.map(cell => `
-                            <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: ${cell === 'X' ? '#e74c3c' : cell === 'O' ? '#3498db' : 'rgba(255,255,255,0.2)'};">
-                                ${cell || '·'}
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
-
-            if (gameBoard) gameBoard.style.display = 'none';
-            if (matchResult) matchResult.classList.remove('hidden');
-
-            updateMatchResult(winner).catch(e => {
-                console.error('Błąd zapisu wyniku meczu:', e);
-            });
-        }
-
         async function resetCurrentMatch() {
             if (!isHost || !currentMatch || !currentTournament) return;
 
@@ -3340,6 +3399,7 @@
                     await resetBracketMatch(currentMatch.id, currentMatch.roundIndex);
                 }
 
+                await clearLiveNode(getMatchKey(currentMatch));
                 closeGame();
             } catch (e) {
                 console.error('Błąd resetu meczu:', e);
@@ -3347,7 +3407,10 @@
         }
 
         async function updateMatchResult(winner) {
-            if (!currentMatch || !currentTournament || !gameState || !winner) return;
+            if (!currentMatch || !currentTournament || !liveState || !winner) return;
+
+            const resScore1 = liveState.score1 || 0;
+            const resScore2 = liveState.score2 || 0;
 
             try {
                 const latestTournamentSnap = await db.ref('tournaments/' + currentTournament.code).once('value');
@@ -3362,15 +3425,15 @@
 
                 if (currentMatch.isGroupMatch) {
                     await updateMatchInListTransactional('groupMatches', currentMatch.id, {
-                        score1: gameState.score1,
-                        score2: gameState.score2,
+                        score1: resScore1,
+                        score2: resScore2,
                         winner: winner.id,
                         status: 'completed'
                     });
                 } else if (currentMatch.isLeagueMatch) {
                     await updateMatchInListTransactional('leagueMatches', currentMatch.id, {
-                        score1: gameState.score1,
-                        score2: gameState.score2,
+                        score1: resScore1,
+                        score2: resScore2,
                         winner: winner.id,
                         status: 'completed'
                     });
@@ -3381,8 +3444,8 @@
                         champion: winner.name,
                         leagueFinal: {
                             ...currentTournament.leagueFinal,
-                            score1: gameState.score1,
-                            score2: gameState.score2,
+                            score1: resScore1,
+                            score2: resScore2,
                             winner: winner.id,
                             status: 'completed'
                         }
@@ -3405,8 +3468,8 @@
                         currentMatch.id,
                         currentMatch.roundIndex,
                         {
-                            score1: gameState.score1,
-                            score2: gameState.score2,
+                            score1: resScore1,
+                            score2: resScore2,
                             winner: winner.id,
                             status: 'completed'
                         },
@@ -3432,12 +3495,46 @@
             }
         }
 
+        // Odpięcie listenerów meczu (live + intent + presence) i timera tury
+        function detachMatchListeners() {
+            try { if (liveRef && liveListener) liveRef.off('value', liveListener); } catch (e) {}
+            try { if (intentRef && intentListener) intentRef.off('value', intentListener); } catch (e) {}
+            try {
+                if (presenceRef) {
+                    if (presenceListener) presenceRef.off('value', presenceListener);
+                    if (myRole !== null) {
+                        const myPres = db.ref('tournaments/' + currentTournament.code + '/matches/' + matchKey + '/presence/' + myClientId);
+                        try { if (typeof myPres.onDisconnect === 'function') myPres.onDisconnect().cancel(); } catch (e) {}
+                        myPres.remove().catch(() => {});
+                    }
+                }
+            } catch (e) {}
+            if (turnEnforceTimeout) { clearTimeout(turnEnforceTimeout); turnEnforceTimeout = null; }
+            const connLine = document.getElementById('gameConnLine');
+            if (connLine) connLine.textContent = '';
+            liveRef = null; liveListener = null;
+            intentRef = null; intentListener = null;
+            presenceRef = null; presenceListener = null; opponentPresent = true;
+            liveState = null; myRole = null; isAuthority = false; matchKey = null;
+        }
+
+        // Usunięcie węzła meczu (po resecie/powtórce) — czyści live + intent
+        async function clearLiveNode(key) {
+            if (!key || !currentTournament?.code) return;
+            try {
+                await db.ref('tournaments/' + currentTournament.code + '/matches/' + key).remove();
+            } catch (e) { console.error('Błąd czyszczenia węzła meczu:', e); }
+        }
+
         function closeGame() {
             clearTimer();
             clearAllGameTimeouts();
             stopGameWatchdog();
             setProcessing(false);
             isModalOpen = false;
+
+            lastClosedMatchKey = matchKey;
+            detachMatchListeners();
 
             // Usuń ogłoszenia i komunikaty kar
             document.querySelectorAll('.round-announcement, .penalty-message').forEach(el => el.remove());
@@ -3448,7 +3545,7 @@
             currentMatch = null;
             gameState = null;
 
-            // Wznowienie nasłuchiwania zmian po meczu
+            // Wznowienie nasłuchiwania zmian po meczu (świeży render fazy turnieju)
             if (currentTournament?.code) {
                 listenToTournament(currentTournament.code);
             }
@@ -3514,6 +3611,7 @@
                     await db.ref('tournaments/' + currentTournament.code + '/bracket').set(bracket);
                 }
 
+                await clearLiveNode(getMatchKey(currentMatch));
                 closeGame();
             } catch (e) {
                 console.error('Błąd resetowania meczu:', e);
@@ -3708,20 +3806,19 @@
                 currentTournament = { ...tournament, code: session.code };
                 isHost = session.hostId && session.hostId === tournament.host;
 
-                addedPlayersFromDevice = Array.isArray(session.addedPlayersFromDevice)
-                    ? session.addedPlayersFromDevice
-                    : [];
-
                 if (isHost) {
                     currentPlayer = { id: tournament.host, name: 'Prowadzący', isHost: true };
-                } else if (session.playerId && tournament.participants?.[session.playerId]) {
-                    currentPlayer = { id: session.playerId, name: tournament.participants[session.playerId].name };
-                } else if (addedPlayersFromDevice[0]) {
-                    currentPlayer = addedPlayersFromDevice[0];
                 } else {
-                    const firstParticipant = Object.entries(tournament.participants || {})[0];
-                    if (firstParticipant) {
-                        currentPlayer = { id: firstParticipant[0], name: firstParticipant[1].name };
+                    // Remote: moja tożsamość to clientId
+                    const pid = (tournament.participants?.[myClientId]) ? myClientId
+                              : (session.playerId && tournament.participants?.[session.playerId]) ? session.playerId
+                              : null;
+                    if (pid) {
+                        currentPlayer = { id: pid, name: tournament.participants[pid].name };
+                    } else {
+                        // Nie jestem już uczestnikiem tego turnieju
+                        clearSession();
+                        return;
                     }
                 }
 

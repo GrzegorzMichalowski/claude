@@ -4,9 +4,9 @@
       "$tournamentId": {
         ".read": true,
         ".write": true,
-        ".validate": "newData.hasChildren(['code', 'name', 'mode', 'level', 'status', 'host', 'createdAt']) && newData.child('code').isString() && newData.child('code').val().length == 6 && newData.child('code').val() == $tournamentId && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('mode').val().matches(/^(groups|knockout)$/) && newData.child('level').val().matches(/^(easy|medium|hard|master)$/) && newData.child('status').val().matches(/^(lobby|groups|knockout|finished)$/) && newData.child('host').isString() && (!newData.hasChild('pointsToWin') || (newData.child('pointsToWin').isNumber() && newData.child('pointsToWin').val() >= 1 && newData.child('pointsToWin').val() <= 10)) && (!newData.hasChild('groupCount') || (newData.child('groupCount').isNumber() && newData.child('groupCount').val() >= 0 && newData.child('groupCount').val() <= 8))",
+        ".validate": "newData.hasChildren(['code', 'name', 'mode', 'level', 'status', 'host', 'createdAt']) && newData.child('code').isString() && newData.child('code').val().length == 6 && newData.child('code').val() == $tournamentId && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('mode').val().matches(/^(groups|knockout|league)$/) && newData.child('level').val().matches(/^(easy|medium|hard|master)$/) && newData.child('status').val().matches(/^(lobby|groups|knockout|league|leagueFinal|finished)$/) && newData.child('host').isString() && (!newData.hasChild('pointsToWin') || ( newData.child('pointsToWin').isNumber() && newData.child('pointsToWin').val() >= 1 && newData.child('pointsToWin').val() <= 10 )) && (!newData.hasChild('groupCount') || ( newData.child('groupCount').isNumber() && newData.child('groupCount').val() >= 0 && newData.child('groupCount').val() <= 8 ))",
         "participants": {
-          "$playerId": {
+          "$oderId": {
             ".validate": "newData.hasChildren(['name', 'joinedAt']) && newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 30"
           }
         },
@@ -21,14 +21,86 @@
         },
         "champion": {
           ".validate": "newData.isString() && newData.val().length <= 30"
+        },
+        "matches": {
+          "$matchKey": {
+            "live": {
+              ".validate": "newData.hasChildren(['board', 'turn', 'phase'])",
+              "board": {
+                ".validate": "newData.hasChild('8')",
+                "$i": {
+                  ".validate": "newData.val() == '' || newData.val() == 'X' || newData.val() == 'O'"
+                }
+              },
+              "turn": {
+                ".validate": "newData.val() == 'X' || newData.val() == 'O'"
+              },
+              "phase": {
+                ".validate": "newData.val().matches(/^(playing|question|roundOver|matchOver)$/)"
+              },
+              "score1": {
+                ".validate": "newData.isNumber()"
+              },
+              "score2": {
+                ".validate": "newData.isNumber()"
+              }
+            },
+            "intent": {
+              ".validate": "newData.hasChildren(['type', 'by']) && newData.child('type').val().matches(/^(select|answer)$/) && newData.child('by').isString()"
+            },
+            "presence": {
+              "$clientId": {
+                ".validate": "newData.isBoolean()"
+              }
+            }
+          }
         }
       }
     },
     "tournamentHistory": {
       ".read": true,
+      ".write": true,
       "$historyId": {
-        ".write": "!data.exists()",
-        ".validate": "newData.hasChildren(['champion', 'finishedAt', 'level', 'mode', 'name', 'participantCount']) && newData.child('champion').isString() && newData.child('champion').val().length <= 30 && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('level').val().matches(/^(easy|medium|hard|master)$/) && newData.child('mode').val().matches(/^(groups|knockout)$/) && newData.child('participantCount').isNumber() && newData.child('participantCount').val() >= 2 && newData.child('participantCount').val() <= 64"
+        ".validate": "newData.hasChildren(['champion', 'finishedAt', 'level', 'mode', 'name', 'participantCount']) && newData.child('champion').isString() && newData.child('champion').val().length <= 30 && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('level').val().matches(/^(easy|medium|hard|master)$/) && newData.child('mode').val().matches(/^(groups|knockout|league)$/) && newData.child('participantCount').isNumber() && newData.child('participantCount').val() >= 2 && newData.child('participantCount').val() <= 64",
+        ".write": "!data.exists()"
+      }
+    },
+    "communityQuizSets": {
+      ".read": true,
+      ".write": true,
+      "$setId": {
+        ".validate": "newData.hasChildren(['name', 'author', 'category', 'level', 'questions', 'status', 'createdAt']) && newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 100 && newData.child('author').isString() && newData.child('author').val().length >= 1 && newData.child('author').val().length <= 50 && newData.child('category').isString() && newData.child('level').isString() && newData.child('status').val().matches(/^(pending|approved|rejected)$/) && newData.hasChild('questions')"
+      }
+    },
+    "communityFiszkiSets": {
+      ".read": true,
+      ".write": true,
+      "$setId": {
+        ".validate": "newData.hasChildren(['name', 'author', 'cards', 'status', 'createdAt']) && newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 100 && newData.child('author').isString() && newData.child('author').val().length >= 1 && newData.child('author').val().length <= 50 && newData.child('status').val().matches(/^(pending|approved|rejected)$/) && newData.hasChild('cards')"
+      }
+    },
+    "communityVabanqueSets": {
+      ".read": true,
+      ".write": true,
+      "$setId": {
+        ".validate": "newData.hasChildren(['name', 'author', 'categories', 'status', 'createdAt']) && newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 100 && newData.child('author').isString() && newData.child('author').val().length >= 1 && newData.child('author').val().length <= 50 && newData.child('status').val().matches(/^(pending|approved|rejected)$/) && newData.hasChild('categories')"
+      }
+    },
+    "gameResults": {
+      ".read": true,
+      ".write": true,
+      "$game": {
+        ".read": true,
+        "$resultId": {
+          ".validate": "newData.hasChildren(['game', 'playerName', 'createdAt', 'score', 'won', 'mode', 'sourceSetId', 'sourceSetName', 'details']) && newData.child('game').isString() && newData.child('game').val() == $game && newData.child('playerName').isString() && newData.child('playerName').val().length >= 1 && newData.child('playerName').val().length <= 50 && newData.child('score').isNumber() && newData.child('won').isBoolean() && newData.child('mode').isString() && newData.child('mode').val().length >= 1 && newData.child('mode').val().length <= 30 && newData.child('sourceSetId').isString() && newData.child('sourceSetId').val().length <= 100 && newData.child('sourceSetName').isString() && newData.child('sourceSetName').val().length <= 150 && newData.child('details').isString() == false"
+        }
+      }
+    },
+    "adminConfig": {
+      ".read": true,
+      "passwordHash": {
+        ".write": true,
+        ".validate": "newData.isString() && newData.val().length == 64"
       }
     },
     "$other": {

@@ -82,6 +82,56 @@
         // Champion - tylko string max 30 znaków
         "champion": {
           ".validate": "newData.isString() && newData.val().length <= 30"
+        },
+
+        // ==========================================
+        // MECZE 1v1 REMOTE - stan synchronizowany na żywo
+        // (zapis dozwolony przez kaskadę .write z $tournamentId;
+        //  tu tylko walidacja struktury - obrona przed śmieciami)
+        // ==========================================
+        "matches": {
+          "$matchKey": {
+            // Stan meczu: plansza + tura + faza + wynik
+            "live": {
+              ".validate": "newData.hasChildren(['board', 'turn', 'phase'])",
+
+              // Plansza: 9 pól, każde '' | 'X' | 'O'
+              "board": {
+                ".validate": "newData.hasChild('8')",
+                "$i": {
+                  ".validate": "newData.val() == '' || newData.val() == 'X' || newData.val() == 'O'"
+                }
+              },
+
+              // Czyja tura
+              "turn": {
+                ".validate": "newData.val() == 'X' || newData.val() == 'O'"
+              },
+
+              // Faza meczu
+              "phase": {
+                ".validate": "newData.val().matches(/^(playing|question|roundOver|matchOver)$/)"
+              },
+
+              // Wyniki - liczby
+              "score1": { ".validate": "newData.isNumber()" },
+              "score2": { ".validate": "newData.isNumber()" }
+              // pozostałe pola (question, selectedCell, deadline, seq, updatedAt,
+              // roundWinnerRole, matchWinnerRole) - dozwolone bez walidacji
+            },
+
+            // Intencja ruchu gracza-nie-autorytetu (przeciwnika O)
+            "intent": {
+              ".validate": "newData.hasChildren(['type', 'by']) && newData.child('type').val().matches(/^(select|answer)$/) && newData.child('by').isString()"
+            },
+
+            // Obecność graczy w meczu (presence)
+            "presence": {
+              "$clientId": {
+                ".validate": "newData.isBoolean()"
+              }
+            }
+          }
         }
       }
     },
