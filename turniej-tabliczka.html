@@ -1004,7 +1004,6 @@
             <div class="match-list" id="groupMatchList"></div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentGroups" style="display: none;">Zakończ turniej (prowadzący)</button>
-                <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateGroups" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
 
@@ -1022,7 +1021,6 @@
             <div id="leagueProgress" style="margin-top: 20px; text-align: center;"></div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentLeague" style="display: none;">Zakończ turniej (prowadzący)</button>
-                <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateLeague" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
 
@@ -1036,7 +1034,6 @@
             <div id="finalControls" style="text-align: center;"></div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentFinal" style="display: none;">Zakończ turniej (prowadzący)</button>
-                <button class="btn btn-secondary" onclick="simulatePendingMatches(1)" id="simulateFinal" style="display: none;">Symuluj finał</button>
             </div>
         </div>
 
@@ -1049,7 +1046,6 @@
             </div>
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn btn-secondary" onclick="endTournament()" id="endTournamentKnockout" style="display: none;">Zakończ turniej (prowadzący)</button>
-                <button class="btn btn-secondary" onclick="simulatePendingMatches(3)" id="simulateKnockout" style="display: none;">Symuluj 3 mecze</button>
             </div>
         </div>
 
@@ -1099,10 +1095,7 @@
                 <div>Przycisk „Zakończ turniej (prowadzący)” kończy bieżący turniej i zapisuje go w historii jako „Przerwany”.</div>
             </div>
 
-            <div class="help-box">
-                <h3>5. Testy bez grania</h3>
-                <div>W fazie grup, ligi i pucharu prowadzący może użyć „Symuluj 3 mecze”, aby szybko sprawdzić przepływ turnieju.</div>
-            </div>
+
 
             <button class="btn btn-secondary" onclick="showStartScreen()">Powrót</button>
         </div>
@@ -2026,9 +2019,7 @@
             document.getElementById('groupStagePanel').classList.remove('hidden');
             document.getElementById('groupStageTitle').textContent = currentTournament.name;
             const endBtn = document.getElementById('endTournamentGroups');
-            const simBtn = document.getElementById('simulateGroups');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
-            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderGroups();
             renderGroupMatches();
@@ -2207,9 +2198,7 @@
             document.getElementById('leagueStagePanel').classList.remove('hidden');
             document.getElementById('leagueStageTitle').textContent = currentTournament.name;
             const endBtn = document.getElementById('endTournamentLeague');
-            const simBtn = document.getElementById('simulateLeague');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
-            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderLeagueStandings();
             renderLeagueMatches();
@@ -2418,9 +2407,7 @@
             hideAllPanels();
             document.getElementById('leagueFinalPanel').classList.remove('hidden');
             const endBtn = document.getElementById('endTournamentFinal');
-            const simBtn = document.getElementById('simulateFinal');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
-            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             const finalMatch = currentTournament.leagueFinal;
             if (!finalMatch) return;
@@ -2484,9 +2471,7 @@
             document.getElementById('knockoutPhaseIndicator').textContent =
                 currentTournament.mode === 'groups' ? 'Faza pucharowa - najlepsi z grup' : 'Faza pucharowa';
             const endBtn = document.getElementById('endTournamentKnockout');
-            const simBtn = document.getElementById('simulateKnockout');
             if (endBtn) endBtn.style.display = isHost ? 'inline-block' : 'none';
-            if (simBtn) simBtn.style.display = isHost ? 'inline-block' : 'none';
 
             renderBracket(currentTournament.bracket);
             maybeAutoEnterMatch();

@@ -1,5 +1,5 @@
 // Service Worker dla Narzędzi dla Nauczycieli
-const CACHE_NAME = 'nauczyciel-tools-v4';
+const CACHE_NAME = 'nauczyciel-tools-v5';
 
 // Pliki do cache'owania przy instalacji (ścieżki względne dla GitHub Pages)
 const STATIC_ASSETS = [
